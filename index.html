@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Hacker News</title>
+    <title>K-Notes</title>
     <link href="css/styles.css" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="js/tailwindConfig.js"></script>
@@ -15,13 +15,12 @@
 
 <body class="font-body-md text-body-md text-on-surface">
     <div class="max-w-[85%] mx-auto bg-surface-bright pb-8">
-        <!-- TopNavBar -->
         <header
             class="bg-primary-container text-on-primary-container flex-col font-['Work_Sans'] text-sm font-medium tracking-tight rounded-none w-full divide-x divide-black/20 flat no shadows flex items-center justify-between px-2 py-1 max-w-[85%] mx-auto"
             style="max-width: 100%;">
             <div class="flex items-center gap-1 w-full">
                 <span class="border border-on-primary-container p-0.5 mr-1 font-bold">KN</span>
-                <span class="font-bold text-black px-2 mr-2">Hacker News</span>
+                <span class="font-bold text-black px-2 mr-2">K. Notes</span>
                 <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
                     <a class="hover:underline" href="#">new</a> |
                     <a class="hover:underline" href="#">past</a> |
@@ -31,12 +30,16 @@
                     <a class="hover:underline" href="#">jobs</a> |
                     <a class="hover:underline" href="#">submit</a>
                 </div>
-                <div class="ml-auto text-black text-[13px]">
-                    By Khushaank Gupta
+                <div class="ml-auto text-black text-[13px] flex items-center gap-4">
+                    <form id="search-form" class="flex items-center">
+                        <input type="text" id="search-input" placeholder="Search..."
+                            class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black">
+                    </form>
+                    <div>By Khushaank Gupta</div>
+                    <a class="hover:underline text-gray-600" href="login.html">login</a>
                 </div>
             </div>
         </header>
-        <!-- Main Content -->
         <main class="bg-[#f6f6ef] pt-2 pb-4">
             <table class="border-spacing-0 border-collapse">
                 <tbody>
@@ -46,7 +49,6 @@
                 </tbody>
             </table>
         </main>
-        <!-- Footer -->
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600] font-['Work_Sans'] text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 divide-x divide-gray-400 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
             style="max-width: 100%;">
@@ -54,12 +56,12 @@
                 <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
             </div>
             <div class="flex flex-wrap justify-center gap-2 text-gray-600">
-                <a class="hover:underline text-gray-600" href="guidelines.html">Guidelines</a> | 
-                <a class="hover:underline text-gray-600" href="faq.html">FAQ</a> | 
-                <a class="hover:underline text-gray-600" href="lists.html">Lists</a> | 
-                <a class="hover:underline text-gray-600" href="api.html">API</a> | 
-                <a class="hover:underline text-gray-600" href="security.html">Security</a> | 
-                <a class="hover:underline text-gray-600" href="legal.html">Legal</a> | 
+                <a class="hover:underline text-gray-600" href="guidelines.html">Guidelines</a> |
+                <a class="hover:underline text-gray-600" href="faq.html">FAQ</a> |
+                <a class="hover:underline text-gray-600" href="lists.html">Lists</a> |
+                <a class="hover:underline text-gray-600" href="api.html">API</a> |
+                <a class="hover:underline text-gray-600" href="security.html">Security</a> |
+                <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
                 <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
             </div>
         </footer>
