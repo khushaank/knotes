@@ -2,12 +2,11 @@
 <html lang="en">
 
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Legal - K. Notes</title>
     <link href="css/styles.css" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="js/tailwindConfig.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
@@ -16,12 +15,29 @@
 <body class="font-body-md text-body-md text-on-surface">
     <div class="max-w-[85%] mx-auto bg-surface-bright pb-8">
         <!-- TopNavBar -->
-        <header
+                <header
             class="bg-primary-container text-on-primary-container flex-col font-['Work_Sans'] text-sm font-medium tracking-tight rounded-none w-full divide-x divide-black/20 flat no shadows flex items-center justify-between px-2 py-1 max-w-[85%] mx-auto"
             style="max-width: 100%;">
             <div class="flex items-center gap-1 w-full">
                 <span class="border border-on-primary-container p-0.5 mr-1 font-bold">KN</span>
                 <a href="index.html" class="font-bold text-black px-2 mr-2 hover:underline">K. Notes</a>
+                <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
+                    <a class="hover:underline" href="#">new</a> |
+                    <a class="hover:underline" href="#">past</a> |
+                    <a class="hover:underline" href="#">comments</a> |
+                    <a class="hover:underline" href="#">ask</a> |
+                    <a class="hover:underline" href="#">show</a> |
+                    <a class="hover:underline" href="#">jobs</a> |
+                    <a class="hover:underline" href="#">submit</a>
+                </div>
+                <div class="ml-auto text-black text-[13px] flex items-center gap-4">
+                    <form id="search-form" class="flex items-center" onsubmit="event.preventDefault(); window.location.href='index.html?search='+document.getElementById('search-input').value;">
+                        <input type="text" id="search-input" placeholder="Search..."
+                            class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black">
+                    </form>
+                    <div>By Khushaank Gupta</div>
+                    <a class="hover:underline text-gray-600" href="login.html">login</a>
+                </div>
             </div>
         </header>
         <!-- Main Content -->
@@ -29,7 +45,24 @@
             <h1 class="font-title-md text-title-md text-black font-bold mb-4">Legal</h1>
             <p class="text-secondary">This page is currently under construction.</p>
         </main>
+        <footer
+            class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600] font-['Work_Sans'] text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
+            style="max-width: 100%;">
+            <div class="flex justify-center w-full mb-2">
+                <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-2 text-gray-600">
+                <a class="hover:underline text-gray-600" href="guidelines.html">Guidelines</a> |
+                <a class="hover:underline text-gray-600" href="faq.html">FAQ</a> |
+                <a class="hover:underline text-gray-600" href="lists.html">Lists</a> |
+                <a class="hover:underline text-gray-600" href="api.html">API</a> |
+                <a class="hover:underline text-gray-600" href="security.html">Security</a> |
+                <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
+                <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
+            </div>
+        </footer>
     </div>
+    <script type="module" src="js/session.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,12 @@
+# K. Notes
+
+This is a Hacker News clone called K. Notes.
+The app allows users to view, search, and submit stories.
+It is built with vanilla HTML/JS and Tailwind CSS.
+Authentication and Database are provided by Supabase.
+
+## Structure
+- index.html: Main story feed
+- viewer.html: View a single story and its comments
+- login.html: Authentication (Login/Register)
+- static pages: faq, guidelines, legal, api, lists, security, contact

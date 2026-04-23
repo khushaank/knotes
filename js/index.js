@@ -18,7 +18,7 @@ async function fetchStories(searchQuery = '') {
     }
 
     const { data: stories, error } = await query;
-    
+
     if (error) {
         console.error('Error fetching blogs:', error);
         return [];
@@ -31,7 +31,7 @@ async function renderStories(searchQuery = '') {
     tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading stories...</td></tr>';
 
     const stories = await fetchStories(searchQuery);
-    
+
     if (!stories || stories.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No stories found. Create some in your Supabase dashboard!</td></tr>';
         return;
@@ -58,7 +58,7 @@ async function renderStories(searchQuery = '') {
             <tr class="h-[5px]"></tr>
         `;
     });
-    
+
     html += `
         <tr class="h-[20px]">
             <td colspan="2"></td>
@@ -67,7 +67,7 @@ async function renderStories(searchQuery = '') {
             </td>
         </tr>
     `;
-    
+
     tbody.innerHTML = html;
 }
 

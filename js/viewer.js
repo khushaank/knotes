@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const commentRoot = toggle.closest('.flex.items-start').parentElement;
             const body = commentRoot.querySelector('.comment-body');
             const footer = commentRoot.querySelector('.comment-footer');
-            
+
             if (toggle.innerText === '[–]') {
                 toggle.innerText = '[+]';
                 if (body) body.style.display = 'none';
