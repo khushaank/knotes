@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick } from './supabaseClient.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
@@ -44,21 +44,19 @@ function renderCommentList(comments) {
     comments.forEach(comment => {
         const timeAgo = calculateTimeAgo(comment.created_at);
         html += `
-            <div class="mb-item-gap comment-node">
+            <div class="mb-4 comment-node">
                 <div class="flex items-start gap-1">
-                    <div class="cursor-pointer text-secondary mt-[2px]">
-                        <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
-                    </div>
+                    <div class="hn-arrow mt-[4px]" data-id="${comment.id}"></div>
                     <div class="w-full">
-                        <div class="font-meta-sm text-meta-sm text-secondary mb-1">
-                            <a class="hover:underline text-on-background" href="#">${comment.user_name || 'anonymous'}</a>
+                        <div class="story-meta mb-1">
+                            <a class="hover:underline text-black" href="profile.html?user=${comment.user_name}">${comment.user_name || 'anonymous'}</a>
                             <a class="hover:underline ml-1" href="#">${timeAgo}</a>
-                            <span class="ml-1 cursor-pointer hover:underline collapse-toggle">[–]</span>
+                            <span class="ml-1 cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
                         </div>
-                        <div class="text-on-background mb-1 comment-body pr-4">
+                        <div class="text-black mb-1 text-[10pt] leading-snug comment-body pr-4">
                             <p>${comment.comment_text}</p>
                         </div>
-                        <div class="font-meta-sm text-meta-sm text-secondary mb-3 comment-footer">
+                        <div class="story-meta mb-3 comment-footer">
                             <a class="hover:underline reply-btn" href="javascript:void(0)">reply</a>
                         </div>
                     </div>
@@ -82,36 +80,34 @@ async function renderPage() {
         return;
     }
 
+    trackClick(story.id); // Track view as a click
+
     // Update story header
     const timeAgo = calculateTimeAgo(story.published_at);
     document.querySelector('article').innerHTML = `
         <div class="flex items-start gap-1">
-            <div class="cursor-pointer text-secondary mt-[2px]">
-                <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
-            </div>
+            <div class="hn-arrow mt-[6px]" data-id="${story.id}"></div>
             <div>
-                <h1 class="font-title-md text-title-md inline">
-                    <a class="text-on-background visited:text-secondary hover:underline" href="#">${story.title}</a>
-                </h1>
-                ${story.category ? `<span class="font-meta-sm text-meta-sm text-secondary hover:underline cursor-pointer ml-1">(${story.category})</span>` : ''}
-                <div class="font-meta-sm text-meta-sm text-secondary mt-item-gap flex items-center gap-1">
+                <span class="story-title">
+                    <a class="hover:underline" href="${story.url || '#'}">${story.title}</a>
+                </span>
+                ${story.url ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${new URL(story.url).hostname.replace('www.', '')}</a>)</span>` : (story.category ? `<span class="domain-text"> (${story.category})</span>` : '')}
+                <div class="story-meta mt-1 flex items-center gap-1">
                     <span>${story.likes_count || 0} points</span>
                     <span>by</span>
-                    <a class="hover:underline" href="#">${story.author || 'anonymous'}</a>
+                    <a class="hover:underline" href="profile.html?user=${story.author}">${story.author || 'anonymous'}</a>
                     <a class="hover:underline" href="#">${timeAgo}</a>
                     <span>|</span>
                     <a class="hover:underline" href="#">hide</a>
                     <span>|</span>
-                    <a class="hover:underline" href="#">past</a>
-                    <span>|</span>
                     <a class="hover:underline" href="#">favorite</a>
                     <span>|</span>
-                    <span>discuss</span>
+                    <a class="hover:underline" href="viewer.html?id=${story.id}">discuss</a>
                 </div>
             </div>
         </div>
         ${story.content ? `
-        <div class="font-body-md text-body-md text-on-background mt-4 ml-[17px] max-w-prose leading-relaxed">
+        <div class="text-black mt-4 ml-[17px] max-w-prose leading-relaxed text-[10pt]">
             <p>${story.content}</p>
         </div>` : ''}
     `;
@@ -126,9 +122,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addBtn = document.getElementById('add-comment-btn');
     const textarea = document.getElementById('comment-input');
+    const commentInputContainer = textarea?.parentElement;
+
+    async function checkAuth() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            if (commentInputContainer) {
+                commentInputContainer.innerHTML = `
+                    <div class="p-2 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
+                        Please <a href="login.html" class="underline font-bold">login</a> to add a comment.
+                    </div>
+                `;
+            }
+            return null;
+        }
+        return session.user;
+    }
 
     if (addBtn) {
         addBtn.addEventListener('click', async () => {
+            const user = await checkAuth();
+            if (!user) return;
+
             const content = textarea.value.trim();
             if (!content || !storyId) return;
 
@@ -144,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         blog_id: storyId,
                         comment_text: content,
-                        user_name: 'test_user' // Hardcoded for now
+                        user_name: user.email.split('@')[0]
                     }
                 ])
                 .select();
@@ -159,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea.value = '';
             renderPage();
         });
+        checkAuth(); // Check initial auth state
     }
 
     // Global click listener for delegation
@@ -184,6 +200,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('reply-btn') || e.target.innerText === 'reply') {
             e.preventDefault();
             if (textarea) textarea.focus();
+        }
+
+        // Upvote handling
+        if (e.target.classList.contains('hn-arrow')) {
+            const storyId = e.target.getAttribute('data-id');
+            if (!storyId) return;
+
+            upvoteStory(storyId).then(result => {
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    renderPage();
+                }
+            });
         }
     });
 });

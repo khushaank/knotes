@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 userContainer.className = 'flex items-center gap-2';
                 
                 const userSpan = document.createElement('a');
-                userSpan.href = '#';
+                userSpan.href = 'profile.html';
                 userSpan.className = 'hover:underline text-black';
                 userSpan.textContent = username;
                 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const logoutLink = document.createElement('a');
                 logoutLink.href = '#';
-                logoutLink.className = 'hover:underline text-gray-600';
+                logoutLink.className = 'hover:underline text-black';
                 logoutLink.textContent = 'logout';
                 
                 logoutLink.addEventListener('click', async (e) => {

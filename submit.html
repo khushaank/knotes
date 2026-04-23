@@ -6,7 +6,7 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>API - K. Notes</title>
+    <title>Submit - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
 <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
@@ -23,33 +23,62 @@
                     <a class="hover:underline" href="comments.html">comments</a> |
                     <a class="hover:underline" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |
-                    <a class="hover:underline" href="submit.html">submit</a>
+                    <a class="hover:underline font-bold" href="submit.html">submit</a>
                 </div>
                 <div class="ml-auto text-black text-[13px] flex items-center gap-4">
                     <a class="hover:underline text-black" href="login.html">login</a>
                 </div>
             </div>
         </header>
-        <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">API Documentation</b>
-            
-            <p class="mb-4">
-                We provide a simple read-only API for retrieving stories and comments.
-            </p>
+        <main class="bg-[#f6f6ef] p-4">
+            <div id="auth-message"
+                class="hidden mb-4 p-2 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
+                You must be <a href="login.html" class="underline font-bold">logged in</a> to submit news.
+            </div>
 
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/topstories</p>
-            <p class="mb-4 ml-4">
-                Returns the current top 30 stories on the front page.
-            </p>
-
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/item/{id}</p>
-            <p class="mb-4 ml-4">
-                Returns details for a specific item (story or comment).
-            </p>
-
-            <p class="mt-8 italic">
-                Note: This API is currently powered by our Supabase backend. Direct access is restricted to authenticated sessions.
-            </p>
+            <form id="submit-form" class="mt-4 max-w-2xl">
+                <table class="border-spacing-0 border-collapse w-full">
+                    <tbody>
+                        <tr>
+                            <td class="py-2 w-16 align-top">title</td>
+                            <td class="py-2"><input type="text" id="submit-title" required
+                                    class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 w-16 align-top">url</td>
+                            <td class="py-2"><input type="url" id="submit-url"
+                                    class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 w-16 align-top">text</td>
+                            <td class="py-2">
+                                <textarea id="submit-text"
+                                    class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"></textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="py-4 flex gap-2">
+                                <button type="submit" id="btn-submit"
+                                    class="bg-gray-200 border border-gray-400 px-4 py-1 hover:bg-gray-300 text-black cursor-pointer text-sm">submit</button>
+                                <button type="button" id="btn-submit-work"
+                                    class="bg-gray-200 border border-gray-400 px-4 py-1 hover:bg-gray-300 text-black cursor-pointer text-sm">submit work</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-8 text-gray-700 text-xs leading-relaxed border-t border-gray-200 pt-4">
+                    <p class="mb-2"><b>Submission Rules:</b></p>
+                    <ul class="list-disc ml-4 space-y-1">
+                        <li>Leave url blank to submit a question for discussion (<b>Ask</b>).</li>
+                        <li>If there is a url, it will be submitted as <b>News</b>.</li>
+                        <li>Use the <b>submit work</b> button for projects you've created (<b>Show HN</b>).</li>
+                        <li>Please read the <a href="guidelines.html" class="underline">Guidelines</a> and <a href="faq.html" class="underline">FAQ</a> before posting.</li>
+                    </ul>
+                </div>
+            </form>
         </main>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
@@ -74,6 +103,7 @@
             </form>
         </footer>
     </div>
+    <script type="module" src="assets/js/submit.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 

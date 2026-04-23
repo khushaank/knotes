@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="icon" type="image/png" href="../assets/img/logo.png">
+</head>
+<body>
+    <div id="login-container" class="container">
+        <h2>Admin Login Required</h2>
+        <p>Please <a href="../login.html">login</a> with an admin account to view this page.</p>
+    </div>
+
+    <div id="admin-dashboard" class="container hidden">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <div class="header-actions">
+                <span id="admin-name"></span>
+                <button id="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-target="users-section">Users</button>
+            <button class="tab-btn" data-target="posts-section">Posts</button>
+            <button class="tab-btn" data-target="comments-section">Comments</button>
+        </nav>
+
+        <main>
+            <!-- Users Section -->
+            <section id="users-section" class="tab-content active">
+                <h2>Manage Users</h2>
+                <div class="table-container">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Admin?</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Posts Section -->
+            <section id="posts-section" class="tab-content hidden">
+                <h2>Manage Posts</h2>
+                <div class="table-container">
+                    <table id="posts-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Comments Section -->
+            <section id="comments-section" class="tab-content hidden">
+                <h2>Manage Comments</h2>
+                <div class="table-container">
+                    <table id="comments-table">
+                        <thead>
+                            <tr>
+                                <th>Comment</th>
+                                <th>User</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

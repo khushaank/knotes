@@ -6,7 +6,7 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>API - K. Notes</title>
+    <title>Ask - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
 <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
@@ -21,7 +21,7 @@
                 <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
                     <a class="hover:underline" href="index.html">new</a> |
                     <a class="hover:underline" href="comments.html">comments</a> |
-                    <a class="hover:underline" href="ask.html">ask</a> |
+                    <a class="hover:underline font-bold" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |
                     <a class="hover:underline" href="submit.html">submit</a>
                 </div>
@@ -30,26 +30,15 @@
                 </div>
             </div>
         </header>
-        <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">API Documentation</b>
-            
-            <p class="mb-4">
-                We provide a simple read-only API for retrieving stories and comments.
-            </p>
+        <main class="bg-[#f6f6ef] pt-2 pb-4">
+            <table class="border-spacing-0 border-collapse">
+                <tbody>
+                    <tr>
+                        <td colspan="3" class="p-4 text-center">Loading stories...</td>
+                    </tr>
+                </tbody>
+            </table>
 
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/topstories</p>
-            <p class="mb-4 ml-4">
-                Returns the current top 30 stories on the front page.
-            </p>
-
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/item/{id}</p>
-            <p class="mb-4 ml-4">
-                Returns details for a specific item (story or comment).
-            </p>
-
-            <p class="mt-8 italic">
-                Note: This API is currently powered by our Supabase backend. Direct access is restricted to authenticated sessions.
-            </p>
         </main>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
@@ -74,6 +63,7 @@
             </form>
         </footer>
     </div>
+    <script type="module" src="assets/js/ask.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 

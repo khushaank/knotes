@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        background-color: #f6f6ef;
+        margin: 0;
+        padding: 0;
+        font-family: Verdana, Geneva, sans-serif;
+        font-size: 10pt;
+        color: #000000;
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+}
+
+@layer components {
+    .hn-orange-bar {
+        background-color: #ff6600;
+    }
+
+    .hn-arrow {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 8px solid #828282;
+        display: inline-block;
+        cursor: pointer;
+        margin-top: 2px;
+        transition: border-bottom-color 0.2s;
+        /* Increase click area without changing visual size */
+        padding: 4px;
+        background-clip: content-box;
+        box-sizing: content-box;
+    }
+
+    .hn-arrow:hover {
+        border-bottom-color: #ff6600;
+    }
+
+    .story-title {
+        font-size: 10pt;
+        color: #000000;
+        line-height: 1.2;
+    }
+
+    .story-meta {
+        font-size: 7pt;
+        color: #828282;
+        padding-top: 1px;
+    }
+
+    .story-meta a {
+        color: #828282;
+    }
+
+    .story-meta a:hover {
+        text-decoration: underline;
+    }
+
+    .domain-text {
+        font-size: 8pt;
+        color: #828282;
+    }
+
+    .domain-text a {
+        color: #828282;
+    }
+}
+
+@layer utilities {
+    .text-hn-grey {
+        color: #828282;
+    }
+}

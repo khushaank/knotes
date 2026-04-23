@@ -6,9 +6,12 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>API - K. Notes</title>
+    <title>Profile - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
-<link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -30,26 +33,46 @@
                 </div>
             </div>
         </header>
-        <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">API Documentation</b>
+        <main class="bg-[#f6f6ef] p-4 min-h-[50vh]">
+            <div id="profile-container" class="hidden">
+                <table class="border-spacing-0 border-collapse text-sm text-gray-700">
+                    <tbody>
+                        <tr>
+                            <td class="py-1 pr-4 align-top font-bold text-gray-500">user:</td>
+                            <td class="py-1" id="profile-username"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 pr-4 align-top font-bold text-gray-500">created:</td>
+                            <td class="py-1" id="profile-created"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 pr-4 align-top font-bold text-gray-500">karma:</td>
+                            <td class="py-1" id="profile-karma">0</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 pr-4 align-top font-bold text-gray-500">about:</td>
+                            <td class="py-1">
+                                <textarea id="profile-about" class="border border-gray-400 p-1 text-sm w-96 h-24 focus:outline-none focus:border-[#ff6600]"></textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="py-2"><button type="button" id="btn-update-profile" class="bg-gray-200 border border-gray-400 px-2 py-0.5 hover:bg-gray-300 text-black cursor-pointer">update</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="mt-6 border-t border-gray-300 pt-4">
+                    <h3 class="font-bold text-gray-800 mb-2">Submissions</h3>
+                    <div id="profile-submissions" class="text-sm">
+                        Loading...
+                    </div>
+                </div>
+            </div>
             
-            <p class="mb-4">
-                We provide a simple read-only API for retrieving stories and comments.
-            </p>
-
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/topstories</p>
-            <p class="mb-4 ml-4">
-                Returns the current top 30 stories on the front page.
-            </p>
-
-            <p class="mb-4 font-mono text-xs bg-gray-200 p-2 rounded">GET /api/v1/item/{id}</p>
-            <p class="mb-4 ml-4">
-                Returns details for a specific item (story or comment).
-            </p>
-
-            <p class="mt-8 italic">
-                Note: This API is currently powered by our Supabase backend. Direct access is restricted to authenticated sessions.
-            </p>
+            <div id="auth-message" class="text-sm p-4 hidden">
+                Please <a href="login.html" class="underline font-bold">login</a> to view your profile.
+            </div>
         </main>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
@@ -74,6 +97,7 @@
             </form>
         </footer>
     </div>
+    <script type="module" src="assets/js/profile.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 
