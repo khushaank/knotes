@@ -1,104 +1,114 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, calculateTrendingScore } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize } from './supabaseClient.js';
+import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
+const storyCache = {}; // Simple cache for filters
+const STORIES_PER_PAGE = 10;
 
-async function fetchStories(searchQuery = '', filter = 'trending') {
+async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     if (!supabase) {
-        console.warn('Supabase is not configured yet.');
-        return [];
+        return { stories: [], count: 0 };
     }
 
     let query = supabase
         .from('blogs')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('status', 'published');
 
-    if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
+    const start = (page - 1) * STORIES_PER_PAGE;
+    const end = start + STORIES_PER_PAGE - 1;
+
+
+    // Check cache
+    const cacheKey = `${filter}-${searchQuery}-${page}`;
+    if (storyCache[cacheKey] && (Date.now() - storyCache[cacheKey].timestamp < 30000)) {
+        return storyCache[cacheKey].data;
     }
 
-    // Default sorting based on filter
-    if (filter === 'new') {
-        query = query.order('published_at', { ascending: false });
-    } else if (filter === 'relevant') {
-        // Simple weighted score sorting (if we had a score column, we'd use it)
-        // For now we'll fetch and sort in JS
-    } else {
-        // Trending: will sort in JS after fetching
-    }
-
-    const { data: stories, error } = await query.limit(100);
+    const { data: stories, error, count } = await query.range(start, end);
 
     if (error) {
-        console.error('Error fetching blogs:', error);
         return [];
     }
 
-    if (filter === 'relevant') {
-        return stories.sort((a, b) => {
-            const scoreA = (a.likes_count || 0) * 0.75 + (a.clicks_count || 0) * 0.25;
-            const scoreB = (b.likes_count || 0) * 0.75 + (b.clicks_count || 0) * 0.25;
-            return scoreB - scoreA;
-        }).slice(0, 30);
-    }
+    const result = sortStories(stories, filter);
+    
+    // Save to cache
+    storyCache[cacheKey] = {
+        data: result,
+        count: count,
+        timestamp: Date.now()
+    };
 
-    if (filter === 'trending') {
-        return stories.sort((a, b) => {
-            return calculateTrendingScore(b) - calculateTrendingScore(a);
-        }).slice(0, 30);
-    }
-
-    return stories.slice(0, 30);
+    return { stories: result, count };
 }
 
 async function renderStories(searchQuery = '', filter = 'trending') {
-    const tbody = document.querySelector('main table tbody');
-    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading stories...</td></tr>';
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = parseInt(urlParams.get('p')) || 1;
 
-    const stories = await fetchStories(searchQuery, filter);
+    const tbody = document.querySelector('main table tbody');
+    const statsSummary = document.getElementById('stats-summary');
+    
+    // Better loading state
+    tbody.style.opacity = '0.5';
+    if (statsSummary) statsSummary.textContent = 'Updating...';
+
+    const { stories, count } = await fetchStories(searchQuery, filter, page);
+    tbody.style.opacity = '1';
 
     if (!stories || stories.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No stories found.</td></tr>';
+        if (statsSummary) statsSummary.textContent = '0 results';
         return;
     }
 
+    if (statsSummary) {
+        statsSummary.textContent = `Showing ${stories.length} ${filter} stories (Page ${page})`;
+    }
+
     let html = '';
+    const startIndex = (page - 1) * STORIES_PER_PAGE;
+
     stories.forEach((story, index) => {
         const timeAgo = calculateTimeAgo(story.published_at);
         const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : null;
         
         html += `
             <tr class="story-row" data-id="${story.id}">
-                <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${index + 1}.</td>
+                <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
                     <div class="hn-arrow" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
-                    <a href="${story.url || `viewer.html?id=${story.id}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${story.title}</a>
-                    ${domain ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${domain}</a>)</span>` : (story.category ? `<span class="domain-text"> (<a href="#">${story.category}</a>)</span>` : '')}
+                    <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
+                    ${domain ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${sanitize(domain)}</a>)</span>` : (story.category ? `<span class="domain-text"> (<a href="#">${sanitize(story.category)}</a>)</span>` : '')}
                 </td>
             </tr>
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${story.author || 'anonymous'}</a> 
-                    <a href="viewer.html?id=${story.id}">${timeAgo}</a> | 
+                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
+                    <a href="pulse/index.html?s=${story.slug}">${timeAgo}</a> | 
                     <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
-                    <a href="viewer.html?id=${story.id}">${story.comments_count || 0} comments</a>
+                    <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
                 </td>
             </tr>
             <tr class="h-[5px] story-spacer" data-id="${story.id}"></tr>
         `;
     });
 
-    html += `
-        <tr class="h-[20px]">
-            <td colspan="2"></td>
-            <td class="font-title-md text-title-md text-black">
-                <a class="hover:underline" href="#">More</a>
-            </td>
-        </tr>
-    `;
+    if (count > page * STORIES_PER_PAGE) {
+        const nextUrl = `index.html?p=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}${filter !== 'trending' ? `&filter=${filter}` : ''}`;
+        html += `
+            <tr class="h-[20px]">
+                <td colspan="2"></td>
+                <td class="font-title-md text-title-md text-black pt-4">
+                    <a href="${nextUrl}" class="hover:underline text-black font-bold">More</a>
+                </td>
+            </tr>
+        `;
+    }
 
     tbody.innerHTML = html;
 }
@@ -136,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.classList.add('font-bold', 'text-black');
             
             const searchInput = document.getElementById('footer-search-input');
-            renderStories(searchInput?.value.trim() || '', currentFilter);
+            renderStories(searchInput?.value.trim() || '', currentFilter, true); // Reset pagination on filter change
         });
     });
 
@@ -147,8 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('footer-search-input');
             if (searchInput) {
                 const term = searchInput.value.trim();
-                if (term) logSearchTerm(term);
-                renderStories(term, currentFilter);
+                if (term) {
+                    logSearchTerm(term);
+                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                }
             }
         });
     }
@@ -204,9 +216,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.error) {
                 alert(result.error);
             } else {
+                // Clear cache on upvote to ensure fresh data
+                const cacheKey = `${currentFilter}-`;
+                delete storyCache[cacheKey];
+                
                 const searchInput = document.getElementById('footer-search-input');
                 renderStories(searchInput?.value.trim() || '', currentFilter);
             }
+        }
+
+        // More Button (now handled by <a> link, but we handle click for potential smooth transition)
+        if (e.target.id === 'more-btn') {
+            // Let the default link behavior happen or handle it via pushState
         }
 
         // Hide

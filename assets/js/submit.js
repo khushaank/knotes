@@ -3,11 +3,11 @@ import { supabase } from './supabaseClient.js';
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('submit-form');
     const authMessage = document.getElementById('auth-message');
-    
+
     if (!supabase) return;
 
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session) {
         form.classList.add('hidden');
         authMessage.classList.remove('hidden');
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         if (!session) return;
 
         let title = document.getElementById('submit-title').value.trim();
@@ -66,13 +66,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             .select();
 
         if (error) {
-            console.error('Error submitting:', error);
             alert('Failed to submit. Please try again.');
         } else {
-            // Reset for next time
             submitCategory = 'news';
-            
-            // Redirect based on category
+
             if (finalCategory === 'show') {
                 window.location.href = 'show.html';
             } else if (finalCategory === 'ask') {

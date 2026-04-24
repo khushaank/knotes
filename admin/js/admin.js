@@ -116,7 +116,7 @@ async function loadPosts() {
     
     const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('id, title, author, status, published_at, slug')
         .order('published_at', { ascending: false });
         
     if (error) {
@@ -131,7 +131,7 @@ async function loadPosts() {
     
     tbody.innerHTML = data.map(post => `
         <tr>
-            <td><a href="../viewer.html?id=${post.id}" target="_blank">${post.title.substring(0, 40)}${post.title.length > 40 ? '...' : ''}</a></td>
+            <td><a href="../../pulse/index.html?s=${post.slug}" target="_blank">${post.title.substring(0, 40)}${post.title.length > 40 ? '...' : ''}</a></td>
             <td>${post.author}</td>
             <td>${post.status}</td>
             <td>${new Date(post.published_at).toLocaleDateString()}</td>

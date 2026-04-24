@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const profileContainer = document.getElementById('profile-container');
@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         .maybeSingle();
 
     if (profileError) {
-        console.error('Error fetching profile:', profileError);
     }
 
     // If profile doesn't exist, create it (fallback for existing users)
@@ -45,7 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .single();
         
         if (insertError) {
-            console.error('Error creating profile:', insertError);
             usernameEl.textContent = defaultUsername;
         } else {
             profile = newProfile;
@@ -62,12 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fetch karma (sum of likes_count on user's blogs)
     const { data: blogs, error: blogsError } = await supabase
         .from('blogs')
-        .select('likes_count, id, title, published_at, url')
+        .select('likes_count, id, title, published_at, url, slug')
         .eq('author', profile?.username || defaultUsername)
         .order('published_at', { ascending: false });
 
     if (blogsError) {
-        console.error('Error fetching blogs:', blogsError);
     } else {
         const karma = blogs.reduce((sum, blog) => sum + (blog.likes_count || 0), 0);
         karmaEl.textContent = karma;
@@ -80,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const timeAgo = calculateTimeAgo(blog.published_at);
                 html += `
                     <li>
-                        <a href="${blog.url || `viewer.html?id=${blog.id}`}" class="hover:underline text-black font-medium">${blog.title}</a>
+                        <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
                         <span class="text-xs text-gray-500 ml-2">${timeAgo} | ${blog.likes_count || 0} points</span>
                     </li>
                 `;
@@ -102,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .eq('id', userId);
 
         if (error) {
-            console.error('Error updating profile:', error);
             alert('Failed to update profile.');
         } else {
             alert('Profile updated!');

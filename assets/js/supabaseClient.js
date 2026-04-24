@@ -17,6 +17,13 @@ export function calculateTimeAgo(dateString) {
     return `${Math.floor(diffInSeconds / 86400)} days ago`;
 }
 
+export function sanitize(text) {
+    if (typeof text !== 'string') return text;
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 export async function upvoteStory(storyId) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
@@ -79,24 +86,3 @@ export async function trackClick(storyId) {
         .eq('id', storyId);
 }
 
-export function calculateTrendingScore(story) {
-    const points = story.likes_count || 0;
-    const clicks = story.clicks_count || 0;
-    const weightPoints = 0.75;
-    const weightClicks = 0.25;
-
-    const baseScore = (points * weightPoints) + (clicks * weightClicks);
-
-    // Time decay
-    const publishedAt = new Date(story.published_at);
-    const updatedAt = story.updated_at ? new Date(story.updated_at) : publishedAt;
-    const now = new Date();
-    const hoursSincePublished = (now - publishedAt) / (1000 * 60 * 60);
-    const hoursSinceUpdated = (now - updatedAt) / (1000 * 60 * 60);
-
-    // Recent updates give a small boost
-    const freshnessBoost = hoursSinceUpdated < 24 ? (1 / (hoursSinceUpdated + 1)) : 0;
-
-    // Simple decay: score / (hours + 2)^1.5
-    return (baseScore + freshnessBoost) / Math.pow(hoursSincePublished + 2, 1.5);
-}

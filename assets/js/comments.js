@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
 
 async function fetchAllComments() {
     if (!supabase) return [];
@@ -9,27 +9,27 @@ async function fetchAllComments() {
             *,
             blogs (
                 title,
-                id
+                id,
+                slug
             )
         `)
         .order('created_at', { ascending: false })
         .limit(50);
 
     if (error) {
-        console.error('Error fetching all comments:', error);
         return [];
     }
     return data;
 }
 
 function renderAllComments(comments) {
-    if (comments.length === 0) return '<div class="p-4 text-secondary">No comments found.</div>';
+    if (!comments || comments.length === 0) return '<div class="p-4 text-center text-gray-600">No comments found.</div>';
 
     let html = '';
     comments.forEach(comment => {
         const timeAgo = calculateTimeAgo(comment.created_at);
         const blogTitle = comment.blogs?.title || 'Unknown Post';
-        const blogId = comment.blogs?.id || '#';
+        const blogSlug = comment.blogs?.slug || '';
 
         html += `
             <div class="mb-6 comment-node">
@@ -39,19 +39,19 @@ function renderAllComments(comments) {
                     </div>
                     <div class="w-full">
                         <div class="font-meta-sm text-meta-sm text-secondary mb-1">
-                            <a class="hover:underline text-on-background font-bold" href="#">${comment.user_name || 'anonymous'}</a>
+                            <a class="hover:underline text-on-background font-bold" href="#">${sanitize(comment.user_name) || 'anonymous'}</a>
                             <span class="mx-1">${timeAgo}</span>
                             <span>|</span>
                             <span class="ml-1">on:</span>
-                            <a class="hover:underline text-black italic ml-1" href="viewer.html?id=${blogId}">${blogTitle}</a>
+                            <a class="hover:underline text-black italic ml-1" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
                         </div>
-                        <div class="text-on-background mb-1 comment-body pr-4 text-sm leading-relaxed">
-                            <p>${comment.comment_text}</p>
+                        <div class="text-on-background mb-1 comment-body pr-4 text-sm leading-relaxed text-black">
+                            <p>${sanitize(comment.comment_text)}</p>
                         </div>
                         <div class="font-meta-sm text-meta-sm text-secondary mb-2">
-                            <a class="hover:underline" href="viewer.html?id=${blogId}">context</a>
+                            <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">context</a>
                             <span class="mx-1">|</span>
-                            <a class="hover:underline" href="viewer.html?id=${blogId}">parent</a>
+                            <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">parent</a>
                         </div>
                     </div>
                 </div>
@@ -66,6 +66,23 @@ async function init() {
     const container = document.getElementById('comments-container');
     const comments = await fetchAllComments();
     container.innerHTML = renderAllComments(comments);
+
+    const searchForm = document.getElementById('footer-search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const searchInput = document.getElementById('footer-search-input');
+            if (searchInput) {
+                const term = searchInput.value.trim();
+                if (term) {
+                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                }
+            }
+        });
+    }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    document.title = "New Comments | K. Notes";
+    init();
+});

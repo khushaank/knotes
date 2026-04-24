@@ -6,17 +6,16 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>KN - Story Viewer</title>
+    <title>Search - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-<link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
-<body class="bg-background text-on-background min-h-screen">
-    <div class="max-w-[85%] mx-auto bg-surface-container-lowest pb-8 mt-2">
-        <!-- Header -->
+<body class="font-body-md text-body-md text-on-surface">
+    <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
         <header
             class="bg-[#ff6600] text-black  text-sm  rounded-none w-full flat no shadows flex items-center justify-between px-2 py-0.5 max-w-[85%] mx-auto"
             style="max-width: 100%;">
@@ -34,29 +33,23 @@
                 </div>
             </div>
         </header>
-        <!-- Main Content -->
-        <main class="bg-surface-container-lowest p-2">
-            <!-- Story Header -->
-            <article class="mb-4">
-                <div class="p-4">Loading story...</div>
-            </article>
-
-            <!-- Comment Input -->
-            <div class="ml-[17px] mb-8">
-                <textarea
-                    class="w-full max-w-lg h-24 border border-outline bg-surface p-1 font-body-md text-body-md focus:outline-none focus:border-primary-container resize-y"
-                    id="comment-input" placeholder=""></textarea>
-                <button
-                    class="mt-2 bg-secondary-container border border-outline px-2 py-1 font-body-md text-body-md hover:bg-surface-variant text-on-background cursor-pointer"
-                    id="add-comment-btn">add comment</button>
+        
+        <div class="bg-[#f6f6ef] px-4 py-4 border-b border-gray-300">
+            <h1 class="text-lg font-bold text-black mb-2">Search Results</h1>
+            <div class="flex items-center gap-2">
+                <input type="text" id="main-search-input" placeholder="Search stories, comments, etc..." 
+                    class="border border-gray-400 px-3 py-1 text-sm rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-full max-w-md">
+                <button id="search-button" class="bg-[#ff6600] text-white px-4 py-1 text-sm rounded-sm hover:bg-[#e65c00]">Search</button>
             </div>
+            <p id="search-status" class="text-xs text-gray-500 mt-2"></p>
+        </div>
 
-            <div class="ml-[17px] font-body-md text-body-md" id="comments-container">
-                <div class="p-4">Loading comments...</div>
+        <main class="bg-[#f6f6ef] pt-2 pb-4 px-2">
+            <div id="search-results-container" class="space-y-4">
+                <p class="p-4 text-center text-gray-600">Enter a search term to find stories and comments.</p>
             </div>
-            <div class="flex flex-col items-center mt-8 pb-4"></div>
         </main>
-        <!-- Footer -->
+
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
             style="max-width: 100%;">
@@ -72,15 +65,9 @@
                 <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
                 <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
             </div>
-            <form id="footer-search-form" class="flex items-center gap-2"
-                onsubmit="event.preventDefault(); window.location.href='index.html?search='+document.getElementById('footer-search-input').value;">
-                <span class="text-gray-500 text-xs">Search:</span>
-                <input type="text" id="footer-search-input"
-                    class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
-            </form>
         </footer>
     </div>
-    <script type="module" src="assets/js/viewer.js"></script>
+    <script type="module" src="assets/js/search.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 

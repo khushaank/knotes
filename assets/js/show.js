@@ -1,74 +1,90 @@
-import { supabase, calculateTimeAgo, upvoteStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize } from './supabaseClient.js';
+import { sortStories } from './algorithm.js';
 
-async function fetchShowStories(searchQuery = '') {
-    if (!supabase) return [];
+let storiesToShow = 10;
+const STORIES_PER_PAGE = 10;
 
-    let query = supabase
+async function fetchShowStories(page = 1) {
+    if (!supabase) return { stories: [], count: 0 };
+
+    const start = (page - 1) * STORIES_PER_PAGE;
+    const end = start + STORIES_PER_PAGE - 1;
+
+    const { data: stories, error, count } = await supabase
         .from('blogs')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('status', 'published')
         .eq('category', 'show')
         .order('published_at', { ascending: false })
-        .limit(30);
+        .range(start, end);
 
-    if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
-    }
-
-    const { data: stories, error } = await query;
     if (error) {
-        console.error('Error fetching show stories:', error);
-        return [];
+        return { stories: [], count: 0 };
     }
-    return stories;
+    return { stories: sortStories(stories, 'trending'), count };
 }
 
-async function renderStories(searchQuery = '') {
+async function renderStories() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = parseInt(urlParams.get('p')) || 1;
+
     const tbody = document.querySelector('main table tbody');
     tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading show stories...</td></tr>';
 
-    const stories = await fetchShowStories(searchQuery);
-
+    const { stories, count } = await fetchShowStories(page);
+    
     if (!stories || stories.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No show stories found. Show your work to the community!</td></tr>';
         return;
     }
 
     let html = '';
+    const startIndex = (page - 1) * STORIES_PER_PAGE;
+
     stories.forEach((story, index) => {
         const timeAgo = calculateTimeAgo(story.published_at);
         html += `
             <tr class="story-row" data-id="${story.id}">
-                <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${index + 1}.</td>
+                <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
                     <div class="hn-arrow" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
-                    <a href="${story.url || `viewer.html?id=${story.id}`}" class="story-link" ${story.url ? 'target="_blank"' : ''}>${story.title}</a>
-                    ${story.url ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${new URL(story.url).hostname.replace('www.', '')}</a>)</span>` : ''}
+                    <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
+                    ${story.url ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : ''}
                 </td>
             </tr>
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${story.author || 'anonymous'}</a> 
-                    <a href="viewer.html?id=${story.id}">${timeAgo}</a> | 
+                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
+                    <a href="pulse/index.html?s=${story.slug}">${timeAgo}</a> | 
                     <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
-                    <a href="viewer.html?id=${story.id}">discuss</a>
+                    <a href="pulse/index.html?s=${story.slug}">discuss</a>
                 </td>
             </tr>
             <tr class="h-[5px] story-spacer" data-id="${story.id}"></tr>
         `;
     });
 
+    if (count > page * STORIES_PER_PAGE) {
+        const nextUrl = `show.html?p=${page + 1}`;
+        html += `
+            <tr class="h-[20px]">
+                <td colspan="2"></td>
+                <td class="font-title-md text-title-md text-black pt-4">
+                    <a href="${nextUrl}" class="hover:underline text-black font-bold">More</a>
+                </td>
+            </tr>
+        `;
+    }
+
     tbody.innerHTML = html;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchParam = urlParams.get('search');
-
-    renderStories(searchParam || '');
+    document.title = "Show | K. Notes";
+    renderStories();
 
     const searchForm = document.getElementById('footer-search-form');
     if (searchForm) {
@@ -76,7 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const searchInput = document.getElementById('footer-search-input');
             if (searchInput) {
-                renderStories(searchInput.value.trim());
+                const term = searchInput.value.trim();
+                if (term) {
+                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                }
             }
         });
     }
@@ -93,6 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 renderStories();
             }
+        }
+
+        if (e.target.id === 'more-btn') {
+            e.preventDefault();
+            storiesToShow += STORIES_PER_PAGE;
+            renderStories();
         }
     });
 });

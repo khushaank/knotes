@@ -50,6 +50,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     } catch (err) {
-        console.error('Error checking session:', err);
     }
 });
