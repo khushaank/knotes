@@ -39,7 +39,7 @@ function renderAllComments(comments) {
                     </div>
                     <div class="w-full">
                         <div class="font-meta-sm text-meta-sm text-secondary mb-1">
-                            <a class="hover:underline text-on-background font-bold" href="#">${sanitize(comment.user_name) || 'anonymous'}</a>
+                            <a class="hover:underline text-on-background font-bold" href="profile.html?user=${sanitize(comment.user_name)}">${sanitize(comment.user_name) || 'anonymous'}</a>
                             <span class="mx-1">${timeAgo}</span>
                             <span>|</span>
                             <span class="ml-1">on:</span>
@@ -64,8 +64,14 @@ function renderAllComments(comments) {
 
 async function init() {
     const container = document.getElementById('comments-container');
+    container.innerHTML = '<div class="p-4 text-center text-gray-600">Loading comments...</div>';
+    
     const comments = await fetchAllComments();
     container.innerHTML = renderAllComments(comments);
+
+    // Show comment count in page
+    const countEl = document.getElementById('comment-count');
+    if (countEl) countEl.textContent = `${comments.length} recent comments`;
 
     const searchForm = document.getElementById('footer-search-form');
     if (searchForm) {

@@ -1,9 +1,10 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
 const storyCache = {}; // Simple cache for filters
 const STORIES_PER_PAGE = 10;
+let userBookmarks = [];
 
 async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     if (!supabase) {
@@ -54,7 +55,13 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     tbody.style.opacity = '0.5';
     if (statsSummary) statsSummary.textContent = 'Updating...';
 
-    const { stories, count } = await fetchStories(searchQuery, filter, page);
+    // Load bookmarks in parallel with stories
+    const [storiesResult] = await Promise.all([
+        fetchStories(searchQuery, filter, page),
+        loadUserBookmarks()
+    ]);
+
+    const { stories, count } = storiesResult;
     tbody.style.opacity = '1';
 
     if (!stories || stories.length === 0) {
@@ -73,6 +80,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     stories.forEach((story, index) => {
         const timeAgo = calculateTimeAgo(story.published_at);
         const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : null;
+        const isBookmarked = userBookmarks.includes(story.id);
         
         html += `
             <tr class="story-row" data-id="${story.id}">
@@ -91,6 +99,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
                     ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
                     <a href="pulse/index.html?s=${story.slug}">${timeAgo}</a> | 
                     <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
+                    <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved ★' : 'save'}</a> | 
                     <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
                 </td>
             </tr>
@@ -113,9 +122,24 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     tbody.innerHTML = html;
 }
 
+async function loadUserBookmarks() {
+    userBookmarks = await getUserBookmarks();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');
+    const filterParam = urlParams.get('filter');
+
+    if (filterParam) {
+        currentFilter = filterParam;
+        document.querySelectorAll('.filter-link').forEach(l => {
+            l.classList.remove('font-bold', 'text-black');
+            if (l.getAttribute('data-filter') === filterParam) {
+                l.classList.add('font-bold', 'text-black');
+            }
+        });
+    }
 
     renderStories(searchParam || '', currentFilter);
 
@@ -128,6 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-trending');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
+            // Clear cache on manual refresh
+            Object.keys(storyCache).forEach(k => delete storyCache[k]);
             const searchInput = document.getElementById('footer-search-input');
             renderStories(searchInput?.value.trim() || '', currentFilter);
         });
@@ -205,29 +231,141 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchTrendingSearches();
 
-    // Upvote, Hide, and Click Tracking delegation
+    // ---- Keyboard Shortcuts ---- //
+    let focusedStoryIndex = -1;
+
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        const storyRows = document.querySelectorAll('.story-row');
+        if (storyRows.length === 0) return;
+
+        if (e.key === 'j') {
+            // Move focus down
+            focusedStoryIndex = Math.min(focusedStoryIndex + 1, storyRows.length - 1);
+            highlightFocusedStory(storyRows);
+        } else if (e.key === 'k') {
+            // Move focus up
+            focusedStoryIndex = Math.max(focusedStoryIndex - 1, 0);
+            highlightFocusedStory(storyRows);
+        } else if (e.key === 'o' || e.key === 'Enter') {
+            // Open focused story
+            if (focusedStoryIndex >= 0 && storyRows[focusedStoryIndex]) {
+                const link = storyRows[focusedStoryIndex].querySelector('.story-link');
+                if (link) link.click();
+            }
+        } else if (e.key === 'u') {
+            // Upvote focused story
+            if (focusedStoryIndex >= 0 && storyRows[focusedStoryIndex]) {
+                const arrow = storyRows[focusedStoryIndex].querySelector('.hn-arrow');
+                if (arrow) arrow.click();
+            }
+        } else if (e.key === '?') {
+            // Show keyboard shortcuts help
+            showShortcutsHelp();
+        }
+    });
+
+    function highlightFocusedStory(rows) {
+        rows.forEach(r => r.style.background = '');
+        if (focusedStoryIndex >= 0 && rows[focusedStoryIndex]) {
+            rows[focusedStoryIndex].style.background = '#fff3e0';
+            rows[focusedStoryIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function showShortcutsHelp() {
+        // Don't create duplicate
+        if (document.getElementById('shortcuts-modal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'shortcuts-modal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);';
+        modal.innerHTML = `
+            <div style="background:#fff;border-radius:8px;padding:24px 32px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);font-size:13px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <b style="font-size:15px;">Keyboard Shortcuts</b>
+                    <span id="close-shortcuts" style="cursor:pointer;font-size:18px;color:#888;">✕</span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:6px 12px 6px 0;color:#888;">j</td><td style="padding:6px 0;">Next story</td></tr>
+                    <tr><td style="padding:6px 12px 6px 0;color:#888;">k</td><td style="padding:6px 0;">Previous story</td></tr>
+                    <tr><td style="padding:6px 12px 6px 0;color:#888;">o / Enter</td><td style="padding:6px 0;">Open story</td></tr>
+                    <tr><td style="padding:6px 12px 6px 0;color:#888;">u</td><td style="padding:6px 0;">Upvote story</td></tr>
+                    <tr><td style="padding:6px 12px 6px 0;color:#888;">?</td><td style="padding:6px 0;">Show this help</td></tr>
+                </table>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (ev) => {
+            if (ev.target === modal || ev.target.id === 'close-shortcuts') modal.remove();
+        });
+    }
+
+    // Upvote, Hide, Bookmark, and Click Tracking delegation
     document.addEventListener('click', async (e) => {
         // Upvote
         if (e.target.classList.contains('hn-arrow')) {
             const storyId = e.target.getAttribute('data-id');
             if (!storyId) return;
 
+            // Visual feedback immediately
+            e.target.style.opacity = '0.3';
+
             const result = await upvoteStory(storyId);
+            
+            e.target.style.opacity = '1';
+
             if (result.error) {
-                alert(result.error);
+                // Show inline tooltip instead of alert
+                showInlineMsg(e.target, result.error);
             } else {
-                // Clear cache on upvote to ensure fresh data
-                const cacheKey = `${currentFilter}-`;
-                delete storyCache[cacheKey];
+                // Local DOM update instead of full render
+                const metaRow = document.querySelector(`.story-meta-row[data-id="${storyId}"]`);
+                if (metaRow) {
+                    const metaTextNodes = metaRow.querySelector('.story-meta');
+                    if (metaTextNodes) {
+                        const currentText = metaTextNodes.innerHTML;
+                        const pointsMatch = currentText.match(/(\d+)\s+points/);
+                        if (pointsMatch) {
+                            let pts = parseInt(pointsMatch[1], 10);
+                            if (result.action === 'added') pts++;
+                            else if (result.action === 'removed') pts = Math.max(0, pts - 1);
+                            metaTextNodes.innerHTML = currentText.replace(/(\d+)\s+points/, `${pts} points`);
+                        }
+                    }
+                }
                 
-                const searchInput = document.getElementById('footer-search-input');
-                renderStories(searchInput?.value.trim() || '', currentFilter);
+                if (result.action === 'removed') {
+                    showInlineMsg(e.target, 'Vote removed');
+                    e.target.style.visibility = 'visible'; // show arrow again
+                } else {
+                    e.target.style.visibility = 'hidden'; // HN style hides upvoted arrow
+                }
+                // Clear cache so next page load has fresh data
+                Object.keys(storyCache).forEach(k => delete storyCache[k]);
             }
         }
 
-        // More Button (now handled by <a> link, but we handle click for potential smooth transition)
-        if (e.target.id === 'more-btn') {
-            // Let the default link behavior happen or handle it via pushState
+        // Bookmark / Save
+        if (e.target.classList.contains('bookmark-link')) {
+            e.preventDefault();
+            const storyId = e.target.getAttribute('data-id');
+            if (!storyId) return;
+
+            const result = await toggleBookmark(parseInt(storyId));
+            if (result.error) {
+                showInlineMsg(e.target, result.error);
+            } else {
+                if (result.action === 'added') {
+                    e.target.textContent = 'saved ★';
+                    userBookmarks.push(parseInt(storyId));
+                } else {
+                    e.target.textContent = 'save';
+                    userBookmarks = userBookmarks.filter(id => id !== parseInt(storyId));
+                }
+            }
         }
 
         // Hide
@@ -235,7 +373,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const storyId = e.target.getAttribute('data-id');
             const rows = document.querySelectorAll(`[data-id="${storyId}"]`);
-            rows.forEach(row => row.classList.add('hidden'));
+            rows.forEach(row => {
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => row.classList.add('hidden'), 300);
+            });
         }
 
         // Click Tracking
@@ -246,5 +388,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Inline message tooltip
+    function showInlineMsg(anchor, msg) {
+        const tip = document.createElement('span');
+        tip.textContent = msg;
+        tip.style.cssText = 'position:absolute;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;';
+        
+        anchor.style.position = 'relative';
+        const parent = anchor.parentElement;
+        parent.style.position = 'relative';
+        parent.appendChild(tip);
+        
+        setTimeout(() => {
+            tip.style.transition = 'opacity 0.3s';
+            tip.style.opacity = '0';
+            setTimeout(() => tip.remove(), 300);
+        }, 1500);
+    }
 
 });

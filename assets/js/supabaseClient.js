@@ -41,7 +41,33 @@ export async function upvoteStory(storyId) {
         .maybeSingle();
 
     if (checkError) return { error: checkError.message };
-    if (existingLike) return { error: 'Already upvoted' };
+
+    // If already upvoted, remove the upvote (undo)
+    if (existingLike) {
+        const { error: deleteError } = await supabase
+            .from('likes')
+            .delete()
+            .eq('blog_id', storyId)
+            .eq('user_id', userId);
+
+        if (deleteError) return { error: deleteError.message };
+
+        // Decrement likes_count
+        const { data: blog } = await supabase
+            .from('blogs')
+            .select('likes_count')
+            .eq('id', storyId)
+            .single();
+
+        if (blog) {
+            await supabase
+                .from('blogs')
+                .update({ likes_count: Math.max(0, (blog.likes_count || 1) - 1) })
+                .eq('id', storyId);
+        }
+
+        return { success: true, action: 'removed' };
+    }
 
     // 2. Insert into likes table
     const { error: likeError } = await supabase
@@ -66,7 +92,7 @@ export async function upvoteStory(storyId) {
 
     if (updateError) return { error: updateError.message };
 
-    return { success: true };
+    return { success: true, action: 'added' };
 }
 
 export async function trackClick(storyId) {
@@ -86,3 +112,112 @@ export async function trackClick(storyId) {
         .eq('id', storyId);
 }
 
+// ---- Bookmarks / Favorites ---- //
+export async function toggleBookmark(storyId) {
+    if (!supabase) return { error: 'Supabase not initialized' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login to save posts' };
+
+    const userId = session.user.id;
+
+    // Check existing
+    const { data: existing, error: checkErr } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('blog_id', storyId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (checkErr) return { error: checkErr.message };
+
+    if (existing) {
+        // Remove bookmark
+        const { error } = await supabase.from('bookmarks').delete().eq('id', existing.id);
+        if (error) return { error: error.message };
+        return { success: true, action: 'removed' };
+    } else {
+        // Add bookmark
+        const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
+        if (error) return { error: error.message };
+        return { success: true, action: 'added' };
+    }
+}
+
+export async function getUserBookmarks() {
+    if (!supabase) return [];
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data, error } = await supabase
+        .from('bookmarks')
+        .select('blog_id')
+        .eq('user_id', session.user.id);
+
+    if (error) return [];
+    return data.map(b => b.blog_id);
+}
+
+export async function getBookmarkedPosts() {
+    if (!supabase) return [];
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data: bookmarks, error: bErr } = await supabase
+        .from('bookmarks')
+        .select('blog_id')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+    if (bErr || !bookmarks || bookmarks.length === 0) return [];
+
+    const ids = bookmarks.map(b => b.blog_id);
+    const { data: posts, error: pErr } = await supabase
+        .from('blogs')
+        .select('id, title, slug, url, published_at, likes_count, author')
+        .in('id', ids);
+
+    if (pErr) return [];
+    return posts;
+}
+
+// ---- Comment Count Sync ---- //
+export async function incrementCommentCount(blogId) {
+    if (!supabase) return;
+
+    const { data: blog } = await supabase
+        .from('blogs')
+        .select('comments_count')
+        .eq('id', blogId)
+        .single();
+
+    if (blog) {
+        await supabase
+            .from('blogs')
+            .update({ comments_count: (blog.comments_count || 0) + 1 })
+            .eq('id', blogId);
+    }
+}
+
+// ---- Share Helpers ---- //
+export async function sharePost(title, url) {
+    if (navigator.share) {
+        try {
+            await navigator.share({ title, url });
+            return { success: true };
+        } catch (e) {
+            // User cancelled share
+            return { cancelled: true };
+        }
+    } else {
+        // Fallback: copy to clipboard
+        try {
+            await navigator.clipboard.writeText(url);
+            return { success: true, copied: true };
+        } catch (e) {
+            return { error: 'Could not copy link' };
+        }
+    }
+}

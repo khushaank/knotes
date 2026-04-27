@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost } from './supabaseClient.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
@@ -10,6 +10,7 @@ const pathParts = window.location.pathname.split('/').filter(p => p);
 const slugFromPath = pathParts.length > 1 && pathParts[0] === 'pulse' ? pathParts[1] : null;
 
 const activeSlug = slugParam || slugFromPath;
+let userBookmarks = [];
 
 async function fetchStory() {
     if (!supabase) return null;
@@ -88,6 +89,10 @@ async function renderPage() {
 
     trackClick(story.id);
 
+    // Load user bookmarks
+    userBookmarks = await getUserBookmarks();
+    const isBookmarked = userBookmarks.includes(story.id);
+
     // Update SEO Meta Tags
     const cleanTitle = sanitize(story.title);
     const cleanExcerpt = sanitize(story.excerpt || story.content || '').substring(0, 160);
@@ -139,7 +144,7 @@ async function renderPage() {
                     <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
                 </h1>
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
-                <div class="story-meta mt-1 flex items-center gap-1 text-xs">
+                <div class="story-meta mt-1 flex items-center gap-1 text-xs flex-wrap">
                     <span>${story.likes_count || 0} points</span>
                     <span>by</span>
                     <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a>
@@ -147,14 +152,19 @@ async function renderPage() {
                     <span>|</span>
                     <a class="hover:underline" href="#">hide</a>
                     <span>|</span>
-                    <a class="hover:underline" href="#">favorite</a>
+                    <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved ★' : 'save'}</a>
+                    <span>|</span>
+                    <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a>
                     <span>|</span>
                     <a class="hover:underline" href="index.html?s=${story.slug}">discuss</a>
                 </div>
             </div>
         </div>
         ${story.content ? `
-        <div class="text-black mt-4 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content">
+        <div class="text-gray-500 text-[10px] mt-2 ml-[17px]">
+            📖 ${Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200))} min read · ${story.clicks_count || 0} views
+        </div>
+        <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content">
             <p>${sanitize(story.content)}</p>
         </div>` : ''}
     `;
@@ -202,6 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            addBtn.disabled = true;
+            addBtn.textContent = 'posting...';
+
             const { error } = await supabase
                 .from('comments')
                 .insert([
@@ -215,16 +228,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) {
                 alert('Failed to add comment.');
+                addBtn.disabled = false;
+                addBtn.textContent = 'add comment';
                 return;
             }
 
+            // Sync comment count on the blog
+            await incrementCommentCount(window.currentStoryId);
+
             textarea.value = '';
+            addBtn.disabled = false;
+            addBtn.textContent = 'add comment';
             renderPage();
         });
         checkAuth();
     }
 
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('collapse-toggle')) {
             const toggle = e.target;
             const commentRoot = toggle.closest('.flex.items-start').parentElement;
@@ -247,14 +267,78 @@ document.addEventListener('DOMContentLoaded', () => {
             if (textarea) textarea.focus();
         }
 
+        // Upvote
         if (e.target.classList.contains('hn-arrow')) {
             const id = e.target.getAttribute('data-id');
             if (!id) return;
 
-            upvoteStory(id).then(result => {
-                if (result.error) alert(result.error);
-                else renderPage();
-            });
+            e.target.style.opacity = '0.3';
+            const result = await upvoteStory(id);
+
+            if (result.error) {
+                e.target.style.opacity = '1';
+                // Show a subtle message next to arrow
+                const tip = document.createElement('span');
+                tip.textContent = result.error;
+                tip.style.cssText = 'font-size:10px;color:#888;margin-left:4px;';
+                e.target.parentElement.appendChild(tip);
+                setTimeout(() => tip.remove(), 2000);
+            } else {
+                const metaRow = document.querySelector('.story-meta');
+                if (metaRow) {
+                    const currentText = metaRow.innerHTML;
+                    const pointsMatch = currentText.match(/(\d+)\s+points/);
+                    if (pointsMatch) {
+                        let pts = parseInt(pointsMatch[1], 10);
+                        if (result.action === 'added') pts++;
+                        else if (result.action === 'removed') pts = Math.max(0, pts - 1);
+                        metaRow.innerHTML = currentText.replace(/(\d+)\s+points/, `${pts} points`);
+                    }
+                }
+                
+                if (result.action === 'removed') {
+                    const tip = document.createElement('span');
+                    tip.textContent = 'Vote removed';
+                    tip.style.cssText = 'font-size:10px;color:#888;margin-left:4px;';
+                    e.target.parentElement.appendChild(tip);
+                    setTimeout(() => tip.remove(), 2000);
+                    e.target.style.visibility = 'visible';
+                    e.target.style.opacity = '1';
+                } else {
+                    e.target.style.visibility = 'hidden';
+                }
+            }
+        }
+
+        // Bookmark
+        if (e.target.classList.contains('bookmark-btn')) {
+            e.preventDefault();
+            const id = e.target.getAttribute('data-id');
+            if (!id) return;
+
+            const result = await toggleBookmark(parseInt(id));
+            if (result.error) {
+                const tip = document.createElement('span');
+                tip.textContent = result.error;
+                tip.style.cssText = 'font-size:10px;color:#888;margin-left:4px;';
+                e.target.parentElement.appendChild(tip);
+                setTimeout(() => tip.remove(), 2000);
+            } else {
+                e.target.textContent = result.action === 'added' ? 'saved ★' : 'save';
+            }
+        }
+
+        // Share
+        if (e.target.classList.contains('share-btn')) {
+            e.preventDefault();
+            const title = e.target.getAttribute('data-title');
+            const url = e.target.getAttribute('data-url');
+            const result = await sharePost(title, url);
+            if (result.copied) {
+                const origText = e.target.textContent;
+                e.target.textContent = 'link copied!';
+                setTimeout(() => { e.target.textContent = origText; }, 2000);
+            }
         }
     });
 });

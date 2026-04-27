@@ -3,97 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard — K. Notes</title>
     <link rel="stylesheet" href="css/admin.css">
     <link rel="icon" type="image/png" href="../assets/img/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="login-container" class="container">
-        <h2>Admin Login Required</h2>
-        <p>Please <a href="../login.html">login</a> with an admin account to view this page.</p>
+
+    <!-- Login Gate -->
+    <div id="login-container">
+        <div class="login-card">
+            <div class="login-logo">K.</div>
+            <h2>Admin Access Required</h2>
+            <p>You need admin privileges to view this dashboard.</p>
+            <a href="../login.html" class="btn btn-primary" style="display:inline-block; margin-top:16px;">Go to Login</a>
+        </div>
     </div>
 
-    <div id="admin-dashboard" class="container hidden">
-        <header>
-            <h1>Admin Dashboard</h1>
-            <div class="header-actions">
-                <span id="admin-name"></span>
-                <button id="logout-btn">Logout</button>
+    <!-- Dashboard Shell -->
+    <div id="admin-dashboard" class="dashboard-shell hidden">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon">K.</span>
+                <span class="brand-text">Notes Admin</span>
             </div>
-        </header>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-target="overview-section">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Overview
+                </button>
+                <button class="nav-item" data-target="users-section">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Users
+                </button>
+                <button class="nav-item" data-target="posts-section">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Posts
+                </button>
+                <button class="nav-item" data-target="comments-section">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Comments
+                </button>
+                <button class="nav-item" data-target="analytics-section">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Analytics
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../index.html" class="nav-item" style="border:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    Back to Site
+                </a>
+            </div>
+        </aside>
 
-        <nav class="tabs">
-            <button class="tab-btn active" data-target="users-section">Users</button>
-            <button class="tab-btn" data-target="posts-section">Posts</button>
-            <button class="tab-btn" data-target="comments-section">Comments</button>
-        </nav>
-
-        <main>
-            <!-- Users Section -->
-            <section id="users-section" class="tab-content active">
-                <h2>Manage Users</h2>
-                <div class="table-container">
-                    <table id="users-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Admin?</th>
-                                <th>Joined</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="5">Loading...</td></tr>
-                        </tbody>
-                    </table>
+        <!-- Main Content -->
+        <div class="main-wrap">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <button class="hamburger" id="sidebar-toggle">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div class="topbar-right">
+                    <span id="admin-name" class="admin-badge"></span>
+                    <button id="logout-btn" class="btn btn-outline-danger btn-sm">Logout</button>
                 </div>
-            </section>
+            </header>
 
-            <!-- Posts Section -->
-            <section id="posts-section" class="tab-content hidden">
-                <h2>Manage Posts</h2>
-                <div class="table-container">
-                    <table id="posts-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="5">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            <!-- Content Area -->
+            <main class="content">
 
-            <!-- Comments Section -->
-            <section id="comments-section" class="tab-content hidden">
-                <h2>Manage Comments</h2>
-                <div class="table-container">
-                    <table id="comments-table">
-                        <thead>
-                            <tr>
-                                <th>Comment</th>
-                                <th>User</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
+                <!-- ===== OVERVIEW ===== -->
+                <section id="overview-section" class="tab-content active">
+                    <h2 class="section-title">Dashboard Overview</h2>
+
+                    <!-- Metric Cards -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            </div>
+                            <div class="metric-info">
+                                <span class="metric-label">Total Users</span>
+                                <span class="metric-value" id="metric-users">—</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            </div>
+                            <div class="metric-info">
+                                <span class="metric-label">Total Posts</span>
+                                <span class="metric-value" id="metric-posts">—</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <div class="metric-info">
+                                <span class="metric-label">Total Comments</span>
+                                <span class="metric-value" id="metric-comments">—</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                            </div>
+                            <div class="metric-info">
+                                <span class="metric-label">Avg Posts/Day</span>
+                                <span class="metric-value" id="metric-avg-posts">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>User Growth</h3>
+                            </div>
+                            <div class="chart-wrap"><canvas id="usersChart"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Posts Over Time</h3>
+                            </div>
+                            <div class="chart-wrap"><canvas id="postsChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown + Recent Activity -->
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header"><h3>Post Categories</h3></div>
+                            <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Recent Activity</h3></div>
+                            <ul id="recent-activity-list" class="activity-list">
+                                <li class="activity-item"><span class="activity-dot"></span>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Top Authors + Quick Stats -->
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header"><h3>Top Authors</h3></div>
+                            <div class="table-container" style="box-shadow:none;">
+                                <table id="top-authors-table">
+                                    <thead><tr><th>Author</th><th>Posts</th></tr></thead>
+                                    <tbody><tr><td colspan="2">Loading...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Content Health</h3></div>
+                            <div class="health-grid" id="content-health">
+                                <div class="health-item">
+                                    <span class="health-label">Posts Today</span>
+                                    <span class="health-value" id="health-posts-today">—</span>
+                                </div>
+                                <div class="health-item">
+                                    <span class="health-label">Posts This Week</span>
+                                    <span class="health-value" id="health-posts-week">—</span>
+                                </div>
+                                <div class="health-item">
+                                    <span class="health-label">Posts This Month</span>
+                                    <span class="health-value" id="health-posts-month">—</span>
+                                </div>
+                                <div class="health-item">
+                                    <span class="health-label">New Users This Week</span>
+                                    <span class="health-value" id="health-users-week">—</span>
+                                </div>
+                                <div class="health-item">
+                                    <span class="health-label">Admin Users</span>
+                                    <span class="health-value" id="health-admin-count">—</span>
+                                </div>
+                                <div class="health-item">
+                                    <span class="health-label">Comments This Week</span>
+                                    <span class="health-value" id="health-comments-week">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== USERS ===== -->
+                <section id="users-section" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Manage Users</h2>
+                        <button id="export-users-btn" class="btn btn-secondary btn-sm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="table-container">
+                            <table id="users-table">
+                                <thead>
+                                    <tr><th>ID</th><th>Username</th><th>Admin</th><th>Joined</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody><tr><td colspan="5">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== POSTS ===== -->
+                <section id="posts-section" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2 class="section-title">Manage Posts</h2>
+                        <button id="export-posts-btn" class="btn btn-secondary btn-sm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+
+                    <!-- Create Post -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header"><h3>Create New Post</h3></div>
+                        <form id="admin-add-post-form" class="create-post-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="admin-post-title">Title *</label>
+                                    <input type="text" id="admin-post-title" placeholder="Enter post title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="admin-post-category">Category</label>
+                                    <select id="admin-post-category">
+                                        <option value="news">News</option>
+                                        <option value="ask">Ask</option>
+                                        <option value="show">Show</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-post-url">URL <span class="text-muted">(optional)</span></label>
+                                <input type="url" id="admin-post-url" placeholder="https://example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-post-content">Content <span class="text-muted">(optional)</span></label>
+                                <textarea id="admin-post-content" placeholder="Write content here..." rows="4"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Publish Post</button>
+                        </form>
+                    </div>
+
+                    <!-- Posts Table -->
+                    <div class="card">
+                        <div class="table-container">
+                            <table id="posts-table">
+                                <thead>
+                                    <tr><th>Title</th><th>Author</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody><tr><td colspan="5">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== COMMENTS ===== -->
+                <section id="comments-section" class="tab-content hidden">
+                    <h2 class="section-title">Manage Comments</h2>
+                    <div class="card">
+                        <div class="table-container">
+                            <table id="comments-table">
+                                <thead>
+                                    <tr><th>Comment</th><th>User</th><th>Date</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== ANALYTICS ===== -->
+                <section id="analytics-section" class="tab-content hidden">
+                    <h2 class="section-title">Analytics Deep Dive</h2>
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header"><h3>Daily Activity (Posts + Comments)</h3></div>
+                            <div class="chart-wrap"><canvas id="dailyActivityChart"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>User Registrations (Cumulative)</h3></div>
+                            <div class="chart-wrap"><canvas id="cumulativeUsersChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header"><h3>Top Commenters</h3></div>
+                            <div class="table-container" style="box-shadow:none;">
+                                <table id="top-commenters-table">
+                                    <thead><tr><th>User</th><th>Comments</th></tr></thead>
+                                    <tbody><tr><td colspan="2">Loading...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Posting Hours (UTC)</h3></div>
+                            <div class="chart-wrap"><canvas id="hourlyChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>

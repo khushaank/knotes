@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-<link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -33,7 +33,8 @@
                 </div>
             </div>
         </header>
-        <div class="bg-[#f6f6ef] px-2 py-1 border-b border-gray-300 flex items-center justify-between text-xs text-gray-600 max-w-[100%]">
+        <div
+            class="bg-[#f6f6ef] px-2 py-1 border-b border-gray-300 flex items-center justify-between text-xs text-gray-600 max-w-[100%]">
             <div class="flex gap-2">
                 <a href="#" class="filter-link font-bold text-black" data-filter="trending">trending</a> |
                 <a href="#" class="filter-link" data-filter="relevant">relevant</a> |
@@ -70,7 +71,14 @@
                 <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
                 <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
             </div>
-            <form id="footer-search-form" class="flex flex-col items-center gap-2" onsubmit="event.preventDefault(); window.location.href='search.html?search='+document.getElementById('footer-search-input').value;"><div class="flex items-center gap-2"><span class="text-gray-500 text-xs">Search:</span><input type="text" id="footer-search-input" class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48"></div><div id="trending-searches" class="text-[10px] text-gray-400 flex gap-2"></div></form>
+            <form id="footer-search-form" class="flex flex-col items-center gap-2"
+                onsubmit="event.preventDefault(); window.location.href='search.html?search='+document.getElementById('footer-search-input').value;">
+                <div class="flex items-center gap-2"><span class="text-gray-500 text-xs">Search:</span><input
+                        type="text" id="footer-search-input"
+                        class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
+                </div>
+                <div id="trending-searches" class="text-[10px] text-gray-400 flex gap-2"></div>
+            </form>
         </footer>
     </div>
     <script type="module" src="assets/js/index.js"></script>
@@ -78,4 +86,3 @@
 </body>
 
 </html>
-
