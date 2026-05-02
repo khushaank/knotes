@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const profileContainer = document.getElementById('profile-container');
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         await setProfileData(profile);
-        await loadSubmissions(profile.username);
+        await loadSubmissions(profile.username, isOwnProfile);
 
         // Show bookmarks for all public profiles
         document.getElementById('tab-saved')?.classList.remove('hidden');
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setAvatarLetter(defaultUsername);
     }
 
-    await loadSubmissions(profile?.username || defaultUsername);
+    await loadSubmissions(profile?.username || defaultUsername, true);
     await loadBookmarks();
     await loadHiddenStories();
     setupUpdateButton(userId);
@@ -292,17 +292,22 @@ function setupTabs() {
 }
 
 // ---- List Rendering ---- //
-function generateListHtml(blogs) {
+function generateListHtml(blogs, showDelete = false) {
     if (blogs.length === 0) {
         return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
     }
 
-    let html = '<ul class="space-y-2">';
+    let html = '<ul class="space-y-4">'; // increased spacing
     blogs.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
+        const deleteBtnHtml = showDelete ? `<span class="material-symbols-outlined delete-post-btn cursor-pointer text-gray-400 hover:text-red-600 ml-2 align-middle transition-colors" style="font-size: 16px;" data-id="${blog.id}" title="Delete post">delete</span>` : '';
+
         html += `
-            <li class="py-1 border-b border-gray-100 last:border-0">
-                <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
+            <li class="py-2 border-b border-gray-100 last:border-0">
+                <div class="flex items-center">
+                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
+                    ${deleteBtnHtml}
+                </div>
                 <div class="text-xs text-gray-500 mt-0.5"><a href="#" onclick="alert('Posted on ' + new Date('${blog.published_at}').toLocaleString() + ' by ${sanitize(blog.author) || 'anonymous'}'); return false;" class="hover:underline text-gray-500">${timeAgo}</a> &middot; ${blog.likes_count || 0} points &middot; ${blog.comments_count || 0} comments</div>
             </li>
         `;
@@ -312,10 +317,10 @@ function generateListHtml(blogs) {
 }
 
 // ---- Submissions ---- //
-async function loadSubmissions(username) {
+async function loadSubmissions(username, isOwnProfile = false) {
     const { data: blogs, error: blogsError } = await supabase
         .from('blogs')
-        .select('likes_count, id, title, published_at, url, slug, comments_count, category')
+        .select('likes_count, id, title, published_at, url, slug, comments_count, category, content')
         .eq('author', username)
         .order('published_at', { ascending: false });
 
@@ -326,10 +331,10 @@ async function loadSubmissions(username) {
     const showEl = document.getElementById('profile-submissions-show');
     const askEl = document.getElementById('profile-submissions-ask');
 
-    if (allEl) allEl.innerHTML = generateListHtml(blogs);
-    if (newsEl) newsEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'news'));
-    if (showEl) showEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'show'));
-    if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'));
+    if (allEl) allEl.innerHTML = generateListHtml(blogs, isOwnProfile);
+    if (newsEl) newsEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'news'), isOwnProfile);
+    if (showEl) showEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'show'), isOwnProfile);
+    if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'), isOwnProfile);
 }
 
 // ---- Bookmarks ---- //
@@ -441,3 +446,27 @@ function setupUpdateButton(userId) {
         updateBtn.disabled = false;
     });
 }
+
+// Global click listener for deleting posts
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('delete-post-btn')) {
+        const id = e.target.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this post? This cannot be undone.')) {
+            e.target.style.opacity = '0.5';
+            e.target.style.pointerEvents = 'none';
+            const result = await deleteStory(id);
+            if (result.error) {
+                alert(result.error);
+                e.target.style.opacity = '1';
+                e.target.style.pointerEvents = 'auto';
+            } else {
+                const li = e.target.closest('li');
+                if (li) {
+                    li.style.transition = 'opacity 0.3s';
+                    li.style.opacity = '0';
+                    setTimeout(() => li.remove(), 300);
+                }
+            }
+        }
+    }
+});

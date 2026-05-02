@@ -436,3 +436,87 @@ export async function deleteAvatar() {
     return { success: true };
 }
 
+export async function deleteStory(storyId) {
+    if (!supabase) return { error: 'Supabase not initialized' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login' };
+
+    // Only allow deletion if the user is the author
+    const { data: blog, error: fetchError } = await supabase
+        .from('blogs')
+        .select('author')
+        .eq('id', storyId)
+        .single();
+
+    if (fetchError || !blog) return { error: 'Story not found or you are not authorized' };
+
+    const username = session.user.email.split('@')[0];
+    if (blog.author !== username) return { error: 'Unauthorized' };
+
+    const { error } = await supabase
+        .from('blogs')
+        .delete()
+        .eq('id', storyId);
+
+    if (error) return { error: error.message };
+    return { success: true };
+}
+
+// ---- Media Upload System ---- //
+export async function uploadMediaFile(file) {
+    if (!supabase) return { error: 'Supabase not initialized' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login' };
+
+    const userId = session.user.id;
+    // Keep original name but sanitize it and add timestamp to avoid collisions
+    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const ext = safeName.split('.').pop();
+    const basename = safeName.substring(0, safeName.lastIndexOf('.'));
+    const filePath = `${userId}/${basename}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file, { upsert: true });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { data: urlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+    return { success: true, url: urlData.publicUrl, name: safeName };
+}
+
+export async function listUserMedia() {
+    if (!supabase) return [];
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const userId = session.user.id;
+
+    const { data: files, error } = await supabase.storage
+        .from('media')
+        .list(userId, {
+            limit: 100,
+            sortBy: { column: 'created_at', order: 'desc' }
+        });
+
+    if (error || !files) return [];
+
+    // Filter out potential folders and get public URLs
+    return files
+        .filter(f => f.name !== '.emptyFolderPlaceholder')
+        .map(f => {
+            const { data } = supabase.storage.from('media').getPublicUrl(`${userId}/${f.name}`);
+            return {
+                name: f.name,
+                url: data.publicUrl,
+                created_at: f.created_at
+            };
+        });
+}
+

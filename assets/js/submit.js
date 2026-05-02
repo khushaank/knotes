@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase, uploadMediaFile, listUserMedia } from './supabaseClient.js';
 
 function generateSlug(title) {
     return title
@@ -20,18 +20,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!session) {
         form.classList.add('hidden');
         authMessage.classList.remove('hidden');
+    } else {
+        const textToolbar = document.getElementById('text-toolbar');
+        if (textToolbar) textToolbar.style.display = 'flex';
     }
 
-    let submitCategory = 'news';
-
     const btnSubmit = document.getElementById('btn-submit');
-    const btnSubmitWork = document.getElementById('btn-submit-work');
+    const categorySelect = document.getElementById('submit-category');
+    const rowUrl = document.getElementById('row-url');
+    const rowText = document.getElementById('row-text');
 
-    if (btnSubmitWork) {
-        btnSubmitWork.addEventListener('click', () => {
-            submitCategory = 'show';
-            form.requestSubmit();
+    if (categorySelect) {
+        categorySelect.addEventListener('change', () => {
+            const cat = categorySelect.value;
+            if (cat === 'news') {
+                if (rowUrl) rowUrl.style.display = '';
+                if (rowText) rowText.style.display = 'none';
+            } else if (cat === 'ask') {
+                if (rowUrl) rowUrl.style.display = 'none';
+                if (rowText) rowText.style.display = '';
+            } else if (cat === 'show') {
+                if (rowUrl) rowUrl.style.display = '';
+                if (rowText) rowText.style.display = '';
+            }
         });
+        // Trigger initially
+        categorySelect.dispatchEvent(new Event('change'));
     }
 
     // Auto-detect URL paste and validate
@@ -95,11 +109,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Determine category if not explicitly set by button
-        let finalCategory = submitCategory;
-        if (finalCategory === 'news' && !url) {
-            finalCategory = 'ask';
-        }
+        const categoryInput = document.getElementById('submit-category');
+        let finalCategory = categoryInput ? categoryInput.value : 'news';
 
         // Prefix for Show HN
         if (finalCategory === 'show' && !title.toLowerCase().startsWith('show hn:')) {
@@ -133,8 +144,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Failed to submit. Please try again.');
             if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'submit'; }
         } else {
-            submitCategory = 'news';
-
             if (finalCategory === 'show') {
                 window.location.href = 'show.html';
             } else if (finalCategory === 'ask') {
@@ -144,4 +153,113 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     });
+
+    // ---- Media Upload & Library Logic ---- //
+    const btnUploadImage = document.getElementById('btn-upload-image');
+    const imageUploadInput = document.getElementById('image-upload-input');
+    const textarea = document.getElementById('submit-text');
+
+    if (btnUploadImage && imageUploadInput) {
+        btnUploadImage.addEventListener('click', () => {
+            imageUploadInput.click();
+        });
+
+        imageUploadInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image must be under 5MB');
+                return;
+            }
+
+            btnUploadImage.disabled = true;
+            btnUploadImage.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px">sync</span> Uploading...';
+
+            const result = await uploadMediaFile(file);
+
+            if (result.error) {
+                alert('Upload failed: ' + result.error);
+            } else {
+                let altText = prompt('Enter a short description (alt text) for this image:', 'Image');
+                if (altText === null) altText = 'Image'; // if user cancels prompt
+
+                const markdown = `\n![${altText}](${result.url})\n`;
+                insertAtCursor(textarea, markdown);
+            }
+
+            btnUploadImage.disabled = false;
+            btnUploadImage.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px">image</span> Upload Image';
+            imageUploadInput.value = '';
+        });
+    }
+
+    // Media Library Modal
+    const btnMediaLibrary = document.getElementById('btn-media-library');
+    const mediaModal = document.getElementById('media-library-modal');
+    const btnCloseMedia = document.getElementById('btn-close-media');
+    const mediaGrid = document.getElementById('media-library-grid');
+
+    if (btnMediaLibrary && mediaModal) {
+        btnMediaLibrary.addEventListener('click', async () => {
+            mediaModal.classList.remove('hidden');
+            mediaGrid.innerHTML = '<div class="col-span-full text-sm text-gray-500 text-center py-8 italic">Loading your photos...</div>';
+
+            const files = await listUserMedia();
+
+            if (files.length === 0) {
+                mediaGrid.innerHTML = '<div class="col-span-full text-sm text-gray-500 text-center py-8 italic">You haven\\\\\'t uploaded any photos yet</div>';
+                return;
+            }
+
+            let html = '';
+            files.forEach(f => {
+                html += `
+                    <div class="media-item border border-gray-200 rounded cursor-pointer hover:border-[#ff6600] overflow-hidden group relative bg-gray-50" data-url="${f.url}" data-name="${f.name}">
+                        <div class="aspect-square bg-cover bg-center" style="background-image: url('${f.url}')"></div>
+                        <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white text-xs font-bold">
+                            Insert
+                        </div>
+                    </div>
+                `;
+            });
+            mediaGrid.innerHTML = html;
+
+            mediaGrid.querySelectorAll('.media-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const url = item.getAttribute('data-url');
+                    const name = item.getAttribute('data-name').split('-')[0]; // simple alt text
+                    insertAtCursor(textarea, `\n![${name}](${url})\n`);
+                    mediaModal.classList.add('hidden');
+                });
+            });
+        });
+
+        btnCloseMedia?.addEventListener('click', () => {
+            mediaModal.classList.add('hidden');
+        });
+
+        mediaModal.addEventListener('click', (e) => {
+            if (e.target === mediaModal) {
+                mediaModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // Helper to insert text at cursor
+    function insertAtCursor(myField, myValue) {
+        if (!myField) return;
+        if (myField.selectionStart || myField.selectionStart === '0') {
+            var startPos = myField.selectionStart;
+            var endPos = myField.selectionEnd;
+            myField.value = myField.value.substring(0, startPos)
+                + myValue
+                + myField.value.substring(endPos, myField.value.length);
+            myField.selectionStart = startPos + myValue.length;
+            myField.selectionEnd = startPos + myValue.length;
+        } else {
+            myField.value += myValue;
+        }
+        myField.focus();
+    }
 });

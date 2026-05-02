@@ -1,4 +1,5 @@
 import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
+import { renderMarkdown, setupLinkPreviews } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
@@ -67,8 +68,8 @@ function renderCommentList(comments) {
                             <a class="hover:underline ml-1" href="#" onclick="alert('Posted on ' + new Date('${comment.created_at}').toLocaleString() + ' by ${sanitize(comment.user_name) || 'anonymous'}'); return false;">${timeAgo}</a>
                             <span class="ml-1 cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
                         </div>
-                        <div class="text-black mb-1 text-[10pt] leading-snug comment-body pr-4">
-                            <p>${sanitize(comment.comment_text)}</p>
+                        <div class="text-black mb-1 text-[10pt] leading-snug comment-body pr-4" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">
+                            ${renderMarkdown(comment.comment_text)}
                         </div>
                         <div class="story-meta mb-3 comment-footer">
                             <a class="hover:underline reply-btn" href="javascript:void(0)">reply</a>
@@ -167,8 +168,8 @@ async function renderPage() {
         <div class="text-gray-500 text-[10px] mt-2 ml-[17px] flex items-center gap-1">
             <span class="material-symbols-outlined" style="font-size:12px;">menu_book</span> ${Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200))} min read &middot; ${story.clicks_count || 0} views
         </div>
-        <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content">
-            <p>${sanitize(story.content)}</p>
+        <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">
+            ${renderMarkdown(story.content)}
         </div>` : ''}
     `;
 
@@ -182,6 +183,7 @@ async function renderPage() {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderPage();
+    setupLinkPreviews();
 
     const addBtn = document.getElementById('add-comment-btn');
     const textarea = document.getElementById('comment-input');

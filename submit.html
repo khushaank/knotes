@@ -3,7 +3,7 @@
 
 <head>
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;" />
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Submit - K. Notes</title>
@@ -40,20 +40,39 @@
                 <table class="border-spacing-0 border-collapse w-full">
                     <tbody>
                         <tr>
+                            <td class="py-2 w-16 align-top">category</td>
+                            <td class="py-2">
+                                <select id="submit-category" class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
+                                    <option value="news">News (Link)</option>
+                                    <option value="ask">Ask (Discussion)</option>
+                                    <option value="show">Show (Submit Work)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
                             <td class="py-2 w-16 align-top">title</td>
                             <td class="py-2"><input type="text" id="submit-title" required
                                     class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
                             </td>
                         </tr>
-                        <tr>
+                        <tr id="row-url">
                             <td class="py-2 w-16 align-top">url</td>
                             <td class="py-2"><input type="url" id="submit-url"
                                     class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
                             </td>
                         </tr>
-                        <tr>
+                        <tr id="row-text">
                             <td class="py-2 w-16 align-top">text</td>
-                            <td class="py-2">
+                            <td class="py-2 relative">
+                                <div class="flex items-center gap-2 mb-1" id="text-toolbar" style="display:none;">
+                                    <button type="button" id="btn-upload-image" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined" style="font-size:12px">image</span> Upload Image
+                                    </button>
+                                    <button type="button" id="btn-media-library" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined" style="font-size:12px">photo_library</span> Media Library
+                                    </button>
+                                    <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                                </div>
                                 <textarea id="submit-text"
                                     class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"></textarea>
                             </td>
@@ -63,21 +82,27 @@
                             <td class="py-4 flex gap-2">
                                 <button type="submit" id="btn-submit"
                                     class="bg-gray-200 border border-gray-400 px-4 py-1 hover:bg-gray-300 text-black cursor-pointer text-sm">submit</button>
-                                <button type="button" id="btn-submit-work"
-                                    class="bg-gray-200 border border-gray-400 px-4 py-1 hover:bg-gray-300 text-black cursor-pointer text-sm">submit
-                                    work</button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 <div class="mt-8 text-gray-700 text-xs leading-relaxed border-t border-gray-200 pt-4">
-                    <p class="mb-2"><b>Submission Rules:</b></p>
-                    <ul class="list-disc ml-4 space-y-1">
-                        <li>Leave url blank to submit a question for discussion (<b>Ask</b>).</li>
-                        <li>If there is a url, it will be submitted as <b>News</b>.</li>
-                        <li>Use the <b>submit work</b> button for projects you've created (<b>Show HN</b>).</li>
+                    <p class="mb-2 text-sm text-[#ff6600]"><b>Submission Rules:</b></p>
+                    <ul class="list-disc ml-4 space-y-1 mb-4">
+                        <li>Select <b>News</b> to submit a link.</li>
+                        <li>Select <b>Ask</b> to submit a question or start a discussion (leave url blank).</li>
+                        <li>Select <b>Show</b> for projects you've created.</li>
                         <li>Please read the <a href="guidelines.html" class="underline">Guidelines</a> and <a
                                 href="faq.html" class="underline">FAQ</a> before posting.</li>
+                    </ul>
+                    
+                    <p class="mb-2 text-sm text-[#ff6600]"><b>Formatting Manual:</b></p>
+                    <ul class="list-disc ml-4 space-y-2">
+                        <li><b>YouTube Videos:</b> Just paste a YouTube link (e.g. <code>https://youtube.com/watch?v=...</code>). It will automatically convert to a live playable video!</li>
+                        <li><b>Images:</b> Paste a direct link to an image ending in <code>.jpg, .png, .gif</code> and it will auto-embed. Or use Markdown: <code>![alt text](image_url)</code>.</li>
+                        <li><b>Live Previews:</b> Any regular link you type will automatically become clickable. Better yet, users can <b>hover</b> over your links to see a live preview window of the webpage!</li>
+                        <li><b>Markdown & HTML:</b> You can use standard Markdown for bold (<code>**bold**</code>), lists, and even standard HTML tags.</li>
+                        <li><b>Indentation:</b> Your spacing and indentation will be preserved perfectly.</li>
                     </ul>
                 </div>
             </form>
@@ -105,6 +130,27 @@
             </form>
         </footer>
     </div>
+
+    <!-- Media Library Modal -->
+    <div id="media-library-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-md shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div class="p-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-md">
+                <h3 class="font-bold text-sm text-gray-800">Your Media Library</h3>
+                <button type="button" id="btn-close-media" class="text-gray-500 hover:text-red-500 cursor-pointer">
+                    <span class="material-symbols-outlined" style="font-size:18px">close</span>
+                </button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1">
+                <div id="media-library-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    <div class="col-span-full text-sm text-gray-500 text-center py-8 italic">Loading your photos...</div>
+                </div>
+            </div>
+            <div class="p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 rounded-b-md">
+                Click on any image to insert it directly into your post!
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="assets/js/submit.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
