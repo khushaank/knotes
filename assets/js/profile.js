@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const profileContainer = document.getElementById('profile-container');
@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateBtn = document.getElementById('btn-update-profile');
     const submissionsEl = document.getElementById('profile-submissions');
     const avatarEl = document.getElementById('profile-avatar');
+    const followBtn = document.getElementById('follow-btn');
+    const avatarEditBtn = document.getElementById('avatar-edit-btn');
+    const avatarMenu = document.getElementById('avatar-menu');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+    const privacyContainer = document.getElementById('profile-privacy-container');
+    const isPublicCheckbox = document.getElementById('profile-is-public');
 
     if (!supabase) return;
 
@@ -45,20 +51,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Check if this is our own profile — re-enable editing
-        if (session && session.user.id === profile.id) {
+        const isOwnProfile = session && session.user.id === profile.id;
+
+        if (isOwnProfile) {
             if (aboutInput) aboutInput.disabled = false;
             if (updateBtn) updateBtn.style.display = '';
             document.getElementById('tab-saved')?.classList.remove('hidden');
+            if (privacyContainer) privacyContainer.style.display = '';
+            setupAvatarEdit(profile);
+        } else if (session) {
+            // Show follow button for other users
+            followBtn.classList.remove('hidden');
+            setupFollowButton(profile.id);
         }
 
-        setProfileData(profile);
+        await setProfileData(profile);
         await loadSubmissions(profile.username);
 
-        // Show bookmarks only for own profile
-        if (session && session.user.id === profile.id) {
-            await loadBookmarks();
+        // Show bookmarks for all public profiles
+        document.getElementById('tab-saved')?.classList.remove('hidden');
+        await loadBookmarks(profile.id);
+
+        if (isOwnProfile) {
             setupUpdateButton(session.user.id);
         }
+
+        // Always load hidden stories (localStorage, client-side only)
+        await loadHiddenStories();
 
         return;
     }
@@ -90,40 +109,166 @@ document.addEventListener('DOMContentLoaded', async () => {
             .insert([{ id: userId, username: defaultUsername }])
             .select()
             .single();
-        
+
         if (!insertError) {
             profile = newProfile;
         }
     }
 
     if (profile) {
-        setProfileData(profile);
+        await setProfileData(profile);
+        setupAvatarEdit(profile);
+        if (privacyContainer) privacyContainer.style.display = '';
     } else {
         usernameEl.textContent = defaultUsername;
-        avatarEl.textContent = defaultUsername.charAt(0).toUpperCase();
+        setAvatarLetter(defaultUsername);
     }
 
     await loadSubmissions(profile?.username || defaultUsername);
     await loadBookmarks();
+    await loadHiddenStories();
     setupUpdateButton(userId);
 
-    function setProfileData(p) {
+    // ---- Set Profile Data ---- //
+    async function setProfileData(p) {
         usernameEl.textContent = p.username;
         document.title = `${p.username}'s Profile - K. Notes`;
         createdEl.textContent = new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         if (aboutInput) aboutInput.value = p.about || '';
-        
-        if (avatarEl) {
-            avatarEl.textContent = p.username.charAt(0).toUpperCase();
-            // Optional: generate a consistent background color based on username
-            const colors = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200'];
-            const charCode = p.username.charCodeAt(0) || 0;
-            const colorClass = colors[charCode % colors.length];
-            avatarEl.className = `w-20 h-20 rounded-md flex items-center justify-center text-3xl font-bold text-gray-700 uppercase ${colorClass}`;
+
+        // Avatar: show image if avatar_url exists, else show letter
+        if (p.avatar_url) {
+            setAvatarImage(p.avatar_url, p.username);
+        } else {
+            setAvatarLetter(p.username);
+        }
+
+        // Karma = follower count
+        const followers = await getFollowerCount(p.id);
+        if (karmaEl) karmaEl.textContent = followers;
+
+        // Set privacy checkbox state
+        if (isPublicCheckbox && p.is_public !== undefined) {
+            isPublicCheckbox.checked = p.is_public === true;
+        }
+    }
+
+    // ---- Avatar Helpers ---- //
+    function setAvatarLetter(username) {
+        if (!avatarEl) return;
+        const colors = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200'];
+        const charCode = (username || '?').charCodeAt(0) || 0;
+        const colorClass = colors[charCode % colors.length];
+        avatarEl.className = `w-16 h-16 rounded flex items-center justify-center text-2xl font-bold text-gray-700 uppercase flex-shrink-0 overflow-hidden ${colorClass}`;
+        avatarEl.innerHTML = '';
+        avatarEl.textContent = (username || '?').charAt(0).toUpperCase();
+    }
+
+    function setAvatarImage(url, username) {
+        if (!avatarEl) return;
+        avatarEl.className = 'w-16 h-16 rounded flex-shrink-0 overflow-hidden bg-gray-200';
+        avatarEl.innerHTML = `<img src="${url}" alt="${sanitize(username)}" class="avatar-img" onerror="this.remove()">`;
+    }
+
+    // ---- Avatar Edit (pencil) ---- //
+    function setupAvatarEdit(profile) {
+        if (!avatarEditBtn) return;
+        avatarEditBtn.classList.remove('hidden');
+
+        // Toggle menu
+        avatarEditBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            avatarMenu.classList.toggle('hidden');
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', () => {
+            avatarMenu.classList.add('hidden');
+        });
+
+        // Upload
+        document.getElementById('avatar-upload-btn')?.addEventListener('click', () => {
+            avatarMenu.classList.add('hidden');
+            avatarFileInput.click();
+        });
+
+        avatarFileInput?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Image must be under 2MB');
+                return;
+            }
+
+            avatarEditBtn.style.opacity = '0.5';
+            const result = await uploadAvatar(file);
+            avatarEditBtn.style.opacity = '1';
+
+            if (result.error) {
+                alert('Upload failed: ' + result.error);
+            } else {
+                setAvatarImage(result.url, profile.username);
+            }
+            avatarFileInput.value = '';
+        });
+
+        // Delete
+        document.getElementById('avatar-delete-btn')?.addEventListener('click', async () => {
+            avatarMenu.classList.add('hidden');
+            const result = await deleteAvatar();
+            if (result.error) {
+                alert('Delete failed: ' + result.error);
+            } else {
+                setAvatarLetter(profile.username);
+            }
+        });
+    }
+
+    // ---- Follow Button ---- //
+    async function setupFollowButton(targetId) {
+        if (!followBtn) return;
+
+        const alreadyFollowing = await isFollowing(targetId);
+        updateFollowUI(alreadyFollowing);
+
+        followBtn.addEventListener('click', async () => {
+            followBtn.disabled = true;
+            const result = await toggleFollow(targetId);
+            followBtn.disabled = false;
+
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            const nowFollowing = result.action === 'followed';
+            updateFollowUI(nowFollowing);
+
+            // Update karma count on page
+            const newCount = await getFollowerCount(targetId);
+            if (karmaEl) karmaEl.textContent = newCount;
+        });
+    }
+
+    function updateFollowUI(isFollowed) {
+        if (!followBtn) return;
+        if (isFollowed) {
+            followBtn.textContent = 'Following';
+            followBtn.className = 'follow-btn following';
+            followBtn.onmouseenter = () => { followBtn.textContent = 'Unfollow'; };
+            followBtn.onmouseleave = () => { followBtn.textContent = 'Following'; };
+        } else {
+            followBtn.textContent = 'Follow';
+            followBtn.className = 'follow-btn follow';
+            followBtn.onmouseenter = null;
+            followBtn.onmouseleave = null;
         }
     }
 });
 
+// ---- Tabs ---- //
 function setupTabs() {
     const tabs = document.querySelectorAll('.profile-tab');
     const panes = document.querySelectorAll('.tab-pane');
@@ -146,18 +291,19 @@ function setupTabs() {
     });
 }
 
+// ---- List Rendering ---- //
 function generateListHtml(blogs) {
     if (blogs.length === 0) {
-        return '<p class="text-gray-500 italic">Nothing found here yet.</p>';
+        return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
     }
-    
+
     let html = '<ul class="space-y-2">';
     blogs.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
         html += `
-            <li>
+            <li class="py-1 border-b border-gray-100 last:border-0">
                 <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
-                <span class="text-xs text-gray-500 ml-2">${timeAgo} | ${blog.likes_count || 0} points | ${blog.comments_count || 0} comments</span>
+                <div class="text-xs text-gray-500 mt-0.5"><a href="#" onclick="alert('Posted on ' + new Date('${blog.published_at}').toLocaleString() + ' by ${sanitize(blog.author) || 'anonymous'}'); return false;" class="hover:underline text-gray-500">${timeAgo}</a> &middot; ${blog.likes_count || 0} points &middot; ${blog.comments_count || 0} comments</div>
             </li>
         `;
     });
@@ -165,9 +311,8 @@ function generateListHtml(blogs) {
     return html;
 }
 
+// ---- Submissions ---- //
 async function loadSubmissions(username) {
-    const karmaEl = document.getElementById('profile-karma');
-
     const { data: blogs, error: blogsError } = await supabase
         .from('blogs')
         .select('likes_count, id, title, published_at, url, slug, comments_count, category')
@@ -175,9 +320,6 @@ async function loadSubmissions(username) {
         .order('published_at', { ascending: false });
 
     if (blogsError) return;
-
-    const karma = blogs.reduce((sum, blog) => sum + (blog.likes_count || 0), 0);
-    if (karmaEl) karmaEl.textContent = karma;
 
     const allEl = document.getElementById('profile-submissions');
     const newsEl = document.getElementById('profile-submissions-news');
@@ -190,27 +332,103 @@ async function loadSubmissions(username) {
     if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'));
 }
 
-async function loadBookmarks() {
+// ---- Bookmarks ---- //
+async function loadBookmarks(userId = null) {
     const listEl = document.getElementById('bookmarks-list');
     if (!listEl) return;
 
-    const posts = await getBookmarkedPosts();
+    const posts = await getBookmarkedPosts(userId);
     listEl.innerHTML = generateListHtml(posts);
 }
 
+// ---- Hidden Stories (from localStorage) ---- //
+async function loadHiddenStories() {
+    const listEl = document.getElementById('hidden-list');
+    if (!listEl) return;
+
+    let hiddenIds = [];
+    try {
+        hiddenIds = JSON.parse(localStorage.getItem('kn-hidden-stories') || '[]');
+    } catch { hiddenIds = []; }
+
+    if (hiddenIds.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 italic py-2">No hidden stories.</p>';
+        return;
+    }
+
+    if (!supabase) {
+        listEl.innerHTML = '<p class="text-gray-500 italic py-2">Cannot load hidden stories.</p>';
+        return;
+    }
+
+    const numericIds = hiddenIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+
+    const { data: posts, error } = await supabase
+        .from('blogs')
+        .select('id, title, slug, url, published_at, likes_count, comments_count, author')
+        .in('id', numericIds);
+
+    if (error || !posts || posts.length === 0) {
+        listEl.innerHTML = `<p class="text-gray-500 italic py-2">${hiddenIds.length} hidden stories (data unavailable).</p>`;
+        return;
+    }
+
+    let html = '<ul class="space-y-2">';
+    posts.forEach(blog => {
+        const timeAgo = calculateTimeAgo(blog.published_at);
+        html += `
+            <li class="py-1 border-b border-gray-100 last:border-0 flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
+                    <div class="text-xs text-gray-500 mt-0.5">${timeAgo} · ${blog.likes_count || 0} points · by ${sanitize(blog.author || 'anonymous')}</div>
+                </div>
+                <button class="unhide-btn text-xs text-[#ff6600] hover:underline flex-shrink-0 mt-0.5 cursor-pointer" data-id="${blog.id}">unhide</button>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    listEl.innerHTML = html;
+
+    // Unhide button handlers
+    listEl.querySelectorAll('.unhide-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            let stored = [];
+            try { stored = JSON.parse(localStorage.getItem('kn-hidden-stories') || '[]'); } catch { }
+            stored = stored.filter(sid => String(sid) !== String(id));
+            localStorage.setItem('kn-hidden-stories', JSON.stringify(stored));
+
+            const li = btn.closest('li');
+            if (li) {
+                li.style.transition = 'opacity 0.2s';
+                li.style.opacity = '0';
+                setTimeout(() => {
+                    li.remove();
+                    if (listEl.querySelectorAll('li').length === 0) {
+                        listEl.innerHTML = '<p class="text-gray-500 italic py-2">No hidden stories.</p>';
+                    }
+                }, 200);
+            }
+        });
+    });
+}
+
+// ---- Update Profile ---- //
 function setupUpdateButton(userId) {
     const updateBtn = document.getElementById('btn-update-profile');
     const aboutInput = document.getElementById('profile-about');
+    const isPublicCheckbox = document.getElementById('profile-is-public');
     if (!updateBtn || !aboutInput) return;
 
     updateBtn.addEventListener('click', async () => {
         const aboutText = aboutInput.value.trim();
+        const isPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
         updateBtn.disabled = true;
         updateBtn.textContent = 'updating...';
 
         const { error } = await supabase
             .from('profiles')
-            .update({ about: aboutText })
+            .update({ about: aboutText, is_public: isPublic })
             .eq('id', userId);
 
         if (error) {

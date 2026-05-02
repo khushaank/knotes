@@ -38,12 +38,10 @@ function renderAllComments(comments) {
                         <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
                     </div>
                     <div class="w-full">
-                        <div class="font-meta-sm text-meta-sm text-secondary mb-1">
-                            <a class="hover:underline text-on-background font-bold" href="profile.html?user=${sanitize(comment.user_name)}">${sanitize(comment.user_name) || 'anonymous'}</a>
-                            <span class="mx-1">${timeAgo}</span>
-                            <span>|</span>
-                            <span class="ml-1">on:</span>
-                            <a class="hover:underline text-black italic ml-1" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
+                        <div class="story-meta mb-1">
+                            <a class="hover:underline text-black" href="profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
+                            <a class="hover:underline ml-1" href="pulse/index.html?s=${blogSlug}" onclick="alert('Posted on ' + new Date('${comment.created_at}').toLocaleString() + ' by ${sanitize(comment.user_name) || 'anonymous'}'); return false;">${timeAgo}</a> | 
+                            on: <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
                         </div>
                         <div class="text-on-background mb-1 comment-body pr-4 text-sm leading-relaxed text-black">
                             <p>${sanitize(comment.comment_text)}</p>

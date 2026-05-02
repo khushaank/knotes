@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
@@ -58,11 +58,13 @@ function renderCommentList(comments) {
         html += `
             <div class="mb-4 comment-node">
                 <div class="flex items-start gap-1">
-                    <div class="hn-arrow mt-[4px]" data-id="${comment.id}"></div>
+                    <div class="cursor-default text-secondary mt-[2px]">
+                        <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
+                    </div>
                     <div class="w-full">
                         <div class="story-meta mb-1">
                             <a class="hover:underline text-black" href="../profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
-                            <a class="hover:underline ml-1" href="#">${timeAgo}</a>
+                            <a class="hover:underline ml-1" href="#" onclick="alert('Posted on ' + new Date('${comment.created_at}').toLocaleString() + ' by ${sanitize(comment.user_name) || 'anonymous'}'); return false;">${timeAgo}</a>
                             <span class="ml-1 cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
                         </div>
                         <div class="text-black mb-1 text-[10pt] leading-snug comment-body pr-4">
@@ -148,11 +150,12 @@ async function renderPage() {
                     <span>${story.likes_count || 0} points</span>
                     <span>by</span>
                     <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a>
-                    <a class="hover:underline" href="#">${timeAgo}</a>
+                    <button class="boost-karma-pulse-btn text-gray-500 hover:text-[#ff6600] text-[10px] mx-1 focus:outline-none" title="Increase karma" data-author="${story.author}">[increase karma]</button>
+                    <a class="hover:underline" href="#" onclick="alert('Posted on ' + new Date('${story.published_at}').toLocaleString() + ' by ${sanitize(story.author) || 'anonymous'}'); return false;">${timeAgo}</a>
                     <span>|</span>
                     <a class="hover:underline" href="#">hide</a>
                     <span>|</span>
-                    <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved ★' : 'save'}</a>
+                    <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
                     <span>|</span>
                     <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a>
                     <span>|</span>
@@ -161,8 +164,8 @@ async function renderPage() {
             </div>
         </div>
         ${story.content ? `
-        <div class="text-gray-500 text-[10px] mt-2 ml-[17px]">
-            📖 ${Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200))} min read · ${story.clicks_count || 0} views
+        <div class="text-gray-500 text-[10px] mt-2 ml-[17px] flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:12px;">menu_book</span> ${Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200))} min read &middot; ${story.clicks_count || 0} views
         </div>
         <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content">
             <p>${sanitize(story.content)}</p>
@@ -273,7 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!id) return;
 
             e.target.style.opacity = '0.3';
+            e.target.style.pointerEvents = 'none';
             const result = await upvoteStory(id);
+            e.target.style.pointerEvents = 'auto';
 
             if (result.error) {
                 e.target.style.opacity = '1';
@@ -324,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.target.parentElement.appendChild(tip);
                 setTimeout(() => tip.remove(), 2000);
             } else {
-                e.target.textContent = result.action === 'added' ? 'saved ★' : 'save';
+                e.target.textContent = result.action === 'added' ? 'saved' : 'save';
             }
         }
 
@@ -338,6 +343,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 const origText = e.target.textContent;
                 e.target.textContent = 'link copied!';
                 setTimeout(() => { e.target.textContent = origText; }, 2000);
+            }
+        }
+
+        // Boost karma from viewer
+        if (e.target.classList.contains('boost-karma-pulse-btn')) {
+            e.preventDefault();
+            const btn = e.target;
+            const author = btn.getAttribute('data-author');
+            if (!author) return;
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+
+            // Lookup author id
+            const { data: profile } = await supabase.from('profiles').select('id').eq('username', author).maybeSingle();
+            if (!profile) {
+                alert('User not found.');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                return;
+            }
+
+            const result = await toggleFollow(profile.id);
+            if (result.error) {
+                alert(result.error);
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            } else {
+                if (result.action === 'followed') {
+                    btn.classList.replace('text-gray-500', 'text-[#ff6600]');
+                    btn.title = "Decrease karma";
+                    btn.textContent = "[decrease karma]";
+                } else {
+                    btn.classList.replace('text-[#ff6600]', 'text-gray-500');
+                    btn.title = "Increase karma";
+                    btn.textContent = "[increase karma]";
+                }
+                btn.disabled = false;
+                btn.style.opacity = '1';
             }
         }
     });

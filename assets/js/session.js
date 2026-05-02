@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check if the auth-link element exists or try to find the login link
-    const authLinks = document.querySelectorAll('a[href="login.html"]');
+    const authLinks = document.querySelectorAll('a[href="login.html"], a[href="../login.html"]');
     
     // Quick fast-path if Supabase isn't initialized properly
     if (!supabase) return;
@@ -18,13 +18,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             authLinks.forEach(link => {
                 const parent = link.parentNode;
+                const isSubdir = link.getAttribute('href') === '../login.html';
+                const prefix = isSubdir ? '../' : '';
                 
                 // Create a container for username and logout
                 const userContainer = document.createElement('div');
                 userContainer.className = 'flex items-center gap-2';
                 
                 const userSpan = document.createElement('a');
-                userSpan.href = 'profile.html';
+                userSpan.href = prefix + 'profile.html';
                 userSpan.className = 'hover:underline text-black';
                 userSpan.textContent = username;
                 

@@ -62,9 +62,9 @@ async function renderStories() {
                 <td colspan="2"></td>
                 <td class="story-meta">
                     ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
-                    <a href="pulse/index.html?s=${story.slug}">${timeAgo}</a> | 
+                    <a href="pulse/index.html?s=${story.slug}" onclick="alert('Posted on ' + new Date('${story.published_at}').toLocaleString() + ' by ${sanitize(story.author) || 'anonymous'}'); return false;">${timeAgo}</a> | 
                     <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
-                    <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved ★' : 'save'}</a> | 
+                    <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a> | 
                     <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
                 </td>
             </tr>
@@ -117,7 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!storyId) return;
 
             e.target.style.opacity = '0.3';
+            e.target.style.pointerEvents = 'none';
             const result = await upvoteStory(storyId);
+            e.target.style.pointerEvents = 'auto';
 
             if (result.error) {
                 showTip(e.target, result.error);
@@ -159,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showTip(e.target, result.error);
             } else {
                 if (result.action === 'added') {
-                    e.target.textContent = 'saved ★';
+                    e.target.textContent = 'saved';
                     userBookmarks.push(parseInt(storyId));
                 } else {
                     e.target.textContent = 'save';

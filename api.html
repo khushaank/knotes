@@ -3,7 +3,7 @@
 
 <head>
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co;" />
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>API - K. Notes</title>
@@ -23,11 +23,11 @@
                     <a class="hover:underline" href="comments.html">comments</a> |
                     <a class="hover:underline" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |
-                    <a class="hover:underline" href="submit.html">submit</a>
+                    <a class="hover:underline" href="submit.html">submit</a> |
+                    <a class="hover:underline" href="leaderboard.html">leaders</a>
                 </div>
-                <div class="ml-auto text-black text-[13px] flex items-center gap-4">
-                    <a class="hover:underline text-black" href="login.html">login</a>
-                </div>
+                <div class="ml-auto text-black text-[13px] flex items-center gap-4"> <a
+                        class="hover:underline text-black" href="login.html">login</a> </div>
             </div>
         </header>
         <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
