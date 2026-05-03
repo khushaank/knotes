@@ -48,8 +48,8 @@ export function setupLinkPreviews() {
         iframe.style.width = '100%';
         iframe.style.height = 'calc(100% - 24px)';
         iframe.style.border = 'none';
-        // Add sandbox to prevent frame busting and annoying alerts
-        iframe.sandbox = "allow-scripts";
+        // Relax sandbox to help with complex document viewers
+        iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
         
         tooltip.appendChild(header);
         tooltip.appendChild(iframe);
@@ -74,9 +74,23 @@ export function setupLinkPreviews() {
         
         target.addEventListener('mouseenter', () => {
             clearTimeout(timeout);
-            header.textContent = target.href;
-            if (iframe.src !== target.href) {
-                iframe.src = target.href;
+            header.textContent = target.textContent.trim() || target.href;
+            
+            // Handle documents via specialized viewers
+            const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
+            const pdfExts = /\.pdf$/i;
+            let finalUrl = target.href;
+            
+            if (target.href.match(officeExts)) {
+                // Microsoft Office Viewer is better for Excel/Word
+                finalUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(target.href)}`;
+            } else if (target.href.match(pdfExts) || target.href.includes('supabase.co/storage/v1/object/public/media')) {
+                // Google GView is good for PDFs
+                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(target.href)}&embedded=true`;
+            }
+
+            if (iframe.src !== finalUrl) {
+                iframe.src = finalUrl;
             }
             
             const rect = target.getBoundingClientRect();

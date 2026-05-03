@@ -471,11 +471,9 @@ export async function uploadMediaFile(file) {
     if (!session) return { error: 'Please login' };
 
     const userId = session.user.id;
-    // Keep original name but sanitize it and add timestamp to avoid collisions
-    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const ext = safeName.split('.').pop();
-    const basename = safeName.substring(0, safeName.lastIndexOf('.'));
-    const filePath = `${userId}/${basename}-${Date.now()}.${ext}`;
+    // Sanitize filename: remove spaces and special chars to help external viewers
+    const safeName = file.name.replace(/\s+/g, '_').replace(/[^\w\.-]/g, '');
+    const filePath = `${userId}/${Date.now()}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
         .from('media')

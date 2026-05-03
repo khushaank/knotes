@@ -8,7 +8,9 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Submit - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="assets/css/modal.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -66,12 +68,12 @@
                             <td class="py-2 relative">
                                 <div class="flex items-center gap-2 mb-1" id="text-toolbar" style="display:none;">
                                     <button type="button" id="btn-upload-image" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined" style="font-size:12px">image</span> Upload Image
+                                        <span class="material-symbols-outlined" style="font-size:12px">upload_file</span> Upload File
                                     </button>
                                     <button type="button" id="btn-media-library" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined" style="font-size:12px">photo_library</span> Media Library
+                                        <span class="material-symbols-outlined" style="font-size:12px">folder_shared</span> Media & Work
                                     </button>
-                                    <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                                    <input type="file" id="image-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
                                 </div>
                                 <textarea id="submit-text"
                                     class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"></textarea>
@@ -132,21 +134,33 @@
     </div>
 
     <!-- Media Library Modal -->
-    <div id="media-library-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-md shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <div class="p-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-md">
-                <h3 class="font-bold text-sm text-gray-800">Your Media Library</h3>
-                <button type="button" id="btn-close-media" class="text-gray-500 hover:text-red-500 cursor-pointer">
-                    <span class="material-symbols-outlined" style="font-size:18px">close</span>
+    <div id="media-library-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#ff6600]">folder_shared</span>
+                    <h3 class="font-bold text-base text-gray-900">Media & Work Library</h3>
+                </div>
+                <button type="button" id="btn-close-media" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined" style="font-size:20px">close</span>
                 </button>
             </div>
-            <div class="p-4 overflow-y-auto flex-1">
-                <div id="media-library-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    <div class="col-span-full text-sm text-gray-500 text-center py-8 italic">Loading your photos...</div>
+            
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+                <div id="media-library-grid" class="grid gap-3">
+                    <!-- Loaded dynamically -->
                 </div>
             </div>
-            <div class="p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 rounded-b-md">
-                Click on any image to insert it directly into your post!
+
+            <div class="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
+                <div class="text-xs text-gray-500 flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:14px">info</span>
+                    Click an image to insert it into your post
+                </div>
+                <button type="button" id="btn-upload-more-submit" class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined" style="font-size:14px">upload</span>
+                    Upload New
+                </button>
             </div>
         </div>
     </div>

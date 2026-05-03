@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory, listUserMedia, uploadMediaFile } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const profileContainer = document.getElementById('profile-container');
@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('tab-saved')?.classList.remove('hidden');
             if (privacyContainer) privacyContainer.style.display = '';
             setupAvatarEdit(profile);
+            setupMediaLibrary();
         } else if (session) {
             // Show follow button for other users
             followBtn.classList.remove('hidden');
@@ -128,6 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadBookmarks();
     await loadHiddenStories();
     setupUpdateButton(userId);
+    setupMediaLibrary();
 
     // ---- Set Profile Data ---- //
     async function setProfileData(p) {
@@ -444,6 +446,181 @@ function setupUpdateButton(userId) {
         }
 
         updateBtn.disabled = false;
+    });
+}
+
+// ---- Media Library ---- //
+function setupMediaLibrary() {
+    const btnMedia = document.getElementById('btn-media-library-profile');
+    const modal = document.getElementById('media-library-modal');
+    const closeBtn = document.getElementById('btn-close-media');
+    const grid = document.getElementById('media-library-grid');
+    const uploadBtn = document.getElementById('btn-upload-more');
+    const uploadInput = document.getElementById('media-upload-input');
+
+    if (!btnMedia || !modal) return;
+
+    btnMedia.addEventListener('click', async () => {
+        modal.classList.remove('hidden');
+        loadMediaFiles();
+    });
+
+    closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+
+    // Close on Esc key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    });
+
+    async function loadMediaFiles() {
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-12">
+                <div class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4"></div>
+                <p class="text-gray-500 text-sm italic">Fetching your media gallery...</p>
+            </div>
+        `;
+
+        const files = await listUserMedia();
+
+        if (files.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded border border-dashed border-gray-300">
+                    <span class="material-symbols-outlined text-gray-300" style="font-size:48px">photo_library</span>
+                    <p class="text-gray-500 text-sm mt-2">No photos found in your library.</p>
+                </div>
+            `;
+            return;
+        }
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'pdf': return 'picture_as_pdf';
+                case 'xls':
+                case 'xlsx':
+                case 'csv': return 'table_chart';
+                case 'doc':
+                case 'docx': return 'description';
+                case 'ppt':
+                case 'pptx': return 'present_to_all';
+                case 'txt': return 'article';
+                default: return 'insert_drive_file';
+            }
+        }
+
+        function isImage(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+        }
+
+        let html = '';
+        files.forEach(f => {
+            const isImg = isImage(f.name);
+            const icon = getFileIcon(f.name);
+            
+            html += `
+                <div class="group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item" 
+                     data-url="${f.url}" 
+                     data-is-img="${isImg}"
+                     onclick="window.open('${f.url}', '_blank')">
+                    ${isImg 
+                        ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
+                        : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
+                             <span class="material-symbols-outlined text-3xl mb-1">${icon}</span>
+                             <span class="text-[9px] truncate w-full px-1">${sanitize(f.name.split('-')[0])}</span>
+                           </div>`
+                    }
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
+                        <span class="text-white text-[10px] font-bold truncate w-full">${sanitize(f.name)}</span>
+                        <button class="mt-2 bg-white text-black text-[9px] px-2 py-1 rounded font-bold hover:bg-[#ff6600] hover:text-white transition-colors" onclick="event.stopPropagation(); navigator.clipboard.writeText('${f.url}'); alert('URL copied to clipboard!')">
+                            Copy Link
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+
+        // Preview Logic
+        grid.querySelectorAll('.media-item').forEach(item => {
+            item.addEventListener('mouseenter', (e) => {
+                const url = item.getAttribute('data-url');
+                const isImg = item.getAttribute('data-is-img') === 'true';
+                if (!isImg) showPreview(url, e);
+            });
+            item.addEventListener('mouseleave', hidePreview);
+        });
+    }
+
+    // Preview Tooltip Element & Functions
+    const previewTooltip = document.createElement('div');
+    previewTooltip.className = 'media-preview-tooltip';
+    document.body.appendChild(previewTooltip);
+
+    function showPreview(url, e) {
+        const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
+        let viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+        
+        if (url.match(officeExts)) {
+            viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+        }
+
+        previewTooltip.innerHTML = `<iframe src="${viewerUrl}" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`;
+        previewTooltip.classList.add('visible');
+        updatePreviewPos(e);
+    }
+
+    function hidePreview() {
+        previewTooltip.classList.remove('visible');
+        previewTooltip.innerHTML = '';
+    }
+
+    function updatePreviewPos(e) {
+        const x = e.clientX + 20;
+        const y = e.clientY - 200;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        let finalX = x;
+        let finalY = y;
+        if (x + 320 > winW) finalX = e.clientX - 340;
+        if (y + 450 > winH) finalY = winH - 460;
+        if (finalY < 10) finalY = 10;
+        previewTooltip.style.left = `${finalX}px`;
+        previewTooltip.style.top = `${finalY}px`;
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        if (previewTooltip.classList.contains('visible')) updatePreviewPos(e);
+    });
+
+    // Upload logic
+    uploadBtn?.addEventListener('click', () => uploadInput.click());
+    uploadInput?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File too large (max 5MB)');
+            return;
+        }
+
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="animate-spin material-symbols-outlined" style="font-size:14px">sync</span> Uploading...';
+
+        const result = await uploadMediaFile(file);
+        
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">upload_file</span> Upload New';
+
+        if (result.error) {
+            alert('Upload failed: ' + result.error);
+        } else {
+            loadMediaFiles();
+        }
+        uploadInput.value = '';
     });
 }
 
