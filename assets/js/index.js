@@ -30,9 +30,19 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
         .select('*', { count: 'exact' })
         .eq('status', 'published');
 
+    // Apply basic SQL ordering to help the local sort algorithm
+    if (filter === 'new') {
+        query = query.order('published_at', { ascending: false });
+    } else {
+        query = query.order('likes_count', { ascending: false });
+    }
+
+    if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,author.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+    }
+
     const start = (page - 1) * STORIES_PER_PAGE;
     const end = start + STORIES_PER_PAGE - 1;
-
 
     // Check cache
     const cacheKey = `${filter}-${searchQuery}-${page}`;
@@ -43,19 +53,21 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const { data: stories, error, count } = await query.range(start, end);
 
     if (error) {
-        return [];
+        console.error('Fetch error:', error);
+        return { stories: [], count: 0 };
     }
 
     const result = sortStories(stories, filter);
     
+    const finalResult = { stories: result, count: count || 0 };
+
     // Save to cache
     storyCache[cacheKey] = {
-        data: result,
-        count: count,
+        data: finalResult,
         timestamp: Date.now()
     };
 
-    return { stories: result, count };
+    return finalResult;
 }
 
 async function renderStories(searchQuery = '', filter = 'trending') {
@@ -191,7 +203,12 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.classList.add('font-bold', 'text-black');
             
             const searchInput = document.getElementById('footer-search-input');
-            renderStories(searchInput?.value.trim() || '', currentFilter, true); // Reset pagination on filter change
+            // When switching filters, reset to page 1 by clearing URL params or just rendering page 1
+            if (window.location.search.includes('p=')) {
+                const newUrl = window.location.pathname + `?filter=${currentFilter}${searchInput?.value.trim() ? `&search=${encodeURIComponent(searchInput.value.trim())}` : ''}`;
+                window.history.pushState({}, '', newUrl);
+            }
+            renderStories(searchInput?.value.trim() || '', currentFilter); 
         });
     });
 

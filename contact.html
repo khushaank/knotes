@@ -6,7 +6,7 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Contact - K. Notes</title>
+    <title>Feedback - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
@@ -31,25 +31,106 @@
             </div>
         </header>
         <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">Contact</b>
+            <b class="text-black text-lg block mb-4">Contact & Feedback</b>
 
-            <p class="mb-4">
-                We'd love to hear from you.
-            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <p class="mb-4">
+                        We'd love to hear from you. Whether it's a bug report, a feature request, or just a friendly
+                        hello, feel free to reach out.
+                    </p>
 
-            <p class="mb-2"><b>Email:</b> <a
-                    href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#107;&#104;&#117;&#115;&#104;&#97;&#97;&#110;&#107;&#103;&#117;&#112;&#116;&#97;&#37;&#52;&#48;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;"
-                    class="underline">&#107;&#104;&#117;&#115;&#104;&#97;&#97;&#110;&#107;&#103;&#117;&#112;&#116;&#97;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a>
-            </p>
+                    <p class="mb-2"><b>Email:</b> <a href="mailto:khushaankgupta@gmail.com"
+                            class="underline">khushaankgupta@gmail.com</a>
+                    </p>
 
-            <p class="mb-2"><b>YouTube:</b> <a href="https://www.youtube.com/@KhushaankGupta" class="underline"
-                    target="_blank">Khushaank Gupta</a>
-            </p>
+                    <p class="mb-2"><b>YouTube:</b> <a href="https://www.youtube.com/@KhushaankGupta" class="underline"
+                            target="_blank">Khushaank Gupta</a>
+                    </p>
+                </div>
 
-            <p class="mt-8 text-gray-500">
-                Please note that we are a small team and may not be able to respond to every message immediately.
+                <div class="bg-white p-6 border border-gray-200 shadow-sm rounded-sm">
+                    <b class="text-black block mb-4">Report a Bug / Leave Feedback</b>
+                    <form id="feedback-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Your Name
+                                (Optional)</label>
+                            <input type="text" id="fb-name"
+                                class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Feedback
+                                Type</label>
+                            <select id="fb-type"
+                                class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm bg-white">
+                                <option value="bug">Bug Report</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="feedback">General Feedback</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Message</label>
+                            <textarea id="fb-message" required rows="4"
+                                class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm resize-y"></textarea>
+                        </div>
+                        <button type="submit"
+                            class="bg-[#ff6600] text-black font-bold py-2 px-6 hover:bg-[#e65c00] transition-colors text-sm rounded-sm">
+                            Submit Feedback
+                        </button>
+                    </form>
+                    <div id="fb-status" class="mt-4 text-sm hidden"></div>
+                </div>
+            </div>
+
+            <p class="mt-12 text-gray-500 text-xs italic">
+                Note: We are a small team and may not be able to respond to every message immediately, but we read every
+                single one.
             </p>
         </main>
+
+        <script type="module">
+            import { supabase } from './assets/js/supabaseClient.js';
+
+            const form = document.getElementById('feedback-form');
+            const status = document.getElementById('fb-status');
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('fb-name').value;
+                    const type = document.getElementById('fb-type').value;
+                    const message = document.getElementById('fb-message').value;
+
+                    status.textContent = 'Sending...';
+                    status.classList.remove('hidden', 'text-red-600', 'text-green-600');
+                    status.classList.add('text-gray-600');
+
+                    if (!supabase) {
+                        status.textContent = 'Connection error. Please try again later.';
+                        status.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const { error } = await supabase.from('feedback').insert([{
+                        name: name || 'Anonymous',
+                        type: type,
+                        message: message,
+                        page_url: window.location.href
+                    }]);
+
+                    if (error) {
+                        status.textContent = 'Error: ' + error.message;
+                        status.classList.add('text-red-600');
+                    } else {
+                        status.textContent = 'Thank you! Your feedback has been received.';
+                        status.classList.add('text-green-600');
+                        form.reset();
+                    }
+                });
+            }
+        </script>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
             style="max-width: 100%;">
@@ -63,7 +144,8 @@
                 <a class="hover:underline text-gray-600" href="api.html">API</a> |
                 <a class="hover:underline text-gray-600" href="security.html">Security</a> |
                 <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
-                <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
+                <a class="hover:underline text-gray-600" href="about.html">About</a> |
+                <a class="hover:underline text-gray-600" href="contact.html">Feedback</a>
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search.html?search='+document.getElementById('footer-search-input').value;">

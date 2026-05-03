@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Under Maintenance - K. Notes</title>
+    <meta name="description" content="K. Notes is currently undergoing maintenance. We'll be back shortly with high-signal content and discussions." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Under Maintenance - K. Notes" />
+    <meta property="og:description" content="We're fine-tuning the signal. K. Notes will be back shortly." />
+    <meta property="og:image" content="https://khushaank.github.io/knotes/assets/img/logo.png" />
+    
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <style>
+        :root {
+            --hn-orange: #ff6600;
+            --hn-bg: #f6f6ef;
+            --text-primary: #1a1a1a;
+            --text-secondary: #828282;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-serif: "Iowan Old Style", "Apple Garamond", "Baskerville", "Times New Roman", "Droid Serif", Times, "Source Serif Pro", serif;
+        }
+
+        body {
+            background-color: var(--hn-bg);
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-sans);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 500px;
+            padding: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background-color: var(--hn-orange);
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            margin: 0 auto 2rem;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            font-family: var(--font-serif);
+            margin-bottom: 2.5rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            border: 1px solid #e5e7eb;
+            color: var(--text-primary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--hn-orange);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .quote {
+            margin-top: 4rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">K</div>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            Fine-tuning the Signal
+        </div>
+        <h1>Under Maintenance</h1>
+        <p>We're currently performing some scheduled upgrades to K. Notes. We'll be back online with a cleaner, faster experience shortly.</p>
+        
+        <div class="quote">
+            "The important thing is not to stop questioning. Curiosity has its own reason for existing." — Albert Einstein
+        </div>
+    </div>
+</body>
+
+</html>

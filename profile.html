@@ -151,7 +151,7 @@
                 <a class="hover:underline text-gray-600" href="api.html">API</a> |
                 <a class="hover:underline text-gray-600" href="security.html">Security</a> |
                 <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
-                <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
+                <a class="hover:underline text-gray-600" href="contact.html">Feedback</a>
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search.html?search='+document.getElementById('footer-search-input').value;">
@@ -162,22 +162,27 @@
         </footer>
     </div>
     <!-- Media Library Modal -->
-    <div id="media-library-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+    <div id="media-library-modal"
+        class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#ff6600]">folder_shared</span>
                     <h3 class="font-bold text-base text-gray-900">Media & Work Library</h3>
                 </div>
-                <button type="button" id="btn-close-media" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
+                <button type="button" id="btn-close-media"
+                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
                     <span class="material-symbols-outlined" style="font-size:20px">close</span>
                 </button>
             </div>
-            
+
             <div class="p-6 overflow-y-auto flex-1 bg-gray-50/50">
                 <div id="media-library-grid" class="grid gap-3">
                     <div class="col-span-full text-center py-12">
-                        <div class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4"></div>
+                        <div
+                            class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4">
+                        </div>
                         <p class="text-gray-500 text-sm italic">Fetching your media gallery...</p>
                     </div>
                 </div>
@@ -188,11 +193,13 @@
                     <span class="material-symbols-outlined" style="font-size:14px">info</span>
                     Files and images you've uploaded
                 </div>
-                <button type="button" id="btn-upload-more" class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
+                <button type="button" id="btn-upload-more"
+                    class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
                     <span class="material-symbols-outlined" style="font-size:14px">upload_file</span>
                     Upload New
                 </button>
-                <input type="file" id="media-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
+                <input type="file" id="media-upload-input"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
             </div>
         </div>
     </div>

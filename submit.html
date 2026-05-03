@@ -7,10 +7,29 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Submit - K. Notes</title>
+    <meta name="description"
+        content="Submit a new story, link, or question to K. Notes. Share high-quality content with the community." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Submit - K. Notes" />
+    <meta property="og:description"
+        content="Submit a new story, link, or question to K. Notes. Share high-quality content with the community." />
+    <meta property="og:image" content="https://khushaank.github.io/knotes/assets/img/logo.png" />
+    <meta property="og:url" content="https://khushaank.github.io/knotes/submit.html" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Submit - K. Notes" />
+    <meta property="twitter:description"
+        content="Submit a new story, link, or question to K. Notes. Share high-quality content with the community." />
+    <meta property="twitter:image" content="https://khushaank.github.io/knotes/assets/img/logo.png" />
+
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link href="assets/css/modal.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -25,8 +44,8 @@
                     <a class="hover:underline" href="comments.html">comments</a> |
                     <a class="hover:underline" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |
-                    <a class="hover:underline font-bold" href="submit.html">submit</a> | <a class="hover:underline"
-                        href="leaderboard.html">leaders</a>
+                    <a class="hover:underline font-bold" href="submit.html">submit</a> |
+                    <a class="hover:underline" href="leaderboard.html">leaders</a>
                 </div>
                 <div class="ml-auto text-black text-[13px] flex items-center gap-4"> <a
                         class="hover:underline text-black" href="login.html">login</a> </div>
@@ -44,7 +63,8 @@
                         <tr>
                             <td class="py-2 w-16 align-top">category</td>
                             <td class="py-2">
-                                <select id="submit-category" class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
+                                <select id="submit-category"
+                                    class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
                                     <option value="news">News (Link)</option>
                                     <option value="ask">Ask (Discussion)</option>
                                     <option value="show">Show (Submit Work)</option>
@@ -67,13 +87,18 @@
                             <td class="py-2 w-16 align-top">text</td>
                             <td class="py-2 relative">
                                 <div class="flex items-center gap-2 mb-1" id="text-toolbar" style="display:none;">
-                                    <button type="button" id="btn-upload-image" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined" style="font-size:12px">upload_file</span> Upload File
+                                    <button type="button" id="btn-upload-image"
+                                        class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined"
+                                            style="font-size:12px">upload_file</span> Upload File
                                     </button>
-                                    <button type="button" id="btn-media-library" class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined" style="font-size:12px">folder_shared</span> Media & Work
+                                    <button type="button" id="btn-media-library"
+                                        class="text-[11px] bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined"
+                                            style="font-size:12px">folder_shared</span> Media & Work
                                     </button>
-                                    <input type="file" id="image-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
+                                    <input type="file" id="image-upload-input"
+                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
                                 </div>
                                 <textarea id="submit-text"
                                     class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"></textarea>
@@ -97,13 +122,20 @@
                         <li>Please read the <a href="guidelines.html" class="underline">Guidelines</a> and <a
                                 href="faq.html" class="underline">FAQ</a> before posting.</li>
                     </ul>
-                    
+
                     <p class="mb-2 text-sm text-[#ff6600]"><b>Formatting Manual:</b></p>
                     <ul class="list-disc ml-4 space-y-2">
-                        <li><b>YouTube Videos:</b> Just paste a YouTube link (e.g. <code>https://youtube.com/watch?v=...</code>). It will automatically convert to a live playable video!</li>
-                        <li><b>Images:</b> Paste a direct link to an image ending in <code>.jpg, .png, .gif</code> and it will auto-embed. Or use Markdown: <code>![alt text](image_url)</code>.</li>
-                        <li><b>Live Previews:</b> Any regular link you type will automatically become clickable. Better yet, users can <b>hover</b> over your links to see a live preview window of the webpage!</li>
-                        <li><b>Markdown & HTML:</b> You can use standard Markdown for bold (<code>**bold**</code>), lists, and even standard HTML tags.</li>
+                        <li><b>YouTube Videos:</b> Just paste a YouTube link (e.g.
+                            <code>https://youtube.com/watch?v=...</code>). It will automatically convert to a live
+                            playable video!
+                        </li>
+                        <li><b>Images:</b> Paste a direct link to an image ending in <code>.jpg, .png, .gif</code> and
+                            it will auto-embed. Or use Markdown: <code>![alt text](image_url)</code>.</li>
+                        <li><b>Live Previews:</b> Any regular link you type will automatically become clickable. Better
+                            yet, users can <b>hover</b> over your links to see a live preview window of the webpage!
+                        </li>
+                        <li><b>Markdown & HTML:</b> You can use standard Markdown for bold (<code>**bold**</code>),
+                            lists, and even standard HTML tags.</li>
                         <li><b>Indentation:</b> Your spacing and indentation will be preserved perfectly.</li>
                     </ul>
                 </div>
@@ -122,7 +154,8 @@
                 <a class="hover:underline text-gray-600" href="api.html">API</a> |
                 <a class="hover:underline text-gray-600" href="security.html">Security</a> |
                 <a class="hover:underline text-gray-600" href="legal.html">Legal</a> |
-                <a class="hover:underline text-gray-600" href="contact.html">Contact</a>
+                <a class="hover:underline text-gray-600" href="about.html">About</a> |
+                <a class="hover:underline text-gray-600" href="contact.html">Feedback</a>
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search.html?search='+document.getElementById('footer-search-input').value;">
@@ -134,18 +167,21 @@
     </div>
 
     <!-- Media Library Modal -->
-    <div id="media-library-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+    <div id="media-library-modal"
+        class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#ff6600]">folder_shared</span>
                     <h3 class="font-bold text-base text-gray-900">Media & Work Library</h3>
                 </div>
-                <button type="button" id="btn-close-media" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
+                <button type="button" id="btn-close-media"
+                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
                     <span class="material-symbols-outlined" style="font-size:20px">close</span>
                 </button>
             </div>
-            
+
             <div class="p-6 overflow-y-auto flex-1 bg-gray-50/50">
                 <div id="media-library-grid" class="grid gap-3">
                     <!-- Loaded dynamically -->
@@ -157,7 +193,8 @@
                     <span class="material-symbols-outlined" style="font-size:14px">info</span>
                     Click an image to insert it into your post
                 </div>
-                <button type="button" id="btn-upload-more-submit" class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
+                <button type="button" id="btn-upload-more-submit"
+                    class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
                     <span class="material-symbols-outlined" style="font-size:14px">upload</span>
                     Upload New
                 </button>

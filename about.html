@@ -6,29 +6,26 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>K. Notes - High-Signal Tech News & Discussion</title>
+    <title>About - K. Notes</title>
     <meta name="description"
-        content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
+        content="Learn about K. Notes, our mission, and the community behind the platform. A high-signal space for tech news and intellectual discussion." />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="K. Notes - High-Signal Tech News & Discussion" />
+    <meta property="og:title" content="About - K. Notes" />
     <meta property="og:description"
-        content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
+        content="Learn about K. Notes, our mission, and the community behind the platform. A high-signal space for tech news and intellectual discussion." />
     <meta property="og:image" content="https://khushaank.github.io/knotes/assets/img/logo.png" />
-    <meta property="og:url" content="https://khushaank.github.io/knotes/index.html" />
+    <meta property="og:url" content="https://khushaank.github.io/knotes/about.html" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="K. Notes - High-Signal Tech News & Discussion" />
+    <meta property="twitter:title" content="About - K. Notes" />
     <meta property="twitter:description"
-        content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
+        content="Learn about K. Notes, our mission, and the community behind the platform. A high-signal space for tech news and intellectual discussion." />
     <meta property="twitter:image" content="https://khushaank.github.io/knotes/assets/img/logo.png" />
 
     <link href="assets/css/styles.css" rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
@@ -51,28 +48,66 @@
                         class="hover:underline text-black" href="login.html">login</a> </div>
             </div>
         </header>
-        <div
-            class="bg-[#f6f6ef] px-2 py-1 border-b border-gray-300 flex items-center justify-between text-xs text-gray-600 max-w-[100%]">
-            <div class="flex gap-2">
-                <a href="#" class="filter-link font-bold text-black" data-filter="trending">trending</a> |
-                <a href="#" class="filter-link" data-filter="relevant">relevant</a> |
-                <a href="#" class="filter-link" data-filter="new">new</a>
+        <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
+            <h1 class="text-black text-2xl font-bold mb-6">About K. Notes</h1>
+
+            <section class="mb-8">
+                <h2 class="text-black text-lg font-bold mb-3">What is K. Notes?</h2>
+                <p class="mb-4">
+                    K. Notes is a community-driven news aggregator and discussion forum focused on technology, science,
+                    computer science, and "anything that gratifies one's intellectual curiosity."
+                </p>
+                <p class="mb-4">
+                    Inspired by the minimalist and functional design of Hacker News, K. Notes aims to provide a clean,
+                    fast, and high-signal environment for developers, researchers, and lifelong learners to share and
+                    discuss the most interesting content on the web.
+                </p>
+            </section>
+
+            <section class="mb-8">
+                <h2 class="text-black text-lg font-bold mb-3">Our Mission</h2>
+                <p class="mb-4">
+                    Our mission is to foster a community where curiosity is the primary driver of interaction. We value:
+                </p>
+                <ul class="list-disc ml-8 space-y-2 mb-4">
+                    <li><b>Intellectual Curiosity:</b> Content that makes you think, learn, or see the world
+                        differently.</li>
+                    <li><b>Civil Discourse:</b> Respectful, substantive discussions that focus on ideas rather than
+                        individuals.</li>
+                    <li><b>Signal over Noise:</b> A focus on high-quality content over clickbait and sensationalism.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="mb-12 p-6 bg-gray-50 border-l-4 border-[#ff6600]">
+                <h2 class="text-black text-lg font-bold mb-2">Meet the Author</h2>
+                <p class="mb-4">
+                    K. Notes was created and is maintained by <b>Khushaank Gupta</b>. Want to know more about the person
+                    behind the platform?
+                </p>
+                <a href="author.html" class="text-[#ff6600] font-bold hover:underline flex items-center gap-1">
+                    Read more about Khushaank &rarr;
+                </a>
+            </section>
+
+            <section class="mb-8">
+                <h2 class="text-black text-lg font-bold mb-3">Technology</h2>
+                <p class="mb-4">
+                    K. Notes is built using modern web technologies to ensure speed and reliability:
+                </p>
+                <ul class="list-disc ml-8 space-y-2 mb-4">
+                    <li><b>Frontend:</b> Vanilla HTML, Tailwind CSS for styling.</li>
+                    <li><b>Backend:</b> Supabase for database and authentication.</li>
+                    <li><b>Design:</b> A tribute to the classic Hacker News aesthetic with modern refinements.</li>
+                </ul>
+            </section>
+
+            <div class="mt-12 p-6 bg-gray-100 rounded-lg border border-gray-200">
+                <p class="text-center italic text-gray-600">
+                    "The important thing is not to stop questioning. Curiosity has its own reason for existing." —
+                    Albert Einstein
+                </p>
             </div>
-            <div class="flex items-center gap-2">
-                <span id="stats-summary" class="text-[10px] text-gray-400"></span>
-                <button id="refresh-trending" class="hover:text-black flex items-center gap-1 focus:outline-none">
-                    <span class="material-symbols-outlined text-sm">refresh</span> refresh
-                </button>
-            </div>
-        </div>
-        <main class="bg-[#f6f6ef] pt-2 pb-4">
-            <table class="border-spacing-0 border-collapse">
-                <tbody>
-                    <tr>
-                        <td colspan="3" class="p-4 text-center">Loading stories...</td>
-                    </tr>
-                </tbody>
-            </table>
         </main>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
@@ -100,7 +135,6 @@
             </form>
         </footer>
     </div>
-    <script type="module" src="assets/js/index.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 
