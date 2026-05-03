@@ -1,0 +1,321 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        background-color: #f6f6ef;
+        margin: 0;
+        padding: 0;
+        font-family: Verdana, Geneva, sans-serif;
+        font-size: 10pt;
+        color: #000000;
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+}
+
+@layer components {
+    .hn-orange-bar {
+        background-color: #ff6600;
+    }
+
+    /* Small filled solid triangle ▲ */
+    .hn-arrow {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 7px solid #828282;
+        cursor: pointer;
+        transition: border-bottom-color 0.15s ease;
+        /* Generous tap target via padding, visual stays small */
+        padding: 3px;
+        background-clip: content-box;
+        box-sizing: content-box;
+        vertical-align: middle;
+    }
+
+    .hn-arrow:hover {
+        border-bottom-color: #ff6600;
+    }
+
+    .story-title {
+        font-size: 10pt;
+        color: #000000;
+        line-height: 1.2;
+    }
+
+    .story-meta {
+        font-size: 7pt;
+        color: #828282;
+        padding-top: 1px;
+    }
+
+    .story-meta a {
+        color: #828282;
+    }
+
+    .story-meta a:hover {
+        text-decoration: underline;
+    }
+
+    .domain-text {
+        font-size: 8pt;
+        color: #828282;
+    }
+
+    .domain-text a {
+        color: #828282;
+    }
+}
+
+@layer utilities {
+    .text-hn-grey {
+        color: #828282;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE OVERRIDES
+   Breakpoints: phone (<640px), tablet (640–1023px),
+   laptop (1024–1535px = unchanged), TV (≥1536px)
+   ============================================================ */
+
+/* ---------- PHONE (< 640px) ---------- */
+@media (max-width: 639px) {
+    /* Container: full-width on phones */
+    .max-w-\[85\%\] {
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Keep small top margin on mobile like laptop */
+    body > div.mt-2,
+    body > .max-w-\[85\%\].mt-2 {
+        margin-top: 4px !important;
+    }
+
+    /* Header: keep horizontal but tighten padding */
+    header .flex.items-center.gap-1.w-full {
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 4px 8px;
+    }
+
+    /* Nav links: slightly smaller gap so they don't overflow */
+    header .flex.flex-wrap.items-center.gap-1 {
+        gap: 2px;
+        font-size: 12px;
+    }
+
+    /* Login link: move to end of first line */
+    header .ml-auto {
+        font-size: 12px;
+    }
+
+    /* Sub-header filter bar */
+    .bg-\[\#f6f6ef\].px-2.py-1 {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    /* Main content: add horizontal padding */
+    main {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
+
+    /* Story table: full width */
+    main table {
+        width: 100%;
+    }
+
+    /* Story title font: slightly larger for readability */
+    .story-title {
+        font-size: 11pt;
+        line-height: 1.35;
+    }
+
+    /* Story meta: larger for easier tapping */
+    .story-meta {
+        font-size: 8pt;
+        line-height: 1.5;
+    }
+
+    .story-meta a {
+        padding: 2px 0;
+    }
+
+    /* Upvote arrow: slightly bigger tap area on mobile */
+    .hn-arrow {
+        padding: 5px;
+    }
+
+    /* Footer: full-width, more padding */
+    footer {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    /* Footer links: wrap nicely */
+    footer .flex.flex-wrap.justify-center.gap-2 {
+        gap: 4px 6px;
+        font-size: 11px;
+    }
+
+    /* Search input in footer: wider on mobile */
+    footer input[type="text"] {
+        width: 100% !important;
+        max-width: 240px;
+    }
+
+    /* Profile page: stack avatar + info vertically */
+    .profile-header {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    /* Profile textarea (about): responsive width */
+    #profile-about {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Profile info grid */
+    .profile-info {
+        width: 100% !important;
+    }
+
+    /* Login / signup inputs: wider on mobile */
+    input.w-36 {
+        width: 10rem !important;
+    }
+
+    /* Submit form: ensure it doesn't overflow */
+    #submit-form {
+        max-width: 100% !important;
+    }
+
+    /* Search page input */
+    #main-search-input {
+        max-width: 100% !important;
+    }
+
+    /* Content pages (FAQ, Guidelines, etc.): reduce padding */
+    main.p-8 {
+        padding: 16px !important;
+    }
+
+    /* Profile tabs: scrollable on small screens */
+    .profile-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        gap: 12px !important;
+        padding-bottom: 6px;
+    }
+}
+
+/* ---------- TABLET (640px – 1023px) ---------- */
+@media (min-width: 640px) and (max-width: 1023px) {
+    /* Container: slightly wider than laptop default */
+    .max-w-\[85\%\] {
+        max-width: 95% !important;
+    }
+
+    /* Content pages: adjust padding */
+    main.p-8 {
+        padding: 24px !important;
+    }
+
+    /* Profile textarea */
+    #profile-about {
+        width: 100% !important;
+        max-width: 24rem;
+    }
+}
+
+/* ---------- TV / ULTRA-WIDE (≥ 1536px) ---------- */
+@media (min-width: 1536px) {
+    /* Cap the container so it doesn't stretch infinitely */
+    .max-w-\[85\%\] {
+        max-width: 1400px !important;
+    }
+
+    /* Scale up base font for big screens */
+    body {
+        font-size: 12pt;
+    }
+
+    /* Story titles: larger for distance reading */
+    .story-title {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+
+    .story-meta {
+        font-size: 9pt;
+    }
+
+    .domain-text {
+        font-size: 9pt;
+    }
+
+    /* Header nav: larger text */
+    header .flex.flex-wrap.items-center.gap-1 {
+        font-size: 14px;
+    }
+
+    /* Footer: larger text */
+    footer {
+        font-size: 13px;
+    }
+
+    /* Footer links */
+    footer .flex.flex-wrap.justify-center.gap-2 {
+        gap: 8px;
+    }
+}
+
+/* ---------- 4K / VERY LARGE TV (≥ 2560px) ---------- */
+@media (min-width: 2560px) {
+    .max-w-\[85\%\] {
+        max-width: 1800px !important;
+    }
+
+    body {
+        font-size: 14pt;
+    }
+
+    .story-title {
+        font-size: 14pt;
+    }
+
+    .story-meta {
+        font-size: 10pt;
+    }
+
+    header .flex.flex-wrap.items-center.gap-1 {
+        font-size: 16px;
+        gap: 6px;
+    }
+
+    header a.font-bold {
+        font-size: 18px;
+    }
+
+    footer {
+        font-size: 14px;
+        padding: 32px !important;
+    }
+}

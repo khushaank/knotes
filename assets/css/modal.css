@@ -1,0 +1,82 @@
+/* Modal & Media Gallery Styles */
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.z-\[100\] { z-index: 100; }
+.bg-black\/60 { background-color: rgba(0, 0, 0, 0.6); }
+.backdrop-blur-sm { backdrop-filter: blur(4px); }
+
+/* Responsive Modal Sizing */
+#media-library-modal > div {
+    width: 95% !important;
+    max-width: 48rem !important;
+    max-height: 90vh !important;
+    margin: auto;
+}
+
+@media (min-width: 640px) {
+    #media-library-modal > div {
+        width: 100% !important;
+        max-height: 85vh !important;
+    }
+}
+
+.rounded-lg { border-radius: 0.5rem; }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+.bg-gray-50\/50 { background-color: rgba(249, 250, 251, 0.5); }
+
+/* Responsive Grid */
+#media-library-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 4px !important;
+}
+
+@media (min-width: 640px) {
+    #media-library-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+        gap: 16px !important;
+        padding: 0 !important;
+    }
+}
+
+.aspect-passport { 
+    aspect-ratio: 3 / 4 !important; 
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Modal text responsiveness */
+@media (max-width: 480px) {
+    #media-library-modal h3 { font-size: 14px !important; }
+    #media-library-modal .text-xs { font-size: 10px !important; }
+    #btn-upload-more-submit, #btn-upload-more { font-size: 10px !important; padding: 4px 8px !important; }
+}
+
+/* File Hover Preview */
+.media-preview-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    width: 320px;
+    height: 450px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    opacity: 0;
+}
+
+.media-preview-tooltip.visible {
+    display: block;
+    opacity: 1;
+}
+
+.preview-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
