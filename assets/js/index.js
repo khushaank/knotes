@@ -126,15 +126,23 @@ async function renderStories(searchQuery = '', filter = 'trending') {
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
-                    <button class="boost-karma-index-btn text-gray-500 hover:text-[#ff6600] text-[10px] mx-1 focus:outline-none" data-author="${story.author}">[increase karma]</button>
-                    <a href="pulse/index.html?s=${story.slug}" onclick="alert('Posted on ' + new Date('${story.published_at}').toLocaleString() + ' by ${sanitize(story.author) || 'anonymous'}'); return false;">${timeAgo}</a> | 
-                    <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
-                    <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a> | 
-                    <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
+                    <span class="opacity-60">by <a href="profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> ${timeAgo}</span> | 
+                    <a href="#" class="hide-link">hide</a> | 
+                    <span class="bookmark-container">
+                        <select class="folder-picker" data-id="${story.id}">
+                            <option value="" disabled selected>+</option>
+                            <option value="To Learn">To Learn</option>
+                            <option value="Inspiration">Inspiration</option>
+                            <option value="Archive">Archive</option>
+                            <option value="Reading List">Reading List</option>
+                        </select>
+                        <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
+                    </span> | 
+                    <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
+                    <a href="pulse/index.html?s=${story.slug}#add-comment" class="hover:underline">add</a>
                 </td>
             </tr>
-            <tr class="h-[5px] story-spacer" data-id="${story.id}"></tr>
+            <tr class="h-[8px] story-spacer" data-id="${story.id}"></tr>
         `;
     });
 
@@ -404,6 +412,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     userBookmarks = userBookmarks.filter(id => id !== parseInt(storyId));
                 }
             }
+        }
+
+        // Folder Picker Change
+        if (e.target.classList.contains('folder-picker')) {
+            const select = e.target;
+            const storyId = select.getAttribute('data-id');
+            const folderName = select.value;
+            if (!storyId || !folderName) return;
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showInlineMsg(select, 'Please login');
+                select.value = '';
+                return;
+            }
+
+            // 1. Ensure it's bookmarked in Supabase
+            const result = await toggleBookmark(parseInt(storyId));
+            // Note: toggleBookmark returns action: 'added' or 'removed'
+            // If it was already bookmarked, it might remove it. We want it added.
+            if (result.action === 'removed') {
+                // Toggle back to added
+                await toggleBookmark(parseInt(storyId));
+            }
+
+            // 2. Save folder mapping to localStorage
+            const key = `kn-folders-${session.user.id}`;
+            const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+            mapping[storyId] = folderName;
+            localStorage.setItem(key, JSON.stringify(mapping));
+
+            // 3. Update UI
+            const bookmarkLink = select.parentElement.querySelector('.bookmark-link');
+            if (bookmarkLink) bookmarkLink.textContent = 'saved';
+            showInlineMsg(select, `Added to ${folderName}`);
+            
+            // Reset select
+            select.value = '';
         }
 
         // Hide — persist to localStorage and remove completely

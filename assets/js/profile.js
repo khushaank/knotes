@@ -275,22 +275,37 @@ function setupTabs() {
     const tabs = document.querySelectorAll('.profile-tab');
     const panes = document.querySelectorAll('.tab-pane');
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab') || 'all';
+
+    function switchTab(target) {
+        tabs.forEach(t => {
+            const isTarget = t.getAttribute('data-tab') === target;
+            if (isTarget) {
+                t.classList.add('font-bold', 'text-black', 'border-b-2', 'border-[#ff6600]');
+                t.classList.remove('text-gray-600');
+            } else {
+                t.classList.remove('font-bold', 'text-black', 'border-b-2', 'border-[#ff6600]');
+                t.classList.add('text-gray-600');
+            }
+        });
+
+        panes.forEach(p => p.classList.add('hidden'));
+        const activePane = document.getElementById(`tab-content-${target}`);
+        if (activePane) activePane.classList.remove('hidden');
+    }
+
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
-            const target = tab.getAttribute('data-tab');
-
-            tabs.forEach(t => {
-                t.classList.remove('font-bold', 'text-black', 'border-b-2', 'border-[#ff6600]');
-                t.classList.add('text-gray-600');
-            });
-            tab.classList.add('font-bold', 'text-black', 'border-b-2', 'border-[#ff6600]');
-            tab.classList.remove('text-gray-600');
-
-            panes.forEach(p => p.classList.add('hidden'));
-            document.getElementById(`tab-content-${target}`)?.classList.remove('hidden');
+            switchTab(tab.getAttribute('data-tab'));
         });
     });
+
+    // Auto-switch to tab from URL
+    if (initialTab !== 'all') {
+        switchTab(initialTab);
+    }
 }
 
 // ---- List Rendering ---- //
@@ -299,18 +314,19 @@ function generateListHtml(blogs, showDelete = false) {
         return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
     }
 
-    let html = '<ul class="space-y-4">'; // increased spacing
+    let html = '<ul class="space-y-4">'; 
     blogs.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
-        const deleteBtnHtml = showDelete ? `<span class="material-symbols-outlined delete-post-btn cursor-pointer text-gray-400 hover:text-red-600 ml-2 align-middle transition-colors" style="font-size: 16px;" data-id="${blog.id}" title="Delete post">delete</span>` : '';
+        const deleteBtnHtml = showDelete ? `<span class="material-symbols-outlined delete-post-btn cursor-pointer text-gray-400 hover:text-red-600 ml-1.5 align-middle transition-colors" style="font-size: 14px;" data-id="${blog.id}" title="Delete post">delete</span>` : '';
 
         html += `
-            <li class="py-2 border-b border-gray-100 last:border-0">
-                <div class="flex items-center">
-                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
+            <li class="py-1.5 last:border-0">
+                <div class="flex items-baseline gap-2">
+                    <span class="text-gray-400 text-[12px] select-none">›</span>
+                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-[14px] text-black font-medium leading-tight">${sanitize(blog.title)}</a>
                     ${deleteBtnHtml}
                 </div>
-                <div class="text-xs text-gray-500 mt-0.5"><a href="#" onclick="alert('Posted on ' + new Date('${blog.published_at}').toLocaleString() + ' by ${sanitize(blog.author) || 'anonymous'}'); return false;" class="hover:underline text-gray-500">${timeAgo}</a> &middot; ${blog.likes_count || 0} points &middot; ${blog.comments_count || 0} comments</div>
+                <div class="text-[11px] text-gray-500 opacity-60 ml-4">${timeAgo} · ${blog.comments_count || 0} comments</div>
             </li>
         `;
     });
@@ -339,13 +355,168 @@ async function loadSubmissions(username, isOwnProfile = false) {
     if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'), isOwnProfile);
 }
 
-// ---- Bookmarks ---- //
+// ---- Bookmarks (Reading Lists) ---- //
+const DEFAULT_FOLDERS = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
+
+function getFolderMapping(userId) {
+    try {
+        const key = `kn-folders-${userId}`;
+        return JSON.parse(localStorage.getItem(key) || '{}');
+    } catch { return {}; }
+}
+
+function moveStoryToFolder(userId, storyId, folderName) {
+    const mapping = getFolderMapping(userId);
+    mapping[storyId] = folderName;
+    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
+}
+
+function removeStoryFromFolder(userId, storyId) {
+    const mapping = getFolderMapping(userId);
+    delete mapping[storyId];
+    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
+}
+
 async function loadBookmarks(userId = null) {
     const listEl = document.getElementById('bookmarks-list');
     if (!listEl) return;
 
-    const posts = await getBookmarkedPosts(userId);
-    listEl.innerHTML = generateListHtml(posts);
+    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading your library...</div>';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = userId || (session ? session.user.id : null);
+    
+    if (!currentUserId) {
+        listEl.innerHTML = '<p class="text-gray-500 italic">Please login to view bookmarks.</p>';
+        return;
+    }
+
+    const posts = await getBookmarkedPosts(currentUserId);
+    const folderMapping = getFolderMapping(currentUserId);
+
+    if (posts.length === 0) {
+        listEl.innerHTML = `
+            <div class="py-12 text-center bg-gray-50 rounded border border-dashed border-gray-200">
+                <span class="material-symbols-outlined text-gray-300" style="font-size:48px">bookmark_border</span>
+                <p class="text-gray-500 text-sm mt-2">Your reading list is empty.</p>
+                <a href="index.html" class="text-[#ff6600] text-xs hover:underline mt-1 inline-block">Browse stories to save</a>
+            </div>
+        `;
+        return;
+    }
+
+    // Organize by folder
+    const organized = {};
+    DEFAULT_FOLDERS.forEach(f => organized[f] = []);
+    organized['Uncategorized'] = [];
+
+    posts.forEach(post => {
+        const folder = folderMapping[post.id] || 'Uncategorized';
+        if (!organized[folder]) organized[folder] = [];
+        organized[folder].push(post);
+    });
+
+    const activeFolders = Object.keys(organized).filter(f => organized[f].length > 0 || DEFAULT_FOLDERS.includes(f));
+
+    function renderFolderContent(folderName) {
+        const folderPosts = organized[folderName] || [];
+        if (folderPosts.length === 0) {
+            return `<div class="py-4 text-center text-gray-400 italic text-[11px]">No stories in this category yet.</div>`;
+        }
+
+        return `
+            <div class="space-y-4">
+                ${folderPosts.map(post => {
+                    const timeAgo = calculateTimeAgo(post.published_at);
+                    const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
+                    const favicon = domain ? `https://www.google.com/s2/favicons?sz=32&domain=${domain}` : null;
+                    
+                    return `
+                        <div class="flex flex-col group py-1.5">
+                            <div class="flex items-baseline gap-1.5">
+                                ${favicon ? `<img src="${favicon}" class="w-3 h-3 translate-y-[1px] opacity-90" alt="">` : '<span class="text-gray-400 text-[12px] select-none">›</span>'}
+                                <a href="${post.url || `pulse/index.html?s=${post.slug}`}" class="text-[14px] text-black hover:underline leading-tight font-medium">${sanitize(post.title)}</a>
+                                ${domain ? `<span class="text-[11px] text-gray-400">(${domain})</span>` : ''}
+                            </div>
+                            <div class="story-meta flex items-center gap-1 opacity-60 ml-4.5">
+                                <span class="text-[11px]">
+                                    by ${post.author} ${timeAgo} | 
+                                    <span class="bookmark-container">
+                                        <select class="move-folder folder-picker" data-id="${post.id}" data-current-folder="${folderName}">
+                                            <option value="" disabled selected>+</option>
+                                            ${DEFAULT_FOLDERS.map(f => `<option value="${f}" ${f === folderName ? 'disabled' : ''}>${f}</option>`).join('')}
+                                            <option value="Uncategorized" ${folderName === 'Uncategorized' ? 'disabled' : ''}>Uncategorized</option>
+                                        </select>
+                                        <a href="#" class="remove-bookmark hover:underline text-red-400 ml-0.5" data-id="${post.id}">remove</a>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    let html = `
+        <div class="folder-dashboard">
+            <div class="flex flex-wrap gap-4 mb-4 pb-1 border-b border-gray-100">
+                ${activeFolders.map(f => `
+                    <button class="folder-chip py-1 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer focus:outline-none ${f === 'Reading List' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-folder="${f}">
+                        ${f} <span class="opacity-50 ml-0.5 font-normal">(${organized[f].length})</span>
+                    </button>
+                `).join('')}
+            </div>
+            <div id="folder-active-content" class="min-h-[120px] mt-2">
+                ${renderFolderContent('Reading List')}
+            </div>
+        </div>
+    `;
+
+    listEl.innerHTML = html;
+
+    // Add listeners for folder chips
+    const chips = listEl.querySelectorAll('.folder-chip');
+    const activeContent = document.getElementById('folder-active-content');
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            chips.forEach(c => {
+                c.classList.remove('text-[#ff6600]', 'border-b-2', 'border-[#ff6600]');
+                c.classList.add('text-gray-400');
+            });
+            chip.classList.add('text-[#ff6600]', 'border-b-2', 'border-[#ff6600]');
+            chip.classList.remove('text-gray-400');
+
+            const folder = chip.getAttribute('data-folder');
+            activeContent.innerHTML = renderFolderContent(folder);
+            attachBookmarkListeners(activeContent);
+        });
+    });
+
+    function attachBookmarkListeners(container) {
+        container.querySelectorAll('.move-folder').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const storyId = e.target.getAttribute('data-id');
+                const newFolder = e.target.value;
+                moveStoryToFolder(currentUserId, storyId, newFolder);
+                await loadBookmarks(currentUserId);
+            });
+        });
+
+        container.querySelectorAll('.remove-bookmark').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const storyId = btn.getAttribute('data-id');
+                if (confirm('Remove from your lists?')) {
+                    removeStoryFromFolder(currentUserId, storyId);
+                    await loadBookmarks(currentUserId);
+                }
+            });
+        });
+    }
+
+    attachBookmarkListeners(listEl);
 }
 
 // ---- Hidden Stories (from localStorage) ---- //

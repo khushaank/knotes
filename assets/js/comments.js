@@ -32,21 +32,21 @@ function renderAllComments(comments) {
         const blogSlug = comment.blogs?.slug || '';
 
         html += `
-            <div class="mb-6 comment-node">
-                <div class="flex items-start gap-1">
-                    <div class="cursor-pointer text-secondary mt-[2px]">
-                        <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
+            <div class="mb-3 comment-node">
+                <div class="flex items-start gap-2">
+                    <div class="pt-[3px]">
+                        <div class="hn-arrow" title="upvote"></div>
                     </div>
-                    <div class="w-full">
-                        <div class="story-meta mb-1">
-                            <a class="hover:underline text-black" href="profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
-                            <a class="hover:underline ml-1" href="pulse/index.html?s=${blogSlug}" onclick="alert('Posted on ' + new Date('${comment.created_at}').toLocaleString() + ' by ${sanitize(comment.user_name) || 'anonymous'}'); return false;">${timeAgo}</a> | 
-                            on: <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
+                    <div class="flex-1">
+                        <div class="story-meta opacity-70">
+                            <a class="hover:underline text-black font-medium" href="profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
+                            <span class="mx-0.5">${timeAgo}</span> | 
+                            on: <a class="hover:underline italic" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
                         </div>
-                        <div class="text-on-background mb-1 comment-body pr-4 text-sm leading-relaxed text-black">
-                            <p>${sanitize(comment.comment_text)}</p>
+                        <div class="comment-body pr-4 text-[13px] leading-tight text-black">
+                            ${sanitize(comment.comment_text)}
                         </div>
-                        <div class="font-meta-sm text-meta-sm text-secondary mb-2">
+                        <div class="story-meta opacity-60 text-[10px] mt-1">
                             <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">context</a>
                             <span class="mx-1">|</span>
                             <a class="hover:underline" href="pulse/index.html?s=${blogSlug}">parent</a>

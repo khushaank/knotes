@@ -147,20 +147,24 @@ async function renderPage() {
                     <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
                 </h1>
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
-                <div class="story-meta mt-1 flex items-center gap-1 text-xs flex-wrap">
-                    <span>${story.likes_count || 0} points</span>
-                    <span>by</span>
-                    <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a>
-                    <button class="boost-karma-pulse-btn text-gray-500 hover:text-[#ff6600] text-[10px] mx-1 focus:outline-none" title="Increase karma" data-author="${story.author}">[increase karma]</button>
-                    <a class="hover:underline" href="#" onclick="alert('Posted on ' + new Date('${story.published_at}').toLocaleString() + ' by ${sanitize(story.author) || 'anonymous'}'); return false;">${timeAgo}</a>
-                    <span>|</span>
-                    <a class="hover:underline" href="#">hide</a>
-                    <span>|</span>
-                    <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
-                    <span>|</span>
-                    <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a>
-                    <span>|</span>
-                    <a class="hover:underline" href="index.html?s=${story.slug}">discuss</a>
+                <div class="story-meta mt-1 opacity-70">
+                    <span class="text-xs">
+                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> ${timeAgo} | 
+                        <a class="hover:underline" href="#">hide</a> | 
+                        <span class="bookmark-container inline-flex items-center">
+                            <select class="folder-picker" data-id="${story.id}">
+                                <option value="" disabled selected>+</option>
+                                <option value="To Learn">To Learn</option>
+                                <option value="Inspiration">Inspiration</option>
+                                <option value="Archive">Archive</option>
+                                <option value="Reading List">Reading List</option>
+                            </select> 
+                            <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
+                        </span> | 
+                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a> | 
+                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
+                        <a href="#add-comment" class="hover:underline">add</a>
+                    </span>
                 </div>
             </div>
         </div>
@@ -187,7 +191,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addBtn = document.getElementById('add-comment-btn');
     const textarea = document.getElementById('comment-input');
+    const previewContainer = document.getElementById('markdown-preview');
+    const previewContent = document.getElementById('preview-content');
     const commentInputContainer = textarea?.parentElement;
+
+    // Real-time Preview logic
+    if (textarea && previewContainer && previewContent) {
+        textarea.addEventListener('input', () => {
+            const val = textarea.value.trim();
+            if (val) {
+                previewContainer.classList.remove('hidden');
+                previewContent.innerHTML = renderMarkdown(val);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
+    }
 
     async function checkAuth() {
         const { data: { session } } = await supabase.auth.getSession();
@@ -242,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await incrementCommentCount(window.currentStoryId);
 
             textarea.value = '';
+            if (previewContainer) previewContainer.classList.add('hidden');
             addBtn.disabled = false;
             addBtn.textContent = 'add comment';
             renderPage();
@@ -315,6 +335,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.target.style.visibility = 'hidden';
                 }
             }
+        }
+        
+        // Folder Picker Change
+        if (e.target.classList.contains('folder-picker')) {
+            const select = e.target;
+            const storyId = select.getAttribute('data-id');
+            const folderName = select.value;
+            if (!storyId || !folderName) return;
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Please login to save to folders');
+                select.value = '';
+                return;
+            }
+
+            // 1. Ensure it's bookmarked in Supabase
+            const result = await toggleBookmark(parseInt(storyId));
+            if (result.action === 'removed') {
+                // Toggle back to added
+                await toggleBookmark(parseInt(storyId));
+            }
+
+            // 2. Save folder mapping to localStorage
+            const key = `kn-folders-${session.user.id}`;
+            const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+            mapping[storyId] = folderName;
+            localStorage.setItem(key, JSON.stringify(mapping));
+
+            // 3. Update UI
+            const bookmarkBtn = select.parentElement.querySelector('.bookmark-btn');
+            if (bookmarkBtn) bookmarkBtn.textContent = 'saved';
+            
+            // Show subtle feedback
+            const tip = document.createElement('span');
+            tip.textContent = `Saved to ${folderName}`;
+            tip.style.cssText = 'font-size:10px;color:#ff6600;margin-left:4px;';
+            select.parentElement.appendChild(tip);
+            setTimeout(() => tip.remove(), 2000);
+            
+            select.value = '';
         }
 
         // Bookmark

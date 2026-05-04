@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Offline - K. Notes</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+</head>
+<body class="font-body-md text-body-md text-on-surface">
+    <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
+        <header
+            class="bg-[#ff6600] text-black  text-sm  rounded-none w-full flat no shadows flex items-center justify-between px-2 py-0.5 max-w-[85%] mx-auto"
+            style="max-width: 100%;">
+            <div class="flex items-center gap-1 w-full">
+                <a href="index.html" class="font-bold text-black px-1 mr-2 hover:underline">K. Notes</a>
+                <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
+                    <span class="opacity-50">Offline Mode</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="bg-[#f6f6ef] pt-20 pb-20 flex flex-col items-center justify-center min-h-[50vh]">
+            <div class="mb-8">
+                <img src="assets/img/logo.png" alt="Logo" class="w-20 h-20 shadow-sm rounded-lg" />
+            </div>
+            <h1 class="text-2xl font-bold text-black mb-4">You are offline</h1>
+            <p class="text-gray-600 max-w-md text-center px-4 mb-8 leading-relaxed">
+                It seems you've lost your connection. K. Notes requires an internet connection to fetch the latest tech news. 
+                Please check your network and try again.
+            </p>
+            <button onclick="window.location.reload()" 
+                class="bg-[#ff6600] text-white px-8 py-2 rounded-sm font-bold hover:bg-[#e65c00] transition-colors shadow-sm cursor-pointer">
+                RETRY CONNECTION
+            </button>
+        </main>
+
+        <footer
+            class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
+            style="max-width: 100%;">
+            <div class="flex justify-center w-full mb-2">
+                <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-2 text-gray-600">
+                <a class="hover:underline text-gray-600" href="about.html">About</a> |
+                <a class="hover:underline text-gray-600" href="faq.html">FAQ</a> |
+                <a class="hover:underline text-gray-600" href="contact.html">Feedback</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

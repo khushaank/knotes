@@ -28,6 +28,9 @@
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link href="assets/css/modal.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ff6600" />
+    <link rel="apple-touch-icon" href="assets/img/logo.png" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
 </head>
@@ -102,6 +105,10 @@
                                 </div>
                                 <textarea id="submit-text"
                                     class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"></textarea>
+                                <div id="markdown-preview" class="hidden w-full mt-2 p-2 border border-dashed border-gray-300 bg-gray-50 text-[10pt] leading-snug comment-body opacity-70">
+                                    <div class="text-[9px] uppercase tracking-wider text-gray-400 mb-1">Preview</div>
+                                    <div id="preview-content"></div>
+                                </div>
                             </td>
                         </tr>
                         <tr>

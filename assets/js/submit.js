@@ -1,4 +1,5 @@
 import { supabase, uploadMediaFile, listUserMedia } from './supabaseClient.js';
+import { renderMarkdown } from './contentRenderer.js';
 
 function generateSlug(title) {
     return title
@@ -158,6 +159,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnUploadImage = document.getElementById('btn-upload-image');
     const imageUploadInput = document.getElementById('image-upload-input');
     const textarea = document.getElementById('submit-text');
+    const previewContainer = document.getElementById('markdown-preview');
+    const previewContent = document.getElementById('preview-content');
+
+    if (textarea && previewContainer && previewContent) {
+        textarea.addEventListener('input', () => {
+            const val = textarea.value.trim();
+            if (val) {
+                previewContainer.classList.remove('hidden');
+                previewContent.innerHTML = renderMarkdown(val);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
+    }
 
     if (btnUploadImage && imageUploadInput) {
         btnUploadImage.addEventListener('click', () => {
@@ -388,5 +403,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             myField.value += myValue;
         }
         myField.focus();
+        myField.dispatchEvent(new Event('input'));
     }
 });
