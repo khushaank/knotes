@@ -112,9 +112,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryInput = document.getElementById('submit-category');
         let finalCategory = categoryInput ? categoryInput.value : 'news';
 
-        // Prefix for Show HN
+        // Prefix for Show KN
         if (finalCategory === 'show' && !title.toLowerCase().startsWith('show hn:')) {
-            title = `Show HN: ${title}`;
+            title = `Show KN: ${title}`;
         }
 
         const userEmail = session.user.email;
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 const ext = result.name.split('.').pop().toLowerCase();
                 const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
-                
+
                 if (isImg) {
                     let altText = prompt('Enter a short description (alt text) for this image:', 'Image');
                     if (altText === null) altText = 'Image';
@@ -243,19 +243,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             files.forEach(f => {
                 const isImg = isImage(f.name);
                 const icon = getFileIcon(f.name);
-                
+
                 html += `
                     <div class="group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item" 
                          data-url="${f.url}" 
                          data-name="${f.name}" 
                          data-is-img="${isImg}">
-                        ${isImg 
-                            ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
-                            : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
+                        ${isImg
+                        ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
+                        : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
                                  <span class="material-symbols-outlined text-3xl mb-1">${icon}</span>
                                  <span class="text-[9px] truncate w-full px-1">${f.name.split('-')[0]}</span>
                                </div>`
-                        }
+                    }
                         <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
                             Insert
                         </div>
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const url = item.getAttribute('data-url');
                     const name = item.getAttribute('data-name').split('-')[0] || 'File';
                     const isImg = item.getAttribute('data-is-img') === 'true';
-                    
+
                     if (isImg) {
                         insertAtCursor(textarea, `\n![${name}](${url})\n`);
                     } else {
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         function showPreview(url, e) {
             const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
             let viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-            
+
             if (url.match(officeExts)) {
                 viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
             }
@@ -315,18 +315,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         function updatePreviewPos(e) {
             const x = e.clientX + 20;
             const y = e.clientY - 200;
-            
+
             // Boundary checks
             const winW = window.innerWidth;
             const winH = window.innerHeight;
-            
+
             let finalX = x;
             let finalY = y;
-            
+
             if (x + 320 > winW) finalX = e.clientX - 340;
             if (y + 450 > winH) finalY = winH - 460;
             if (finalY < 10) finalY = 10;
-            
+
             previewTooltip.style.left = `${finalX}px`;
             previewTooltip.style.top = `${finalY}px`;
         }
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         imageUploadInput.addEventListener('change', async () => {
             if (!mediaModal.classList.contains('hidden')) {
                 // If modal is open, wait a bit then refresh
-                setTimeout(loadMediaFiles, 1500); 
+                setTimeout(loadMediaFiles, 1500);
             }
         });
 

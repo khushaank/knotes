@@ -58,7 +58,7 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     }
 
     const result = sortStories(stories, filter);
-    
+
     const finalResult = { stories: result, count: count || 0 };
 
     // Save to cache
@@ -76,7 +76,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
 
     const tbody = document.querySelector('main table tbody');
     const statsSummary = document.getElementById('stats-summary');
-    
+
     // Better loading state
     tbody.style.opacity = '0.5';
     if (statsSummary) statsSummary.textContent = 'Updating...';
@@ -111,7 +111,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
         const timeAgo = calculateTimeAgo(story.published_at);
         const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : null;
         const isBookmarked = userBookmarks.includes(story.id);
-        
+
         html += `
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
@@ -195,20 +195,20 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             currentFilter = e.target.getAttribute('data-filter');
-            
+
             // Update UI
             document.querySelectorAll('.filter-link').forEach(l => {
                 l.classList.remove('font-bold', 'text-black');
             });
             e.target.classList.add('font-bold', 'text-black');
-            
+
             const searchInput = document.getElementById('footer-search-input');
             // When switching filters, reset to page 1 by clearing URL params or just rendering page 1
             if (window.location.search.includes('p=')) {
                 const newUrl = window.location.pathname + `?filter=${currentFilter}${searchInput?.value.trim() ? `&search=${encodeURIComponent(searchInput.value.trim())}` : ''}`;
                 window.history.pushState({}, '', newUrl);
             }
-            renderStories(searchInput?.value.trim() || '', currentFilter); 
+            renderStories(searchInput?.value.trim() || '', currentFilter);
         });
     });
 
@@ -229,10 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function logSearchTerm(term) {
         if (!supabase) return;
-        
+
         // Try to increment existing or insert new
         const { data, error } = await supabase.rpc('increment_search_count', { search_term: term });
-        
+
         if (error) {
             // Fallback if RPC isn't available
             const { data: existing } = await supabase
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .select('id, count')
                 .eq('term', term)
                 .maybeSingle();
-            
+
             if (existing) {
                 await supabase.from('search_stats').update({ count: existing.count + 1 }).eq('id', existing.id);
             } else {
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .select('term')
             .order('count', { ascending: false })
             .limit(5);
-        
+
         if (data && data.length > 0) {
             const container = document.getElementById('trending-searches');
             if (container) {
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.style.pointerEvents = 'none';
 
             const result = await upvoteStory(storyId);
-            
+
             e.target.style.opacity = '1';
             e.target.style.pointerEvents = 'auto';
 
@@ -374,12 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
-                
+
                 if (result.action === 'removed') {
                     showInlineMsg(e.target, 'Vote removed');
                     e.target.style.visibility = 'visible'; // show arrow again
                 } else {
-                    e.target.style.visibility = 'hidden'; // HN style hides upvoted arrow
+                    e.target.style.visibility = 'hidden'; // KN style hides upvoted arrow
                 }
                 // Clear cache so next page load has fresh data
                 Object.keys(storyCache).forEach(k => delete storyCache[k]);
@@ -471,12 +471,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const tip = document.createElement('span');
         tip.textContent = msg;
         tip.style.cssText = 'position:absolute;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;';
-        
+
         anchor.style.position = 'relative';
         const parent = anchor.parentElement;
         parent.style.position = 'relative';
         parent.appendChild(tip);
-        
+
         setTimeout(() => {
             tip.style.transition = 'opacity 0.3s';
             tip.style.opacity = '0';
