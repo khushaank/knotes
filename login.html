@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Login - K. Notes</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+</head>
+
+<body class="bg-white font-body-md text-body-md text-on-surface p-4">
+    <div id="message-container" class="text-sm font-bold mb-4 hidden"></div>
+
+    <div class="mb-8">
+        <b class="text-[13px] text-black">Login</b>
+        <form id="login-form" class="mt-2 text-[13px]">
+            <table class="border-spacing-0 border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="py-1 pr-2">username:</td>
+                        <td class="py-1"><input type="text" id="login-email"
+                                class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 pr-2">password:</td>
+                        <td class="py-1 relative">
+                            <input type="password" id="login-password"
+                                class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
+                            <button type="button"
+                                class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
+                                onclick="togglePassword('login-password')">
+                                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="py-2"><button type="submit"
+                                class="bg-gray-200 border border-gray-400 px-2 py-0.5 hover:bg-gray-300 text-black cursor-pointer">login</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+        <div class="mt-2 text-xs">
+            <a href="#" id="forgot-password-link" class="text-blue-600 hover:underline">Forgot your password?</a>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <b class="text-[13px] text-black">Create Account</b>
+        <form id="signup-form" class="mt-2 text-[13px]">
+            <table class="border-spacing-0 border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="py-1 pr-2">username:</td>
+                        <td class="py-1"><input type="text" id="signup-email"
+                                class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 pr-2">password:</td>
+                        <td class="py-1 relative">
+                            <input type="password" id="signup-password"
+                                class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
+                            <button type="button"
+                                class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
+                                onclick="togglePassword('signup-password')">
+                                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="py-2"><button type="submit"
+                                class="bg-gray-200 border border-gray-400 px-2 py-0.5 hover:bg-gray-300 text-black cursor-pointer">create
+                                account</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+    </main>
+    </div>
+    <script>
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            const icon = event.currentTarget.querySelector('.material-symbols-outlined');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+    </script>
+    <script type="module">
+        import { supabase } from './js/supabaseClient.js';
+
+        // Redirect if already logged in
+        async function checkSession() {
+            if (!supabase) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'index.html';
+            }
+        }
+        checkSession();
+    </script>
+    <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/session.js"></script>
+</body>
+
+</html>

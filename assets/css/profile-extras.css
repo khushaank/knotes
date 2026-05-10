@@ -1,0 +1,178 @@
+/* Profile Page Extra Styles */
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.avatar-wrapper .avatar-edit {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ff6600;
+    color: #fff;
+    border: 2px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.15s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-wrapper .avatar-edit:hover {
+    transform: scale(1.1);
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+}
+
+/* Avatar context menu */
+.avatar-menu {
+    position: absolute;
+    bottom: -64px;
+    right: -4px;
+    z-index: 20;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    font-size: 12px;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.avatar-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 12px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #333;
+    font-size: 12px;
+}
+
+.avatar-menu button:hover {
+    background: #f3f4f6;
+}
+
+.avatar-menu button.text-red {
+    color: #dc2626;
+}
+
+/* Follow button */
+.follow-btn {
+    padding: 3px 12px;
+    font-size: 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid;
+}
+
+.follow-btn.follow {
+    background: #ff6600;
+    color: #fff;
+    border-color: #ff6600;
+}
+
+.follow-btn.follow:hover {
+    background: #e65c00;
+}
+
+.follow-btn.following {
+    background: #fff;
+    color: #666;
+    border-color: #d1d5db;
+}
+
+.follow-btn.following:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+/* Karma tooltip */
+.karma-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    max-width: 85vw;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    text-align: left;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    line-height: 1.5;
+    border: 1px solid #e5e7eb;
+    font-weight: normal;
+}
+
+.karma-tip b {
+    color: #111827;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.karma-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #ffffff;
+}
+
+.karma-tip::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #e5e7eb;
+    margin-top: 1px;
+}
+
+.karma-trigger:hover .karma-tip {
+    display: block;
+}
+
+/* Mobile adjustment to prevent off-screen */
+@media (max-width: 450px) {
+    .karma-tip {
+        left: auto;
+        right: -10px;
+        transform: none;
+        width: 250px;
+    }
+
+    .karma-tip::after {
+        left: auto;
+        right: 16px;
+        transform: none;
+    }
+
+    .karma-tip::before {
+        left: auto;
+        right: 15px;
+        transform: none;
+    }
+}
