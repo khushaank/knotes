@@ -275,12 +275,15 @@ function setupTabs() {
     const tabs = document.querySelectorAll('.profile-tab');
     const panes = document.querySelectorAll('.tab-pane');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialTab = urlParams.get('tab') || 'all';
+    function getHashTab() {
+        return window.location.hash ? window.location.hash.substring(1) : 'all';
+    }
 
     function switchTab(target) {
+        const baseTarget = target.split('/')[0];
+
         tabs.forEach(t => {
-            const isTarget = t.getAttribute('data-tab') === target;
+            const isTarget = t.getAttribute('data-tab') === baseTarget;
             if (isTarget) {
                 t.classList.add('font-bold', 'text-black', 'border-b-2', 'border-[#ff6600]');
                 t.classList.remove('text-gray-600');
@@ -291,8 +294,14 @@ function setupTabs() {
         });
 
         panes.forEach(p => p.classList.add('hidden'));
-        const activePane = document.getElementById(`tab-content-${target}`);
+        const activePane = document.getElementById(`tab-content-${baseTarget}`);
         if (activePane) activePane.classList.remove('hidden');
+
+        if (history.replaceState) {
+            history.replaceState(null, null, '#' + target);
+        } else {
+            window.location.hash = '#' + target;
+        }
     }
 
     tabs.forEach(tab => {
@@ -302,10 +311,11 @@ function setupTabs() {
         });
     });
 
-    // Auto-switch to tab from URL
-    if (initialTab !== 'all') {
-        switchTab(initialTab);
-    }
+    window.addEventListener('hashchange', () => {
+        switchTab(getHashTab());
+    });
+
+    switchTab(getHashTab());
 }
 
 // ---- List Rendering ---- //
@@ -314,7 +324,7 @@ function generateListHtml(blogs, showDelete = false) {
         return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
     }
 
-    let html = '<ul class="space-y-4">'; 
+    let html = '<ul class="space-y-4">';
     blogs.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
         const deleteBtnHtml = showDelete ? `<span class="material-symbols-outlined delete-post-btn cursor-pointer text-gray-400 hover:text-red-600 ml-1.5 align-middle transition-colors" style="font-size: 14px;" data-id="${blog.id}" title="Delete post">delete</span>` : '';
@@ -385,7 +395,7 @@ async function loadBookmarks(userId = null) {
 
     const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = userId || (session ? session.user.id : null);
-    
+
     if (!currentUserId) {
         listEl.innerHTML = '<p class="text-gray-500 italic">Please login to view bookmarks.</p>';
         return;
@@ -427,11 +437,11 @@ async function loadBookmarks(userId = null) {
         return `
             <div class="space-y-4">
                 ${folderPosts.map(post => {
-                    const timeAgo = calculateTimeAgo(post.published_at);
-                    const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
-                    const favicon = domain ? `https://www.google.com/s2/favicons?sz=32&domain=${domain}` : null;
-                    
-                    return `
+            const timeAgo = calculateTimeAgo(post.published_at);
+            const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
+            const favicon = domain ? `https://www.google.com/s2/favicons?sz=32&domain=${domain}` : null;
+
+            return `
                         <div class="flex flex-col group py-1.5">
                             <div class="flex items-baseline gap-1.5">
                                 ${favicon ? `<img src="${favicon}" class="w-3 h-3 translate-y-[1px] opacity-90" alt="">` : '<span class="text-gray-400 text-[12px] select-none">›</span>'}
@@ -453,22 +463,30 @@ async function loadBookmarks(userId = null) {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
+    }
+
+    let currentFolder = 'Reading List';
+    const currentHash = window.location.hash.substring(1);
+    if (currentHash.startsWith('saved/')) {
+        const folderSlug = currentHash.split('/')[1];
+        const matchedFolder = activeFolders.find(f => f.replace(/\s+/g, '-').toLowerCase() === folderSlug.toLowerCase());
+        if (matchedFolder) currentFolder = matchedFolder;
     }
 
     let html = `
         <div class="folder-dashboard">
             <div class="flex flex-wrap gap-4 mb-4 pb-1 border-b border-gray-100">
                 ${activeFolders.map(f => `
-                    <button class="folder-chip py-1 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer focus:outline-none ${f === 'Reading List' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-folder="${f}">
+                    <a href="#saved/${f.replace(/\s+/g, '-')}" class="folder-chip py-1 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer focus:outline-none ${f === currentFolder ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-folder="${f}">
                         ${f} <span class="opacity-50 ml-0.5 font-normal">(${organized[f].length})</span>
-                    </button>
+                    </a>
                 `).join('')}
             </div>
             <div id="folder-active-content" class="min-h-[120px] mt-2">
-                ${renderFolderContent('Reading List')}
+                ${renderFolderContent(currentFolder)}
             </div>
         </div>
     `;
@@ -479,20 +497,40 @@ async function loadBookmarks(userId = null) {
     const chips = listEl.querySelectorAll('.folder-chip');
     const activeContent = document.getElementById('folder-active-content');
 
-    chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            chips.forEach(c => {
+    function updateFolderView() {
+        let targetFolder = 'Reading List';
+        const hash = window.location.hash.substring(1);
+        if (hash.startsWith('saved/')) {
+            const folderSlug = hash.split('/')[1];
+            const matchedFolder = activeFolders.find(f => f.replace(/\s+/g, '-').toLowerCase() === folderSlug.toLowerCase());
+            if (matchedFolder) targetFolder = matchedFolder;
+        }
+
+        chips.forEach(c => {
+            if (c.getAttribute('data-folder') === targetFolder) {
+                c.classList.add('text-[#ff6600]', 'border-b-2', 'border-[#ff6600]');
+                c.classList.remove('text-gray-400');
+            } else {
                 c.classList.remove('text-[#ff6600]', 'border-b-2', 'border-[#ff6600]');
                 c.classList.add('text-gray-400');
-            });
-            chip.classList.add('text-[#ff6600]', 'border-b-2', 'border-[#ff6600]');
-            chip.classList.remove('text-gray-400');
-
-            const folder = chip.getAttribute('data-folder');
-            activeContent.innerHTML = renderFolderContent(folder);
-            attachBookmarkListeners(activeContent);
+            }
         });
-    });
+
+        activeContent.innerHTML = renderFolderContent(targetFolder);
+        attachBookmarkListeners(activeContent);
+    }
+
+    // Instead of click listeners that duplicate logic, just rely on hashchange
+    // But since loadBookmarks can be called multiple times, we must cleanup the old listener
+    if (window._bookmarkHashListener) {
+        window.removeEventListener('hashchange', window._bookmarkHashListener);
+    }
+    window._bookmarkHashListener = () => {
+        if (window.location.hash.substring(1).startsWith('saved')) {
+            updateFolderView();
+        }
+    };
+    window.addEventListener('hashchange', window._bookmarkHashListener);
 
     function attachBookmarkListeners(container) {
         container.querySelectorAll('.move-folder').forEach(select => {
@@ -598,6 +636,20 @@ function setupUpdateButton(userId) {
     const isPublicCheckbox = document.getElementById('profile-is-public');
     if (!updateBtn || !aboutInput) return;
 
+    let initialAbout = aboutInput.value;
+    let initialIsPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
+
+    updateBtn.style.display = 'none';
+
+    function checkForChanges() {
+        const hasChanged = aboutInput.value !== initialAbout || 
+                          (isPublicCheckbox && isPublicCheckbox.checked !== initialIsPublic);
+        updateBtn.style.display = hasChanged ? 'inline-block' : 'none';
+    }
+
+    aboutInput.addEventListener('input', checkForChanges);
+    if (isPublicCheckbox) isPublicCheckbox.addEventListener('change', checkForChanges);
+
     updateBtn.addEventListener('click', async () => {
         const aboutText = aboutInput.value.trim();
         const isPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
@@ -611,12 +663,19 @@ function setupUpdateButton(userId) {
 
         if (error) {
             alert('Failed to update profile.');
+            updateBtn.disabled = false;
+            updateBtn.textContent = 'update';
         } else {
+            initialAbout = aboutInput.value;
+            initialIsPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
+            
             updateBtn.textContent = 'updated ✓';
-            setTimeout(() => { updateBtn.textContent = 'update'; }, 1500);
+            setTimeout(() => { 
+                updateBtn.textContent = 'update'; 
+                checkForChanges();
+            }, 1500);
+            updateBtn.disabled = false;
         }
-
-        updateBtn.disabled = false;
     });
 }
 
@@ -691,19 +750,19 @@ function setupMediaLibrary() {
         files.forEach(f => {
             const isImg = isImage(f.name);
             const icon = getFileIcon(f.name);
-            
+
             html += `
                 <div class="group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item" 
                      data-url="${f.url}" 
                      data-is-img="${isImg}"
                      onclick="window.open('${f.url}', '_blank')">
-                    ${isImg 
-                        ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
-                        : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
+                    ${isImg
+                    ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
+                    : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
                              <span class="material-symbols-outlined text-3xl mb-1">${icon}</span>
                              <span class="text-[9px] truncate w-full px-1">${sanitize(f.name.split('-')[0])}</span>
                            </div>`
-                    }
+                }
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
                         <span class="text-white text-[10px] font-bold truncate w-full">${sanitize(f.name)}</span>
                         <button class="mt-2 bg-white text-black text-[9px] px-2 py-1 rounded font-bold hover:bg-[#ff6600] hover:text-white transition-colors" onclick="event.stopPropagation(); navigator.clipboard.writeText('${f.url}'); alert('URL copied to clipboard!')">
@@ -734,7 +793,7 @@ function setupMediaLibrary() {
     function showPreview(url, e) {
         const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
         let viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-        
+
         if (url.match(officeExts)) {
             viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
         }
@@ -782,7 +841,7 @@ function setupMediaLibrary() {
         uploadBtn.innerHTML = '<span class="animate-spin material-symbols-outlined" style="font-size:14px">sync</span> Uploading...';
 
         const result = await uploadMediaFile(file);
-        
+
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">upload_file</span> Upload New';
 

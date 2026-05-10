@@ -2,7 +2,7 @@ import { sanitize } from './supabaseClient.js';
 
 export function renderMarkdown(text) {
     if (!text) return '';
-    
+
     let processedText = text;
 
     // Auto-embed YouTube
@@ -25,7 +25,7 @@ export function renderMarkdown(text) {
     } else {
         parsed = sanitize(processedText);
     }
-    
+
     return parsed;
 }
 
@@ -38,11 +38,11 @@ export function setupLinkPreviews() {
         tooltip.className = 'hidden absolute z-50 bg-white border border-gray-300 shadow-2xl rounded overflow-hidden pointer-events-none transition-opacity duration-200 opacity-0';
         tooltip.style.width = '400px';
         tooltip.style.height = '300px';
-        
+
         const header = document.createElement('div');
         header.className = 'bg-gray-100 px-2 py-1 text-xs text-gray-600 border-b border-gray-200 truncate font-semibold';
         header.id = 'link-preview-header';
-        
+
         const iframe = document.createElement('iframe');
         iframe.id = 'link-preview-iframe';
         iframe.style.width = '100%';
@@ -50,7 +50,7 @@ export function setupLinkPreviews() {
         iframe.style.border = 'none';
         // Relax sandbox to help with complex document viewers
         iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
-        
+
         tooltip.appendChild(header);
         tooltip.appendChild(iframe);
         document.body.appendChild(tooltip);
@@ -63,7 +63,7 @@ export function setupLinkPreviews() {
     document.addEventListener('mouseover', (e) => {
         const target = e.target.closest('a');
         if (!target) return;
-        
+
         // Only preview external links that aren't the same domain
         if (!target.href.startsWith('http') || target.href.includes(window.location.hostname)) return;
 
@@ -71,16 +71,16 @@ export function setupLinkPreviews() {
         if (target.href.match(/\.(jpg|jpeg|png|gif|webp)$/i) || target.href.includes('youtube.com') || target.href.includes('youtu.be')) return;
 
         clearTimeout(timeout);
-        
+
         target.addEventListener('mouseenter', () => {
             clearTimeout(timeout);
             header.textContent = target.textContent.trim() || target.href;
-            
+
             // Handle documents via specialized viewers
             const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
             const pdfExts = /\.pdf$/i;
             let finalUrl = target.href;
-            
+
             if (target.href.match(officeExts)) {
                 // Microsoft Office Viewer is better for Excel/Word
                 finalUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(target.href)}`;
@@ -92,23 +92,23 @@ export function setupLinkPreviews() {
             if (iframe.src !== finalUrl) {
                 iframe.src = finalUrl;
             }
-            
+
             const rect = target.getBoundingClientRect();
-            
+
             // Positioning logic to keep it on screen
             let left = rect.left + window.scrollX;
             let top = rect.bottom + window.scrollY + 10;
-            
+
             if (left + 400 > window.innerWidth) {
                 left = window.innerWidth - 420;
             }
             if (top - window.scrollY + 300 > window.innerHeight) {
                 top = rect.top + window.scrollY - 310;
             }
-            
+
             tooltip.style.left = `${Math.max(10, left)}px`;
             tooltip.style.top = `${Math.max(10, top)}px`;
-            
+
             tooltip.classList.remove('hidden');
             setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
         }, { once: true });

@@ -11,12 +11,12 @@ async function performSearch(query) {
 
     const container = document.getElementById('search-results-container');
     const status = document.getElementById('search-status');
-    
+
     container.innerHTML = '<div class="p-8 text-center text-gray-600">Searching...</div>';
     status.textContent = `Searching for "${query}"...`;
 
     // Fetch blogs matching the query via the new paginated RPC
-    const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', { 
+    const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', {
         search_query: query,
         page_limit: RESULTS_PER_PAGE,
         page_offset: offset
@@ -74,9 +74,9 @@ function renderResults(results, query, totalCount, page) {
         if (item.category?.toLowerCase().includes(query.toLowerCase())) occurrences.push('tag/category');
         if (item.url?.toLowerCase().includes(query.toLowerCase())) occurrences.push('link');
         if (item.published_at?.toLowerCase().includes(query.toLowerCase())) occurrences.push('date');
-        
-        const matchingComments = item.comments.filter(c => 
-            c.comment_text?.toLowerCase().includes(query.toLowerCase()) || 
+
+        const matchingComments = item.comments.filter(c =>
+            c.comment_text?.toLowerCase().includes(query.toLowerCase()) ||
             c.user_name?.toLowerCase().includes(query.toLowerCase())
         );
         if (matchingComments.length > 0) occurrences.push(`comment (${matchingComments.length})`);

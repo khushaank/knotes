@@ -2,7 +2,6 @@ import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBo
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
-const storyCache = {}; // Simple cache for filters
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 
@@ -44,12 +43,6 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const start = (page - 1) * STORIES_PER_PAGE;
     const end = start + STORIES_PER_PAGE - 1;
 
-    // Check cache
-    const cacheKey = `${filter}-${searchQuery}-${page}`;
-    if (storyCache[cacheKey] && (Date.now() - storyCache[cacheKey].timestamp < 30000)) {
-        return storyCache[cacheKey].data;
-    }
-
     const { data: stories, error, count } = await query.range(start, end);
 
     if (error) {
@@ -60,12 +53,6 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const result = sortStories(stories, filter);
 
     const finalResult = { stories: result, count: count || 0 };
-
-    // Save to cache
-    storyCache[cacheKey] = {
-        data: finalResult,
-        timestamp: Date.now()
-    };
 
     return finalResult;
 }
@@ -116,7 +103,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
-                    <div class="hn-arrow" title="upvote" data-id="${story.id}"></div>
+                    <div class="knotes-upvote-triangle" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
                     <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
@@ -126,20 +113,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    <span class="opacity-60">by <a href="profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> ${timeAgo}</span> | 
-                    <a href="#" class="hide-link">hide</a> | 
-                    <span class="bookmark-container">
-                        <select class="folder-picker" data-id="${story.id}">
-                            <option value="" disabled selected>+</option>
-                            <option value="To Learn">To Learn</option>
-                            <option value="Inspiration">Inspiration</option>
-                            <option value="Archive">Archive</option>
-                            <option value="Reading List">Reading List</option>
-                        </select>
-                        <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
-                    </span> | 
-                    <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
-                    <a href="pulse/index.html?s=${story.slug}#add-comment" class="hover:underline">add</a>
+                    <span class="opacity-70">by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a></span><span class="mx-1 opacity-40">|</span><span class="opacity-70">${timeAgo}</span><span class="mx-1 opacity-40">|</span><a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a><span class="mx-1 opacity-40">|</span><span class="bookmark-container"><div class="knotes-dropdown" data-id="${story.id}"><button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button><div class="knotes-dropdown-menu hidden"><div class="dropdown-item" data-folder="To Learn">To Learn</div><div class="dropdown-item" data-folder="Inspiration">Inspiration</div><div class="dropdown-item" data-folder="Archive">Archive</div><div class="dropdown-item" data-folder="Reading List">Reading List</div>${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}</div></div></span><span class="mx-1 opacity-40">|</span><a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a><span class="mx-1 opacity-40">|</span><a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
                 </td>
             </tr>
             <tr class="h-[8px] story-spacer" data-id="${story.id}"></tr>
@@ -191,8 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-trending');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
-            // Clear cache on manual refresh
-            Object.keys(storyCache).forEach(k => delete storyCache[k]);
             const searchInput = document.getElementById('footer-search-input');
             renderStories(searchInput?.value.trim() || '', currentFilter);
         });
@@ -302,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === 'u') {
             // Upvote focused story
             if (focusedStoryIndex >= 0 && storyRows[focusedStoryIndex]) {
-                const arrow = storyRows[focusedStoryIndex].querySelector('.hn-arrow');
+                const arrow = storyRows[focusedStoryIndex].querySelector('.knotes-upvote-triangle');
                 if (arrow) arrow.click();
             }
         } else if (e.key === '?') {
@@ -350,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Upvote, Hide, Bookmark, and Click Tracking delegation
     document.addEventListener('click', async (e) => {
         // Upvote
-        if (e.target.classList.contains('hn-arrow')) {
+        if (e.target.classList.contains('knotes-upvote-triangle')) {
             const storyId = e.target.getAttribute('data-id');
             if (!storyId) return;
 
@@ -389,70 +361,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     e.target.style.visibility = 'hidden'; // KN style hides upvoted arrow
                 }
-                // Clear cache so next page load has fresh data
-                Object.keys(storyCache).forEach(k => delete storyCache[k]);
+                // No cache to clear now
             }
         }
 
-        // Bookmark / Save
-        if (e.target.classList.contains('bookmark-link')) {
+        // Bookmark logic is now handled in the folder picker        // Custom Dropdown Logic
+        if (e.target.classList.contains('knotes-dropdown-trigger')) {
             e.preventDefault();
-            const storyId = e.target.getAttribute('data-id');
-            if (!storyId) return;
-
-            const result = await toggleBookmark(parseInt(storyId));
-            if (result.error) {
-                showInlineMsg(e.target, result.error);
-            } else {
-                if (result.action === 'added') {
-                    e.target.textContent = 'saved';
-                    userBookmarks.push(parseInt(storyId));
-                } else {
-                    e.target.textContent = 'save';
-                    userBookmarks = userBookmarks.filter(id => id !== parseInt(storyId));
-                }
-            }
+            const dropdown = e.target.closest('.knotes-dropdown');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+            return;
         }
 
-        // Folder Picker Change
-        if (e.target.classList.contains('folder-picker')) {
-            const select = e.target;
-            const storyId = select.getAttribute('data-id');
-            const folderName = select.value;
+        if (e.target.classList.contains('dropdown-item')) {
+            const item = e.target;
+            const folderName = item.getAttribute('data-folder');
+            const dropdown = item.closest('.knotes-dropdown');
+            const storyId = dropdown.getAttribute('data-id');
+            const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+
             if (!storyId || !folderName) return;
 
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                showInlineMsg(select, 'Please login');
-                select.value = '';
+                showInlineMsg(trigger, 'Please login');
+                menu.classList.add('hidden');
                 return;
             }
 
-            // 1. Ensure it's bookmarked in Supabase
-            const result = await toggleBookmark(parseInt(storyId));
-            // Note: toggleBookmark returns action: 'added' or 'removed'
-            // If it was already bookmarked, it might remove it. We want it added.
-            if (result.action === 'removed') {
-                // Toggle back to added
+            if (folderName === 'unsave') {
                 await toggleBookmark(parseInt(storyId));
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                delete mapping[storyId];
+                localStorage.setItem(key, JSON.stringify(mapping));
+
+                trigger.textContent = '+';
+                trigger.classList.remove('saved');
+                item.remove();
+                showInlineMsg(trigger, 'Removed');
+                const idx = userBookmarks.indexOf(parseInt(storyId));
+                if (idx > -1) userBookmarks.splice(idx, 1);
+            } else {
+                if (!userBookmarks.includes(parseInt(storyId))) {
+                    await toggleBookmark(parseInt(storyId));
+                    userBookmarks.push(parseInt(storyId));
+                }
+
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                mapping[storyId] = folderName;
+                localStorage.setItem(key, JSON.stringify(mapping));
+
+                trigger.textContent = 'saved';
+                trigger.classList.add('saved');
+                if (!menu.querySelector('[data-folder="unsave"]')) {
+                    const opt = document.createElement('div');
+                    opt.className = 'dropdown-item text-red-500';
+                    opt.setAttribute('data-folder', 'unsave');
+                    opt.textContent = 'Unsave';
+                    menu.appendChild(opt);
+                }
+                showInlineMsg(trigger, `Added to ${folderName}`);
             }
-
-            // 2. Save folder mapping to localStorage
-            const key = `kn-folders-${session.user.id}`;
-            const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-            mapping[storyId] = folderName;
-            localStorage.setItem(key, JSON.stringify(mapping));
-
-            // 3. Update UI
-            const bookmarkLink = select.parentElement.querySelector('.bookmark-link');
-            if (bookmarkLink) bookmarkLink.textContent = 'saved';
-            showInlineMsg(select, `Added to ${folderName}`);
-            
-            // Reset select
-            select.value = '';
+            menu.classList.add('hidden');
+            return;
         }
 
-        // Hide — persist to localStorage and remove completely
+        if (!e.target.closest('.knotes-dropdown')) {
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
+        }
+
         if (e.target.classList.contains('hide-link')) {
             e.preventDefault();
             const storyId = e.target.getAttribute('data-id');
@@ -470,6 +454,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const storyId = e.target.getAttribute('data-id');
             if (storyId) {
                 trackClick(storyId);
+            }
+        }
+
+        // Share logic
+        if (e.target.classList.contains('share-link')) {
+            e.preventDefault();
+            const btn = e.target;
+            const title = btn.getAttribute('data-title');
+            const url = btn.getAttribute('data-url');
+            if (navigator.share) {
+                navigator.share({ title, url }).catch(() => { });
+            } else {
+                navigator.clipboard.writeText(url);
+                const oldText = btn.textContent;
+                btn.textContent = 'copied!';
+                setTimeout(() => btn.textContent = oldText, 2000);
             }
         }
 

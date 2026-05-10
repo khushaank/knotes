@@ -46,12 +46,12 @@ async function loadReadingLists() {
                     </div>
                     <div class="space-y-1 ml-4">
                         ${organized[folderName].map(post => {
-                            const timeAgo = calculateTimeAgo(post.published_at);
-                            const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
-                            return `
+                const timeAgo = calculateTimeAgo(post.published_at);
+                const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
+                return `
                                 <div class="flex flex-col mb-2">
                                     <div class="flex items-baseline gap-1">
-                                        <div class="hn-arrow scale-75 -ml-4 mr-1"></div>
+                                        <div class="knotes-upvote-triangle scale-75 -ml-4 mr-1"></div>
                                         <a href="${post.url || `pulse/index.html?s=${post.slug}`}" class="text-[14px] text-black hover:underline">${sanitize(post.title)}</a>
                                         ${domain ? `<span class="text-[11px] text-gray-400">(${domain})</span>` : ''}
                                     </div>
@@ -70,7 +70,7 @@ async function loadReadingLists() {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </div>
             `;

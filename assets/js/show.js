@@ -35,7 +35,7 @@ async function renderStories() {
         fetchShowStories(page),
         loadUserBookmarks()
     ]);
-    
+
     if (!stories || stories.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No show stories found. <a href="submit.html" class="underline">Show your work</a> to the community!</td></tr>';
         return;
@@ -51,7 +51,7 @@ async function renderStories() {
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
-                    <div class="hn-arrow" title="upvote" data-id="${story.id}"></div>
+                    <div class="knotes-upvote-triangle" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
                     <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
@@ -61,11 +61,7 @@ async function renderStories() {
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    ${story.likes_count || 0} points by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> 
-                    <a href="pulse/index.html?s=${story.slug}" onclick="alert('Posted on ' + new Date('${story.published_at}').toLocaleString() + ' by ${sanitize(story.author) || 'anonymous'}'); return false;">${timeAgo}</a> | 
-                    <a href="#" class="hide-link" data-id="${story.id}">hide</a> | 
-                    <a href="#" class="bookmark-link" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a> | 
-                    <a href="pulse/index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
+                    <span class="opacity-70">by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a></span><span class="mx-1 opacity-40">|</span><span class="opacity-70">${timeAgo}</span><span class="mx-1 opacity-40">|</span><a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a><span class="mx-1 opacity-40">|</span><span class="bookmark-container"><div class="knotes-dropdown" data-id="${story.id}"><button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button><div class="knotes-dropdown-menu hidden"><div class="dropdown-item" data-folder="To Learn">To Learn</div><div class="dropdown-item" data-folder="Inspiration">Inspiration</div><div class="dropdown-item" data-folder="Archive">Archive</div><div class="dropdown-item" data-folder="Reading List">Reading List</div>${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}</div></div></span><span class="mx-1 opacity-40">|</span><a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a><span class="mx-1 opacity-40">|</span><a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
                 </td>
             </tr>
             <tr class="h-[5px] story-spacer" data-id="${story.id}"></tr>
@@ -112,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event delegation
     document.addEventListener('click', async (e) => {
         // Upvote
-        if (e.target.classList.contains('hn-arrow')) {
+        if (e.target.classList.contains('knotes-upvote-triangle')) {
             const storyId = e.target.getAttribute('data-id');
             if (!storyId) return;
 
@@ -139,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
-                
+
                 if (result.action === 'removed') {
                     showTip(e.target, 'Vote removed');
                     e.target.style.visibility = 'visible';
@@ -150,24 +146,77 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Bookmark
-        if (e.target.classList.contains('bookmark-link')) {
+        // Custom Dropdown Logic
+        if (e.target.classList.contains('knotes-dropdown-trigger')) {
             e.preventDefault();
-            const storyId = e.target.getAttribute('data-id');
-            if (!storyId) return;
+            const dropdown = e.target.closest('.knotes-dropdown');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+            return;
+        }
 
-            const result = await toggleBookmark(parseInt(storyId));
-            if (result.error) {
-                showTip(e.target, result.error);
-            } else {
-                if (result.action === 'added') {
-                    e.target.textContent = 'saved';
-                    userBookmarks.push(parseInt(storyId));
-                } else {
-                    e.target.textContent = 'save';
-                    userBookmarks = userBookmarks.filter(id => id !== parseInt(storyId));
-                }
+        if (e.target.classList.contains('dropdown-item')) {
+            const item = e.target;
+            const folderName = item.getAttribute('data-folder');
+            const dropdown = item.closest('.knotes-dropdown');
+            const storyId = dropdown.getAttribute('data-id');
+            const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+
+            if (!storyId || !folderName) return;
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showTip(trigger, 'Please login');
+                menu.classList.add('hidden');
+                return;
             }
+
+            if (folderName === 'unsave') {
+                await toggleBookmark(parseInt(storyId));
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                delete mapping[storyId];
+                localStorage.setItem(key, JSON.stringify(mapping));
+                
+                trigger.textContent = '+';
+                trigger.classList.remove('saved');
+                item.remove();
+                showTip(trigger, 'Removed');
+                const idx = userBookmarks.indexOf(parseInt(storyId));
+                if (idx > -1) userBookmarks.splice(idx, 1);
+            } else {
+                if (!userBookmarks.includes(parseInt(storyId))) {
+                    await toggleBookmark(parseInt(storyId));
+                    userBookmarks.push(parseInt(storyId));
+                }
+
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                mapping[storyId] = folderName;
+                localStorage.setItem(key, JSON.stringify(mapping));
+
+                trigger.textContent = 'saved';
+                trigger.classList.add('saved');
+                if (!menu.querySelector('[data-folder="unsave"]')) {
+                    const opt = document.createElement('div');
+                    opt.className = 'dropdown-item text-red-500';
+                    opt.setAttribute('data-folder', 'unsave');
+                    opt.textContent = 'Unsave';
+                    menu.appendChild(opt);
+                }
+                showTip(trigger, `Added to ${folderName}`);
+            }
+            menu.classList.add('hidden');
+            return;
+        }
+
+        // Hide menus when clicking elsewhere
+        if (!e.target.closest('.knotes-dropdown')) {
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
         }
 
         // Hide
@@ -180,6 +229,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.style.opacity = '0';
                 setTimeout(() => row.classList.add('hidden'), 300);
             });
+        }
+
+        // Share logic
+        if (e.target.classList.contains('share-link')) {
+            e.preventDefault();
+            const btn = e.target;
+            const title = btn.getAttribute('data-title');
+            const url = btn.getAttribute('data-url');
+            if (navigator.share) {
+                navigator.share({ title, url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url);
+                const oldText = btn.textContent;
+                btn.textContent = 'copied!';
+                setTimeout(() => btn.textContent = oldText, 2000);
+            }
         }
     });
 });

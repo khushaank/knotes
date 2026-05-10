@@ -139,7 +139,7 @@ async function renderPage() {
     const timeAgo = calculateTimeAgo(story.published_at);
     document.querySelector('article').innerHTML = `
         <div class="flex items-start gap-1">
-            <div class="hn-arrow mt-[6px]" data-id="${story.id}"></div>
+            <div class="knotes-upvote-triangle mt-[6px]" data-id="${story.id}"></div>
             <div>
                 <h1 class="story-title text-lg font-bold leading-tight">
                     <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
@@ -147,20 +147,29 @@ async function renderPage() {
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
                 <div class="story-meta mt-1 opacity-70">
                     <span class="text-xs">
-                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> ${timeAgo} | 
-                        <a class="hover:underline" href="#">hide</a> | 
+                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a>
+                        <span class="mx-1 opacity-40">|</span>
+                        ${timeAgo}
+                        <span class="mx-1 opacity-40">|</span>
+                        <a class="hover:underline" href="#">hide</a>
+                        <span class="mx-1 opacity-40">|</span>
                         <span class="bookmark-container inline-flex items-center">
-                            <select class="folder-picker" data-id="${story.id}">
-                                <option value="" disabled selected>+</option>
-                                <option value="To Learn">To Learn</option>
-                                <option value="Inspiration">Inspiration</option>
-                                <option value="Archive">Archive</option>
-                                <option value="Reading List">Reading List</option>
-                            </select> 
-                            <a class="hover:underline bookmark-btn" href="#" data-id="${story.id}">${isBookmarked ? 'saved' : 'save'}</a>
-                        </span> | 
-                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a> | 
-                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
+                            <div class="knotes-dropdown" data-id="${story.id}">
+                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button>
+                                <div class="knotes-dropdown-menu hidden">
+                                    <div class="dropdown-item" data-folder="To Learn">To Learn</div>
+                                    <div class="dropdown-item" data-folder="Inspiration">Inspiration</div>
+                                    <div class="dropdown-item" data-folder="Archive">Archive</div>
+                                    <div class="dropdown-item" data-folder="Reading List">Reading List</div>
+                                    ${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}
+                                </div>
+                            </div>
+                        </span>
+                        <span class="mx-1 opacity-40">|</span>
+                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a>
+                        <span class="mx-1 opacity-40">|</span>
+                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
+                        <span class="mx-1 opacity-40">|</span>
                         <a href="#add-comment" class="hover:underline">add</a>
                     </span>
                 </div>
@@ -289,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Upvote
-        if (e.target.classList.contains('hn-arrow')) {
+        if (e.target.classList.contains('knotes-upvote-triangle')) {
             const id = e.target.getAttribute('data-id');
             if (!id) return;
 
@@ -333,48 +342,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Folder Picker Change
-        if (e.target.classList.contains('folder-picker')) {
-            const select = e.target;
-            const storyId = select.getAttribute('data-id');
-            const folderName = select.value;
+        // Custom Dropdown Logic
+        if (e.target.classList.contains('knotes-dropdown-trigger')) {
+            e.preventDefault();
+            const dropdown = e.target.closest('.knotes-dropdown');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+            return;
+        }
+
+        if (e.target.classList.contains('dropdown-item')) {
+            const item = e.target;
+            const folderName = item.getAttribute('data-folder');
+            const dropdown = item.closest('.knotes-dropdown');
+            const storyId = dropdown.getAttribute('data-id');
+            const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
+            const menu = dropdown.querySelector('.knotes-dropdown-menu');
+
             if (!storyId || !folderName) return;
 
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                alert('Please login to save to folders');
-                select.value = '';
+                showInlineMsg(trigger, 'Please login');
+                menu.classList.add('hidden');
                 return;
             }
 
-            // 1. Ensure it's bookmarked in Supabase
-            const result = await toggleBookmark(parseInt(storyId));
-            if (result.action === 'removed') {
-                // Toggle back to added
+            if (folderName === 'unsave') {
                 await toggleBookmark(parseInt(storyId));
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                delete mapping[storyId];
+                localStorage.setItem(key, JSON.stringify(mapping));
+
+                trigger.textContent = '+';
+                trigger.classList.remove('saved');
+                item.remove();
+                showInlineMsg(trigger, 'Removed');
+                const idx = userBookmarks.indexOf(parseInt(storyId));
+                if (idx > -1) userBookmarks.splice(idx, 1);
+            } else {
+                if (!userBookmarks.includes(parseInt(storyId))) {
+                    await toggleBookmark(parseInt(storyId));
+                    userBookmarks.push(parseInt(storyId));
+                }
+
+                const key = `kn-folders-${session.user.id}`;
+                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                mapping[storyId] = folderName;
+                localStorage.setItem(key, JSON.stringify(mapping));
+
+                trigger.textContent = 'saved';
+                trigger.classList.add('saved');
+                if (!menu.querySelector('[data-folder="unsave"]')) {
+                    const opt = document.createElement('div');
+                    opt.className = 'dropdown-item text-red-500';
+                    opt.setAttribute('data-folder', 'unsave');
+                    opt.textContent = 'Unsave';
+                    menu.appendChild(opt);
+                }
+                showInlineMsg(trigger, `Added to ${folderName}`);
             }
-
-            // 2. Save folder mapping to localStorage
-            const key = `kn-folders-${session.user.id}`;
-            const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-            mapping[storyId] = folderName;
-            localStorage.setItem(key, JSON.stringify(mapping));
-
-            // 3. Update UI
-            const bookmarkBtn = select.parentElement.querySelector('.bookmark-btn');
-            if (bookmarkBtn) bookmarkBtn.textContent = 'saved';
-
-            // Show subtle feedback
-            const tip = document.createElement('span');
-            tip.textContent = `Saved to ${folderName}`;
-            tip.style.cssText = 'font-size:10px;color:#ff6600;margin-left:4px;';
-            select.parentElement.appendChild(tip);
-            setTimeout(() => tip.remove(), 2000);
-
-            select.value = '';
+            menu.classList.add('hidden');
+            return;
         }
 
-        // Bookmark
+        // Hide menus when clicking elsewhere
+        if (!e.target.closest('.knotes-dropdown')) {
+            document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
+        }
+
+        // Bookmark logic is now handled in the folder picker
         if (e.target.classList.contains('bookmark-btn')) {
             e.preventDefault();
             const id = e.target.getAttribute('data-id');

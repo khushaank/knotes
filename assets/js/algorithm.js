@@ -10,7 +10,7 @@
 export function calculateTrendingScore(story) {
     const points = story.likes_count || 0;
     const clicks = story.clicks_count || 0;
-    
+
     // Engagement score (weighted)
     const baseScore = (points * 0.75) + (clicks * 0.25);
 
@@ -18,7 +18,7 @@ export function calculateTrendingScore(story) {
     const publishedAt = new Date(story.published_at);
     const updatedAt = story.updated_at ? new Date(story.updated_at) : publishedAt;
     const now = new Date();
-    
+
     const hoursSincePublished = (now - publishedAt) / (1000 * 60 * 60);
     const hoursSinceUpdated = (now - updatedAt) / (1000 * 60 * 60);
 
@@ -53,11 +53,11 @@ export function sortStories(stories, filter = 'trending') {
     switch (filter) {
         case 'new':
             return storiesCopy.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
-        
+
         case 'relevant':
         case 'top':
             return storiesCopy.sort((a, b) => calculateRelevanceScore(b) - calculateRelevanceScore(a));
-        
+
         case 'trending':
         default:
             return storiesCopy.sort((a, b) => calculateTrendingScore(b) - calculateTrendingScore(a));
@@ -72,8 +72,8 @@ export function sortStories(stories, filter = 'trending') {
 export function filterBySearch(stories, query) {
     if (!query) return stories;
     const q = query.toLowerCase();
-    
-    return stories.filter(story => 
+
+    return stories.filter(story =>
         (story.title && story.title.toLowerCase().includes(q)) ||
         (story.author && story.author.toLowerCase().includes(q)) ||
         (story.category && story.category.toLowerCase().includes(q)) ||

@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const userId = btn.getAttribute('data-userid');
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
-                
+
                 const result = await toggleFollow(userId);
-                
+
                 if (result.error) {
                     alert(result.error);
                     btn.disabled = false;

@@ -35,7 +35,7 @@ function renderAllComments(comments) {
             <div class="mb-2 comment-node">
                 <div class="flex items-start gap-2">
                     <div class="pt-[3px]">
-                        <div class="hn-arrow" title="upvote"></div>
+                        <div class="knotes-upvote-triangle" title="upvote"></div>
                     </div>
                     <div class="flex-1">
                         <div class="story-meta opacity-70">
