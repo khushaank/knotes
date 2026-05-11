@@ -67,7 +67,6 @@ async function init() {
     const comments = await fetchAllComments();
     container.innerHTML = renderAllComments(comments);
 
-    // Show comment count in page
     const countEl = document.getElementById('comment-count');
     if (countEl) countEl.textContent = `${comments.length} recent comments`;
 

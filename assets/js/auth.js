@@ -82,13 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage(error.message, true);
             } else {
                 showMessage('Account created successfully! You can now login.', false);
-                // Auto-switch focus to login form
                 document.getElementById('login-email')?.focus();
             }
         });
     }
 
-    // Forgot Password
     const forgotLink = document.getElementById('forgot-password-link');
     if (forgotLink) {
         forgotLink.addEventListener('click', async (e) => {
@@ -119,13 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Handle password reset if user came from reset email
     const hash = window.location.hash;
     if (hash && hash.includes('type=recovery')) {
         showResetPasswordForm();
     }
 
-    // Also check for access_token in URL (Supabase redirect)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('type') === 'recovery') {
         showResetPasswordForm();
@@ -136,11 +132,9 @@ function showResetPasswordForm() {
     const main = document.querySelector('body');
     const messageContainer = document.getElementById('message-container');
 
-    // Hide login/signup forms
     document.getElementById('login-form')?.parentElement?.classList.add('hidden');
     document.getElementById('signup-form')?.parentElement?.classList.add('hidden');
 
-    // Create reset form
     const resetDiv = document.createElement('div');
     resetDiv.className = 'mb-8';
     resetDiv.innerHTML = `
@@ -191,7 +185,6 @@ function showResetPasswordForm() {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            // Need to exchange the token from URL
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const accessToken = hashParams.get('access_token');
             const refreshToken = hashParams.get('refresh_token');

@@ -5,7 +5,6 @@ let currentFilter = 'trending';
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 
-// ---- Hidden Stories (localStorage) ---- //
 function getHiddenStories() {
     try {
         return JSON.parse(localStorage.getItem('kn-hidden-stories') || '[]');
@@ -29,7 +28,6 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
         .select('*', { count: 'exact' })
         .eq('status', 'published');
 
-    // Apply basic SQL ordering to help the local sort algorithm
     if (filter === 'new') {
         query = query.order('published_at', { ascending: false });
     } else {
@@ -64,11 +62,8 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     const tbody = document.querySelector('main table tbody');
     const statsSummary = document.getElementById('stats-summary');
 
-    // Better loading state
     tbody.style.opacity = '0.5';
     if (statsSummary) statsSummary.textContent = 'Updating...';
-
-    // Load bookmarks in parallel with stories
     const [storiesResult] = await Promise.all([
         fetchStories(searchQuery, filter, page),
         loadUserBookmarks()
@@ -87,7 +82,6 @@ async function renderStories(searchQuery = '', filter = 'trending') {
         statsSummary.textContent = `Showing ${stories.length} ${filter} stories (Page ${page})`;
     }
 
-    // Filter out hidden stories
     const hiddenIds = getHiddenStories();
     const visibleStories = stories.filter(s => !hiddenIds.includes(String(s.id)));
 
@@ -161,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchInput) searchInput.value = searchParam;
     }
 
-    // Refresh trending
     const refreshBtn = document.getElementById('refresh-trending');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
@@ -170,20 +163,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Filter links
     document.querySelectorAll('.filter-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             currentFilter = e.target.getAttribute('data-filter');
 
-            // Update UI
             document.querySelectorAll('.filter-link').forEach(l => {
                 l.classList.remove('font-bold', 'text-black');
             });
             e.target.classList.add('font-bold', 'text-black');
 
             const searchInput = document.getElementById('footer-search-input');
-            // When switching filters, reset to page 1 by clearing URL params or just rendering page 1
             if (window.location.search.includes('p=')) {
                 const newUrl = window.location.pathname + `?filter=${currentFilter}${searchInput?.value.trim() ? `&search=${encodeURIComponent(searchInput.value.trim())}` : ''}`;
                 window.history.pushState({}, '', newUrl);
@@ -210,11 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function logSearchTerm(term) {
         if (!supabase) return;
 
-        // Try to increment existing or insert new
         const { data, error } = await supabase.rpc('increment_search_count', { search_term: term });
 
         if (error) {
-            // Fallback if RPC isn't available
             const { data: existing } = await supabase
                 .from('search_stats')
                 .select('id, count')
@@ -247,38 +235,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchTrendingSearches();
 
-    // ---- Keyboard Shortcuts ---- //
     let focusedStoryIndex = -1;
 
     document.addEventListener('keydown', (e) => {
-        // Don't trigger if user is typing in an input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         const storyRows = document.querySelectorAll('.story-row');
         if (storyRows.length === 0) return;
 
         if (e.key === 'j') {
-            // Move focus down
             focusedStoryIndex = Math.min(focusedStoryIndex + 1, storyRows.length - 1);
             highlightFocusedStory(storyRows);
         } else if (e.key === 'k') {
-            // Move focus up
             focusedStoryIndex = Math.max(focusedStoryIndex - 1, 0);
             highlightFocusedStory(storyRows);
         } else if (e.key === 'o' || e.key === 'Enter') {
-            // Open focused story
             if (focusedStoryIndex >= 0 && storyRows[focusedStoryIndex]) {
                 const link = storyRows[focusedStoryIndex].querySelector('.story-link');
                 if (link) link.click();
             }
         } else if (e.key === 'u') {
-            // Upvote focused story
             if (focusedStoryIndex >= 0 && storyRows[focusedStoryIndex]) {
                 const arrow = storyRows[focusedStoryIndex].querySelector('.knotes-upvote-triangle');
                 if (arrow) arrow.click();
             }
         } else if (e.key === '?') {
-            // Show keyboard shortcuts help
             showShortcutsHelp();
         }
     });
@@ -292,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showShortcutsHelp() {
-        // Don't create duplicate
         if (document.getElementById('shortcuts-modal')) return;
 
         const modal = document.createElement('div');
@@ -319,14 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Upvote, Hide, Bookmark, and Click Tracking delegation
     document.addEventListener('click', async (e) => {
-        // Upvote
         if (e.target.classList.contains('knotes-upvote-triangle')) {
             const storyId = e.target.getAttribute('data-id');
             if (!storyId) return;
-
-            // Visual feedback immediately
             e.target.style.opacity = '0.3';
             e.target.style.pointerEvents = 'none';
 
@@ -336,10 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.style.pointerEvents = 'auto';
 
             if (result.error) {
-                // Show inline tooltip instead of alert
                 showInlineMsg(e.target, result.error);
             } else {
-                // Local DOM update instead of full render
                 const metaRow = document.querySelector(`.story-meta-row[data-id="${storyId}"]`);
                 if (metaRow) {
                     const metaTextNodes = metaRow.querySelector('.story-meta');
@@ -357,15 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.action === 'removed') {
                     showInlineMsg(e.target, 'Vote removed');
-                    e.target.style.visibility = 'visible'; // show arrow again
+                    e.target.style.visibility = 'visible';
                 } else {
-                    e.target.style.visibility = 'hidden'; // KN style hides upvoted arrow
+                    e.target.style.visibility = 'hidden';
                 }
-                // No cache to clear now
             }
         }
-
-        // Bookmark logic is now handled in the folder picker        // Custom Dropdown Logic
         if (e.target.classList.contains('knotes-dropdown-trigger')) {
             e.preventDefault();
             const dropdown = e.target.closest('.knotes-dropdown');
@@ -449,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Click Tracking
         if (e.target.classList.contains('story-link')) {
             const storyId = e.target.getAttribute('data-id');
             if (storyId) {
@@ -457,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Share logic
         if (e.target.classList.contains('share-link')) {
             e.preventDefault();
             const btn = e.target;
@@ -473,7 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Boost Karma
         if (e.target.classList.contains('boost-karma-index-btn')) {
             e.preventDefault();
             const btn = e.target;
@@ -512,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inline message tooltip
     function showInlineMsg(anchor, msg) {
         const tip = document.createElement('span');
         tip.textContent = msg;

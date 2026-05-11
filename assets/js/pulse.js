@@ -5,8 +5,6 @@ const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
 const slugParam = urlParams.get('s');
 
-// Also try to get slug from path (for pretty URLs if the server supports it)
-// e.g., /pulse/some-slug -> path parts: ["", "pulse", "some-slug"]
 const pathParts = window.location.pathname.split('/').filter(p => p);
 const slugFromPath = pathParts.length > 1 && pathParts[0] === 'pulse' ? pathParts[1] : null;
 
@@ -90,11 +88,9 @@ async function renderPage() {
 
     trackClick(story.id);
 
-    // Load user bookmarks
     userBookmarks = await getUserBookmarks();
     const isBookmarked = userBookmarks.includes(story.id);
 
-    // Update SEO Meta Tags
     const cleanTitle = sanitize(story.title);
     const cleanExcerpt = sanitize(story.excerpt || story.content || '').substring(0, 160);
     const storyUrl = window.location.href;
@@ -108,7 +104,6 @@ async function renderPage() {
     document.querySelector('meta[property="twitter:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="twitter:description"]')?.setAttribute('content', cleanExcerpt);
 
-    // Add JSON-LD Structured Data
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "NewsArticle",
@@ -135,7 +130,6 @@ async function renderPage() {
     }
     script.text = JSON.stringify(jsonLd);
 
-    // Update story header with h1 for better SEO
     const timeAgo = calculateTimeAgo(story.published_at);
     document.querySelector('article').innerHTML = `
         <div class="flex items-start gap-1">
@@ -186,7 +180,6 @@ async function renderPage() {
     const comments = await fetchComments(story.id);
     commentsContainer.innerHTML = renderCommentList(comments);
 
-    // Set storyId for the add comment logic
     window.currentStoryId = story.id;
 }
 
@@ -200,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewContent = document.getElementById('preview-content');
     const commentInputContainer = textarea?.parentElement;
 
-    // Real-time Preview logic
     if (textarea && previewContainer && previewContent) {
         textarea.addEventListener('input', () => {
             const val = textarea.value.trim();
@@ -262,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Sync comment count on the blog
             await incrementCommentCount(window.currentStoryId);
 
             textarea.value = '';
@@ -297,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (textarea) textarea.focus();
         }
 
-        // Upvote
         if (e.target.classList.contains('knotes-upvote-triangle')) {
             const id = e.target.getAttribute('data-id');
             if (!id) return;
@@ -309,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.error) {
                 e.target.style.opacity = '1';
-                // Show a subtle message next to arrow
                 const tip = document.createElement('span');
                 tip.textContent = result.error;
                 tip.style.cssText = 'font-size:10px;color:#888;margin-left:4px;';
@@ -342,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Custom Dropdown Logic
         if (e.target.classList.contains('knotes-dropdown-trigger')) {
             e.preventDefault();
             const dropdown = e.target.closest('.knotes-dropdown');
@@ -410,12 +398,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Hide menus when clicking elsewhere
         if (!e.target.closest('.knotes-dropdown')) {
             document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
         }
-
-        // Bookmark logic is now handled in the folder picker
         if (e.target.classList.contains('bookmark-btn')) {
             e.preventDefault();
             const id = e.target.getAttribute('data-id');
@@ -433,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Share
         if (e.target.classList.contains('share-btn')) {
             e.preventDefault();
             const title = e.target.getAttribute('data-title');
@@ -446,7 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Boost karma from viewer
         if (e.target.classList.contains('boost-karma-pulse-btn')) {
             e.preventDefault();
             const btn = e.target;
@@ -456,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = true;
             btn.style.opacity = '0.5';
 
-            // Lookup author id
             const { data: profile } = await supabase.from('profiles').select('id').eq('username', author).maybeSingle();
             if (!profile) {
                 alert('User not found.');

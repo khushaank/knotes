@@ -15,7 +15,6 @@ async function performSearch(query) {
     container.innerHTML = '<div class="p-8 text-center text-gray-600">Searching...</div>';
     status.textContent = `Searching for "${query}"...`;
 
-    // Fetch blogs matching the query via the new paginated RPC
     const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', {
         search_query: query,
         page_limit: RESULTS_PER_PAGE,
@@ -28,7 +27,7 @@ async function performSearch(query) {
     }
 
     if (!blogs || blogs.length === 0) {
-        container.innerHTML = '<div class="p-8 text-center text-gray-600">No results found for "' + query + '".</div>';
+        container.innerHTML = '<div class="p-8 text-center text-gray-600">No results found for "' + sanitize(query) + '".</div>';
         status.textContent = 'Found 0 results.';
         return;
     }
@@ -36,16 +35,15 @@ async function performSearch(query) {
     const totalCount = blogs[0].total_count;
     const blogIds = blogs.map(b => b.id);
 
-    // Fetch all related comments in a single batch query
     const { data: allComments, error: commentError } = await supabase
         .from('comments')
         .select('blog_id, comment_text, user_name')
         .in('blog_id', blogIds);
 
     if (commentError) {
+        console.error('Comment fetch error:', commentError);
     }
 
-    // Map comments to their respective blogs
     const results = blogs.map(blog => ({
         ...blog,
         comments: (allComments || []).filter(c => c.blog_id === blog.id)
@@ -57,7 +55,8 @@ async function performSearch(query) {
 
 function highlight(text, query) {
     if (!text || !query) return text || '';
-    const regex = new RegExp(`(${query})`, 'gi');
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
     return text.replace(regex, '<mark class="bg-yellow-200 text-black px-0.5 rounded-sm">$1</mark>');
 }
 
@@ -65,9 +64,8 @@ function renderResults(results, query, totalCount, page) {
     const container = document.getElementById('search-results-container');
     let html = '';
 
-    results.forEach((item, index) => {
+    results.forEach((item) => {
         const occurrences = [];
-        // ... (rest of occurrences logic stays same)
         if (item.title?.toLowerCase().includes(query.toLowerCase())) occurrences.push('title');
         if (item.content?.toLowerCase().includes(query.toLowerCase())) occurrences.push('content');
         if (item.author?.toLowerCase().includes(query.toLowerCase())) occurrences.push('author');
@@ -156,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggerSearch = () => {
         const query = mainSearchInput.value.trim();
         if (query) {
-            // Update URL without reload if possible, or just reload with new param
             window.location.href = `search.html?search=${encodeURIComponent(query)}`;
         }
     };

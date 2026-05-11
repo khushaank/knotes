@@ -104,9 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event delegation
     document.addEventListener('click', async (e) => {
-        // Upvote
         if (e.target.classList.contains('knotes-upvote-triangle')) {
             const storyId = e.target.getAttribute('data-id');
             if (!storyId) return;
@@ -145,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Custom Dropdown Logic
         if (e.target.classList.contains('knotes-dropdown-trigger')) {
             e.preventDefault();
             const dropdown = e.target.closest('.knotes-dropdown');
@@ -180,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mapping = JSON.parse(localStorage.getItem(key) || '{}');
                 delete mapping[storyId];
                 localStorage.setItem(key, JSON.stringify(mapping));
-                
+
                 trigger.textContent = '+';
                 trigger.classList.remove('saved');
                 item.remove();
@@ -213,12 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Hide menus when clicking elsewhere
         if (!e.target.closest('.knotes-dropdown')) {
             document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
         }
-
-        // Hide
         if (e.target.classList.contains('hide-link')) {
             e.preventDefault();
             const storyId = e.target.getAttribute('data-id');
@@ -230,14 +224,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Share logic
         if (e.target.classList.contains('share-link')) {
             e.preventDefault();
             const btn = e.target;
             const title = btn.getAttribute('data-title');
             const url = btn.getAttribute('data-url');
             if (navigator.share) {
-                navigator.share({ title, url }).catch(() => {});
+                navigator.share({ title, url }).catch(() => { });
             } else {
                 navigator.clipboard.writeText(url);
                 const oldText = btn.textContent;

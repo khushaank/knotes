@@ -1,4 +1,3 @@
-/* Modal & Media Gallery Styles */
 .fixed {
     position: fixed;
 }
@@ -22,7 +21,7 @@
     backdrop-filter: blur(4px);
 }
 
-/* Responsive Modal Sizing */
+
 #media-library-modal>div {
     width: 95% !important;
     max-width: 48rem !important;
@@ -49,7 +48,7 @@
     background-color: rgba(249, 250, 251, 0.5);
 }
 
-/* Responsive Grid */
+
 #media-library-grid {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)) !important;
@@ -71,7 +70,7 @@
     height: auto !important;
 }
 
-/* Modal text responsiveness */
+
 @media (max-width: 480px) {
     #media-library-modal h3 {
         font-size: 14px !important;
@@ -88,7 +87,7 @@
     }
 }
 
-/* File Hover Preview */
+
 .media-preview-tooltip {
     display: none;
     position: fixed;

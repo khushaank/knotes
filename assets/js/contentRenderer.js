@@ -4,21 +4,15 @@ export function renderMarkdown(text) {
     if (!text) return '';
 
     let processedText = text;
-
-    // Auto-embed YouTube
     const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     processedText = processedText.replace(ytRegex, (match, videoId) => {
-        // Only replace if it's not already in an iframe or markdown link (basic check)
         if (match.includes('iframe') || match.includes('youtube.com/embed')) return match;
         return `\n<iframe class="w-full max-w-2xl rounded shadow-md mt-2 mb-4" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
     });
 
-    // Auto-embed Images (bare URLs ending in image extensions)
-    // We only replace if there isn't a ! in front of it (basic markdown image check)
     const imgRegex = /(?<!\!\[.*?\]\()(?<!src=["'])(https?:\/\/[^\s<]+?\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<]*)?)/gi;
     processedText = processedText.replace(imgRegex, '![]($1)');
 
-    // Parse with marked
     let parsed = '';
     if (typeof marked !== 'undefined') {
         parsed = marked.parse(processedText, { breaks: true, gfm: true });
@@ -30,7 +24,6 @@ export function renderMarkdown(text) {
 }
 
 export function setupLinkPreviews() {
-    // Add tooltip container to body if not exists
     let tooltip = document.getElementById('link-preview-tooltip');
     if (!tooltip) {
         tooltip = document.createElement('div');
@@ -48,7 +41,6 @@ export function setupLinkPreviews() {
         iframe.style.width = '100%';
         iframe.style.height = 'calc(100% - 24px)';
         iframe.style.border = 'none';
-        // Relax sandbox to help with complex document viewers
         iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
 
         tooltip.appendChild(header);
@@ -64,10 +56,7 @@ export function setupLinkPreviews() {
         const target = e.target.closest('a');
         if (!target) return;
 
-        // Only preview external links that aren't the same domain
         if (!target.href.startsWith('http') || target.href.includes(window.location.hostname)) return;
-
-        // Skip if it's already an image or video link (they are auto-embedded anyway)
         if (target.href.match(/\.(jpg|jpeg|png|gif|webp)$/i) || target.href.includes('youtube.com') || target.href.includes('youtu.be')) return;
 
         clearTimeout(timeout);
@@ -75,17 +64,13 @@ export function setupLinkPreviews() {
         target.addEventListener('mouseenter', () => {
             clearTimeout(timeout);
             header.textContent = target.textContent.trim() || target.href;
-
-            // Handle documents via specialized viewers
             const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
             const pdfExts = /\.pdf$/i;
             let finalUrl = target.href;
 
             if (target.href.match(officeExts)) {
-                // Microsoft Office Viewer is better for Excel/Word
                 finalUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(target.href)}`;
             } else if (target.href.match(pdfExts) || target.href.includes('supabase.co/storage/v1/object/public/media')) {
-                // Google GView is good for PDFs
                 finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(target.href)}&embedded=true`;
             }
 
@@ -95,7 +80,6 @@ export function setupLinkPreviews() {
 
             const rect = target.getBoundingClientRect();
 
-            // Positioning logic to keep it on screen
             let left = rect.left + window.scrollX;
             let top = rect.bottom + window.scrollY + 10;
 
@@ -117,7 +101,7 @@ export function setupLinkPreviews() {
             timeout = setTimeout(() => {
                 tooltip.classList.add('opacity-0');
                 setTimeout(() => tooltip.classList.add('hidden'), 200);
-            }, 100); // slight delay
+            }, 100);
         }, { once: true });
     });
 }

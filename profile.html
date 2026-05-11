@@ -29,7 +29,8 @@
                     <a class="hover:underline" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |
                     <a class="hover:underline" href="submit.html">submit</a> |
-                    <a class="hover:underline" href="leaderboard.html">leaders</a>
+                    <a class="hover:underline" href="leaderboard.html">leaders</a> |
+                    <a class="hover:underline" href="subscriptions.html">subscriptions</a>
                 </div>
                 <div class="ml-auto text-black text-[13px] flex items-center gap-4"> <a
                         class="hover:underline text-black" href="login.html">login</a> </div>
@@ -37,9 +38,9 @@
         </header>
         <main class="bg-[#f6f6ef] p-6 min-h-[50vh]">
             <div id="profile-container" class="hidden">
-                <!-- Profile Header Card -->
+
                 <div class="profile-header flex items-start gap-6 mb-6 p-4 bg-white rounded border border-gray-200">
-                    <!-- Avatar with pencil edit -->
+
                     <div class="avatar-wrapper flex-shrink-0">
                         <div id="profile-avatar"
                             class="w-16 h-16 bg-gray-300 rounded flex items-center justify-center text-2xl font-bold text-gray-600 uppercase overflow-hidden">
@@ -55,7 +56,7 @@
                         <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
                     </div>
 
-                    <!-- Info -->
+
                     <div class="profile-info flex-1 min-w-0">
                         <div class="flex items-center gap-3 mb-1 flex-wrap">
                             <span id="profile-username" class="font-bold text-black text-base"></span>
@@ -100,7 +101,7 @@
                     </div>
                 </div>
 
-                <!-- Tabs Navigation -->
+
                 <div class="profile-tabs border-b border-gray-300 mb-4 flex gap-4 text-[13px]">
                     <a href="#" class="profile-tab font-bold text-black border-b-2 border-[#ff6600] pb-1"
                         data-tab="all">All</a>
@@ -111,9 +112,10 @@
                         data-tab="saved">Saved</a>
                     <a href="#" id="tab-hidden" class="profile-tab text-gray-600 pb-1 hover:text-black"
                         data-tab="hidden">Hidden</a>
+                    <a href="subscriptions.html" class="profile-tab text-gray-600 pb-1 hover:text-black">Subscriptions</a>
                 </div>
 
-                <!-- Tab Contents -->
+
                 <div id="tab-content-all" class="tab-pane">
                     <div id="profile-submissions" class="text-sm">Loading...</div>
                 </div>
@@ -161,7 +163,7 @@
             </form>
         </footer>
     </div>
-    <!-- Media Library Modal -->
+
     <div id="media-library-modal"
         class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div

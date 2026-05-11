@@ -10,11 +10,7 @@
 export function calculateTrendingScore(story) {
     const points = story.likes_count || 0;
     const clicks = story.clicks_count || 0;
-
-    // Engagement score (weighted)
     const baseScore = (points * 0.75) + (clicks * 0.25);
-
-    // Time decay
     const publishedAt = new Date(story.published_at);
     const updatedAt = story.updated_at ? new Date(story.updated_at) : publishedAt;
     const now = new Date();
@@ -22,10 +18,8 @@ export function calculateTrendingScore(story) {
     const hoursSincePublished = (now - publishedAt) / (1000 * 60 * 60);
     const hoursSinceUpdated = (now - updatedAt) / (1000 * 60 * 60);
 
-    // Freshness boost for recent updates
     const freshnessBoost = hoursSinceUpdated < 24 ? (1 / (hoursSinceUpdated + 1)) : 0;
 
-    // Apply gravity (decay)
     const gravity = 1.5;
     return (baseScore + freshnessBoost) / Math.pow(hoursSincePublished + 2, gravity);
 }

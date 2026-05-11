@@ -1,7 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig.js';
 
-// Initialize the Supabase client only if keys are provided (to prevent crashes before setup)
 export const supabase = (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
@@ -40,7 +39,6 @@ export async function upvoteStory(storyId) {
 
     const userId = session.user.id;
 
-    // 1. Check if already upvoted
     const { data: existingLike, error: checkError } = await supabase
         .from('likes')
         .select('*')
@@ -50,7 +48,6 @@ export async function upvoteStory(storyId) {
 
     if (checkError) return { error: checkError.message };
 
-    // If already upvoted, remove the upvote (undo)
     if (existingLike) {
         const { error: deleteError } = await supabase
             .from('likes')
@@ -60,7 +57,6 @@ export async function upvoteStory(storyId) {
 
         if (deleteError) return { error: deleteError.message };
 
-        // Decrement likes_count
         const { data: blog } = await supabase
             .from('blogs')
             .select('likes_count')
@@ -77,20 +73,17 @@ export async function upvoteStory(storyId) {
         return { success: true, action: 'removed' };
     }
 
-    // 2. Insert into likes table
     const { error: likeError } = await supabase
         .from('likes')
         .insert([{ blog_id: storyId, user_id: userId }]);
 
     if (likeError) {
         if (likeError.code === '23505') {
-            // Unique violation (409). Already liked concurrently.
             return { success: true, action: 'added' };
         }
         return { error: likeError.message };
     }
 
-    // 3. Increment likes_count in blogs table
     const { data: blog, error: fetchError } = await supabase
         .from('blogs')
         .select('likes_count')
@@ -126,7 +119,6 @@ export async function trackClick(storyId) {
         .eq('id', storyId);
 }
 
-// ---- Bookmarks / Favorites ---- //
 export async function toggleBookmark(storyId) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
@@ -135,7 +127,6 @@ export async function toggleBookmark(storyId) {
 
     const userId = session.user.id;
 
-    // Check existing
     const { data: existing, error: checkErr } = await supabase
         .from('bookmarks')
         .select('id')
@@ -146,12 +137,10 @@ export async function toggleBookmark(storyId) {
     if (checkErr) return { error: checkErr.message };
 
     if (existing) {
-        // Remove bookmark
         const { error } = await supabase.from('bookmarks').delete().eq('id', existing.id);
         if (error) return { error: error.message };
         return { success: true, action: 'removed' };
     } else {
-        // Add bookmark
         const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
         if (error) {
             if (error.code === '23505') return { success: true, action: 'added' };
@@ -204,7 +193,6 @@ export async function getBookmarkedPosts(userId = null) {
     return posts;
 }
 
-// ---- Comment Count Sync ---- //
 export async function incrementCommentCount(blogId) {
     if (!supabase) return;
 
@@ -222,18 +210,15 @@ export async function incrementCommentCount(blogId) {
     }
 }
 
-// ---- Share Helpers ---- //
 export async function sharePost(title, url) {
     if (navigator.share) {
         try {
             await navigator.share({ title, url });
             return { success: true };
         } catch (e) {
-            // User cancelled share
             return { cancelled: true };
         }
     } else {
-        // Fallback: copy to clipboard
         try {
             await navigator.clipboard.writeText(url);
             return { success: true, copied: true };
@@ -243,9 +228,6 @@ export async function sharePost(title, url) {
     }
 }
 
-// ---- Follow System ---- //
-// Requires `follows` table: id (int8 PK), follower_id (uuid), following_id (uuid), created_at (timestamptz)
-
 export async function toggleFollow(targetUserId) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
@@ -254,7 +236,6 @@ export async function toggleFollow(targetUserId) {
 
     const myId = session.user.id;
 
-    // Check existing follow
     const { data: existing, error: checkErr } = await supabase
         .from('follows')
         .select('id')
@@ -265,12 +246,10 @@ export async function toggleFollow(targetUserId) {
     if (checkErr) return { error: checkErr.message };
 
     if (existing) {
-        // Unfollow
         const { error } = await supabase.from('follows').delete().eq('id', existing.id);
         if (error) return { error: error.message };
         return { success: true, action: 'unfollowed' };
     } else {
-        // Follow
         const { error } = await supabase.from('follows').insert([{
             follower_id: myId,
             following_id: targetUserId
@@ -323,7 +302,34 @@ export async function getFollowingCount(userId) {
     return count || 0;
 }
 
-// ---- Stats Helpers ---- //
+export async function getFollowingList(userId) {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+        .from('follows')
+        .select(`
+            following_id,
+            profiles:following_id (id, username, avatar_url, about)
+        `)
+        .eq('follower_id', userId);
+    
+    if (error) return [];
+    return data.map(d => d.profiles);
+}
+
+export async function getFollowersList(userId) {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+        .from('follows')
+        .select(`
+            follower_id,
+            profiles:follower_id (id, username, avatar_url, about)
+        `)
+        .eq('following_id', userId);
+    
+    if (error) return [];
+    return data.map(d => d.profiles);
+}
+
 export async function getProfileViews(username) {
     if (!supabase) return 0;
     const { data, error } = await supabase
@@ -344,11 +350,9 @@ export async function getUserSavedCount(userId) {
     return count || 0;
 }
 
-// ---- Leaderboard ---- //
 export async function getLeaderboard(limit = 20) {
     if (!supabase) return [];
 
-    // Get all public profiles
     const { data: profiles, error: pErr } = await supabase
         .from('profiles')
         .select('id, username, avatar_url, created_at')
@@ -356,7 +360,6 @@ export async function getLeaderboard(limit = 20) {
 
     if (pErr || !profiles) return [];
 
-    // For each profile, count followers, views, and saved items
     const results = [];
     for (const p of profiles) {
         const count = await getFollowerCount(p.id);
@@ -365,13 +368,9 @@ export async function getLeaderboard(limit = 20) {
         results.push({ ...p, followers: count, views, saved });
     }
 
-    // Sort by followers desc, take top N
     results.sort((a, b) => b.followers - a.followers);
     return results.slice(0, limit);
 }
-
-// ---- Avatar Upload ---- //
-// Requires Supabase Storage bucket named "avatars" (public)
 
 export async function uploadAvatar(file) {
     if (!supabase) return { error: 'Supabase not initialized' };
@@ -383,21 +382,17 @@ export async function uploadAvatar(file) {
     const ext = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${ext}`;
 
-    // Upload to storage
     const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
     if (uploadError) return { error: uploadError.message };
 
-    // Get public URL
     const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-    const publicUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
-
-    // Save URL to profile
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
     const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -415,8 +410,6 @@ export async function deleteAvatar() {
     if (!session) return { error: 'Please login' };
 
     const userId = session.user.id;
-
-    // List files in user's folder and remove all
     const { data: files } = await supabase.storage
         .from('avatars')
         .list(userId);
@@ -426,7 +419,6 @@ export async function deleteAvatar() {
         await supabase.storage.from('avatars').remove(paths);
     }
 
-    // Clear URL from profile
     const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
@@ -442,7 +434,6 @@ export async function deleteStory(storyId) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'Please login' };
 
-    // Only allow deletion if the user is the author
     const { data: blog, error: fetchError } = await supabase
         .from('blogs')
         .select('author')
@@ -463,7 +454,6 @@ export async function deleteStory(storyId) {
     return { success: true };
 }
 
-// ---- Media Upload System ---- //
 export async function uploadMediaFile(file) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
@@ -471,7 +461,6 @@ export async function uploadMediaFile(file) {
     if (!session) return { error: 'Please login' };
 
     const userId = session.user.id;
-    // Sanitize filename: remove spaces and special chars to help external viewers
     const safeName = file.name.replace(/\s+/g, '_').replace(/[^\w\.-]/g, '');
     const filePath = `${userId}/${Date.now()}-${safeName}`;
 
@@ -505,7 +494,6 @@ export async function listUserMedia() {
 
     if (error || !files) return [];
 
-    // Filter out potential folders and get public URLs
     return files
         .filter(f => f.name !== '.emptyFolderPlaceholder')
         .map(f => {

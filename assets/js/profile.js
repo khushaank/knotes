@@ -24,14 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { data: { session } } = await supabase.auth.getSession();
 
-    // Setup Tabs
     setupTabs();
 
-    // If viewing another user's profile (public mode)
     if (viewingUser) {
         profileContainer.classList.remove('hidden');
 
-        // Hide edit controls for public profiles
         if (aboutInput) aboutInput.disabled = true;
         if (updateBtn) updateBtn.style.display = 'none';
 
@@ -50,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Check if this is our own profile — re-enable editing
         const isOwnProfile = session && session.user.id === profile.id;
 
         if (isOwnProfile) {
@@ -61,7 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             setupAvatarEdit(profile);
             setupMediaLibrary();
         } else if (session) {
-            // Show follow button for other users
             followBtn.classList.remove('hidden');
             setupFollowButton(profile.id);
         }
@@ -69,7 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await setProfileData(profile);
         await loadSubmissions(profile.username, isOwnProfile);
 
-        // Show bookmarks for all public profiles
         document.getElementById('tab-saved')?.classList.remove('hidden');
         await loadBookmarks(profile.id);
 
@@ -77,13 +71,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             setupUpdateButton(session.user.id);
         }
 
-        // Always load hidden stories (localStorage, client-side only)
         await loadHiddenStories();
 
         return;
     }
-
-    // Own profile (no ?user= param)
     if (!session) {
         authMessage.classList.remove('hidden');
         return;
@@ -96,14 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userEmail = session.user.email;
     const defaultUsername = userEmail.split('@')[0];
 
-    // Fetch profile
     let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-    // If profile doesn't exist, create it
     if (!profile) {
         const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
@@ -131,31 +120,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupUpdateButton(userId);
     setupMediaLibrary();
 
-    // ---- Set Profile Data ---- //
     async function setProfileData(p) {
         usernameEl.textContent = p.username;
         document.title = `${p.username}'s Profile - K. Notes`;
         createdEl.textContent = new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         if (aboutInput) aboutInput.value = p.about || '';
 
-        // Avatar: show image if avatar_url exists, else show letter
         if (p.avatar_url) {
             setAvatarImage(p.avatar_url, p.username);
         } else {
             setAvatarLetter(p.username);
         }
 
-        // Karma = follower count
         const followers = await getFollowerCount(p.id);
         if (karmaEl) karmaEl.textContent = followers;
 
-        // Set privacy checkbox state
         if (isPublicCheckbox && p.is_public !== undefined) {
             isPublicCheckbox.checked = p.is_public === true;
         }
     }
 
-    // ---- Avatar Helpers ---- //
     function setAvatarLetter(username) {
         if (!avatarEl) return;
         const colors = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200'];
@@ -172,23 +156,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         avatarEl.innerHTML = `<img src="${url}" alt="${sanitize(username)}" class="avatar-img" onerror="this.remove()">`;
     }
 
-    // ---- Avatar Edit (pencil) ---- //
     function setupAvatarEdit(profile) {
         if (!avatarEditBtn) return;
         avatarEditBtn.classList.remove('hidden');
-
-        // Toggle menu
         avatarEditBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             avatarMenu.classList.toggle('hidden');
         });
 
-        // Close menu on outside click
         document.addEventListener('click', () => {
             avatarMenu.classList.add('hidden');
         });
-
-        // Upload
         document.getElementById('avatar-upload-btn')?.addEventListener('click', () => {
             avatarMenu.classList.add('hidden');
             avatarFileInput.click();
@@ -198,7 +176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Validate size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
                 alert('Image must be under 2MB');
                 return;
@@ -216,7 +193,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             avatarFileInput.value = '';
         });
 
-        // Delete
         document.getElementById('avatar-delete-btn')?.addEventListener('click', async () => {
             avatarMenu.classList.add('hidden');
             const result = await deleteAvatar();
@@ -228,7 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ---- Follow Button ---- //
     async function setupFollowButton(targetId) {
         if (!followBtn) return;
 
@@ -248,7 +223,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nowFollowing = result.action === 'followed';
             updateFollowUI(nowFollowing);
 
-            // Update karma count on page
             const newCount = await getFollowerCount(targetId);
             if (karmaEl) karmaEl.textContent = newCount;
         });
@@ -270,7 +244,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ---- Tabs ---- //
 function setupTabs() {
     const tabs = document.querySelectorAll('.profile-tab');
     const panes = document.querySelectorAll('.tab-pane');
@@ -318,7 +291,6 @@ function setupTabs() {
     switchTab(getHashTab());
 }
 
-// ---- List Rendering ---- //
 function generateListHtml(blogs, showDelete = false) {
     if (blogs.length === 0) {
         return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
@@ -344,7 +316,6 @@ function generateListHtml(blogs, showDelete = false) {
     return html;
 }
 
-// ---- Submissions ---- //
 async function loadSubmissions(username, isOwnProfile = false) {
     const { data: blogs, error: blogsError } = await supabase
         .from('blogs')
@@ -365,7 +336,6 @@ async function loadSubmissions(username, isOwnProfile = false) {
     if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'), isOwnProfile);
 }
 
-// ---- Bookmarks (Reading Lists) ---- //
 const DEFAULT_FOLDERS = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
 
 function getFolderMapping(userId) {
@@ -415,7 +385,6 @@ async function loadBookmarks(userId = null) {
         return;
     }
 
-    // Organize by folder
     const organized = {};
     DEFAULT_FOLDERS.forEach(f => organized[f] = []);
     organized['Uncategorized'] = [];
@@ -493,7 +462,6 @@ async function loadBookmarks(userId = null) {
 
     listEl.innerHTML = html;
 
-    // Add listeners for folder chips
     const chips = listEl.querySelectorAll('.folder-chip');
     const activeContent = document.getElementById('folder-active-content');
 
@@ -520,8 +488,6 @@ async function loadBookmarks(userId = null) {
         attachBookmarkListeners(activeContent);
     }
 
-    // Instead of click listeners that duplicate logic, just rely on hashchange
-    // But since loadBookmarks can be called multiple times, we must cleanup the old listener
     if (window._bookmarkHashListener) {
         window.removeEventListener('hashchange', window._bookmarkHashListener);
     }
@@ -557,7 +523,6 @@ async function loadBookmarks(userId = null) {
     attachBookmarkListeners(listEl);
 }
 
-// ---- Hidden Stories (from localStorage) ---- //
 async function loadHiddenStories() {
     const listEl = document.getElementById('hidden-list');
     if (!listEl) return;
@@ -605,7 +570,6 @@ async function loadHiddenStories() {
     html += '</ul>';
     listEl.innerHTML = html;
 
-    // Unhide button handlers
     listEl.querySelectorAll('.unhide-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-id');
@@ -629,7 +593,6 @@ async function loadHiddenStories() {
     });
 }
 
-// ---- Update Profile ---- //
 function setupUpdateButton(userId) {
     const updateBtn = document.getElementById('btn-update-profile');
     const aboutInput = document.getElementById('profile-about');
@@ -642,8 +605,8 @@ function setupUpdateButton(userId) {
     updateBtn.style.display = 'none';
 
     function checkForChanges() {
-        const hasChanged = aboutInput.value !== initialAbout || 
-                          (isPublicCheckbox && isPublicCheckbox.checked !== initialIsPublic);
+        const hasChanged = aboutInput.value !== initialAbout ||
+            (isPublicCheckbox && isPublicCheckbox.checked !== initialIsPublic);
         updateBtn.style.display = hasChanged ? 'inline-block' : 'none';
     }
 
@@ -668,10 +631,10 @@ function setupUpdateButton(userId) {
         } else {
             initialAbout = aboutInput.value;
             initialIsPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
-            
+
             updateBtn.textContent = 'updated ✓';
-            setTimeout(() => { 
-                updateBtn.textContent = 'update'; 
+            setTimeout(() => {
+                updateBtn.textContent = 'update';
                 checkForChanges();
             }, 1500);
             updateBtn.disabled = false;
@@ -679,7 +642,6 @@ function setupUpdateButton(userId) {
     });
 }
 
-// ---- Media Library ---- //
 function setupMediaLibrary() {
     const btnMedia = document.getElementById('btn-media-library-profile');
     const modal = document.getElementById('media-library-modal');
@@ -698,7 +660,6 @@ function setupMediaLibrary() {
     closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
 
-    // Close on Esc key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
             modal.classList.add('hidden');
@@ -774,7 +735,6 @@ function setupMediaLibrary() {
         });
         grid.innerHTML = html;
 
-        // Preview Logic
         grid.querySelectorAll('.media-item').forEach(item => {
             item.addEventListener('mouseenter', (e) => {
                 const url = item.getAttribute('data-url');
@@ -785,7 +745,6 @@ function setupMediaLibrary() {
         });
     }
 
-    // Preview Tooltip Element & Functions
     const previewTooltip = document.createElement('div');
     previewTooltip.className = 'media-preview-tooltip';
     document.body.appendChild(previewTooltip);
@@ -826,7 +785,6 @@ function setupMediaLibrary() {
         if (previewTooltip.classList.contains('visible')) updatePreviewPos(e);
     });
 
-    // Upload logic
     uploadBtn?.addEventListener('click', () => uploadInput.click());
     uploadInput?.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -854,7 +812,6 @@ function setupMediaLibrary() {
     });
 }
 
-// Global click listener for deleting posts
 document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-post-btn')) {
         const id = e.target.getAttribute('data-id');

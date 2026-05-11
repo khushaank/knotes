@@ -20,7 +20,6 @@ async function loadReadingLists() {
         return;
     }
 
-    // Organize posts by folder
     const organized = {};
     DEFAULT_FOLDERS.forEach(f => organized[f] = []);
     organized['Uncategorized'] = [];
@@ -79,24 +78,19 @@ async function loadReadingLists() {
 
     container.innerHTML = html;
 
-    // Add listeners for moving/removing
     container.querySelectorAll('.move-folder').forEach(select => {
         select.addEventListener('change', (e) => {
             const storyId = e.target.getAttribute('data-id');
             const newFolder = e.target.value;
             moveStoryToFolder(session.user.id, storyId, newFolder);
-            loadReadingLists(); // refresh
+            loadReadingLists();
         });
     });
 
     container.querySelectorAll('.remove-bookmark').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const storyId = e.target.getAttribute('data-id');
-            // Assuming we have access to toggleBookmark or similar
-            // For now, just remove from mapping and potentially Supabase
             if (confirm('Are you sure you want to remove this story from your lists?')) {
-                // We'd call toggleBookmark here if exported
-                // For simplicity in this demo, let's just clear the mapping
                 removeStoryFromFolder(session.user.id, storyId);
                 loadReadingLists();
             }
