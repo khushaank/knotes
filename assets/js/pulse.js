@@ -141,14 +141,11 @@ async function renderPage() {
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
                 <div class="story-meta mt-1 opacity-70">
                     <span class="text-xs">
-                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a>
-                        <span class="mx-1 opacity-40">|</span>
-                        ${timeAgo}
-                        <span class="mx-1 opacity-40">|</span>
-                        <a class="hover:underline" href="#">hide</a>
-                        <span class="mx-1 opacity-40">|</span>
-                        <span class="bookmark-container inline-flex items-center">
-                            <div class="knotes-dropdown" data-id="${story.id}">
+                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> | 
+                        ${timeAgo} | 
+                        <a class="hover:underline" href="#">hide</a> | 
+                        <span class="bookmark-container inline-block">
+                            <span class="knotes-dropdown inline-block" data-id="${story.id}">
                                 <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button>
                                 <div class="knotes-dropdown-menu hidden">
                                     <div class="dropdown-item" data-folder="To Learn">To Learn</div>
@@ -157,13 +154,10 @@ async function renderPage() {
                                     <div class="dropdown-item" data-folder="Reading List">Reading List</div>
                                     ${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}
                                 </div>
-                            </div>
-                        </span>
-                        <span class="mx-1 opacity-40">|</span>
-                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a>
-                        <span class="mx-1 opacity-40">|</span>
-                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a>
-                        <span class="mx-1 opacity-40">|</span>
+                            </span>
+                        </span> | 
+                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a> | 
+                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
                         <a href="#add-comment" class="hover:underline">add</a>
                     </span>
                 </div>

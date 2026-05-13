@@ -59,11 +59,16 @@ async function renderStories() {
             </tr>
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
-                <td class="story-meta">
-                    <span class="opacity-70">by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a></span><span class="mx-1 opacity-40">|</span><span class="opacity-70">${timeAgo}</span><span class="mx-1 opacity-40">|</span><a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a><span class="mx-1 opacity-40">|</span><span class="bookmark-container"><div class="knotes-dropdown" data-id="${story.id}"><button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button><div class="knotes-dropdown-menu hidden"><div class="dropdown-item" data-folder="To Learn">To Learn</div><div class="dropdown-item" data-folder="Inspiration">Inspiration</div><div class="dropdown-item" data-folder="Archive">Archive</div><div class="dropdown-item" data-folder="Reading List">Reading List</div>${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}</div></div></span><span class="mx-1 opacity-40">|</span><a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a><span class="mx-1 opacity-40">|</span><a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
+                <td class="story-meta opacity-70">
+                    by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
+                    ${timeAgo} | 
+                    <a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a> | 
+                    <span class="bookmark-container"><span class="knotes-dropdown inline-block" data-id="${story.id}"><button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button><div class="knotes-dropdown-menu hidden"><div class="dropdown-item" data-folder="To Learn">To Learn</div><div class="dropdown-item" data-folder="Inspiration">Inspiration</div><div class="dropdown-item" data-folder="Archive">Archive</div><div class="dropdown-item" data-folder="Reading List">Reading List</div>${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}</div></span></span> | 
+                    <a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a> | 
+                    <a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
                 </td>
             </tr>
-            <tr class="h-[5px] story-spacer" data-id="${story.id}"></tr>
+            <tr class="h-[2px] story-spacer" data-id="${story.id}"></tr>
         `;
     });
 
