@@ -1,5 +1,5 @@
 import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
-import { renderMarkdown, setupLinkPreviews } from './contentRenderer.js';
+import { renderMarkdown } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');
@@ -52,8 +52,15 @@ function renderCommentList(comments) {
     if (comments.length === 0) return '<div class="mt-4 text-secondary">No comments yet.</div>';
 
     let html = '';
-    comments.forEach(comment => {
+    const visibleCount = 2;
+
+    comments.forEach((comment, index) => {
         const timeAgo = calculateTimeAgo(comment.created_at);
+        
+        if (index === visibleCount) {
+             html += `<div id="extra-comments" class="hidden">`;
+        }
+
         html += `
             <div class="mb-2 comment-node">
                 <div class="flex items-start gap-1">
@@ -74,7 +81,24 @@ function renderCommentList(comments) {
                 </div>
             </div>
         `;
+
+        if (index >= visibleCount && index === comments.length - 1) {
+            html += `</div>`;
+        }
     });
+
+    if (comments.length > visibleCount) {
+        html += `
+            <div class="mt-8 mb-4 flex items-center gap-4">
+                <div class="flex-1 h-[1px] bg-gray-200"></div>
+                <button id="show-more-comments" class="group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-300 bg-white text-gray-500 hover:text-[#ff6600] hover:border-[#ff6600] hover:bg-[#fffbf0] text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer shadow-sm hover:shadow-md outline-none" data-more="${comments.length - visibleCount}" data-total="${comments.length}">
+                    <span class="material-symbols-outlined transition-transform duration-200" id="expand-icon" style="font-size: 18px;">expand_more</span>
+                    <span>View all ${comments.length} comments</span>
+                </button>
+                <div class="flex-1 h-[1px] bg-gray-200"></div>
+            </div>
+        `;
+    }
 
     return html;
 }
@@ -179,25 +203,14 @@ async function renderPage() {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderPage();
-    setupLinkPreviews();
+
 
     const addBtn = document.getElementById('add-comment-btn');
     const textarea = document.getElementById('comment-input');
-    const previewContainer = document.getElementById('markdown-preview');
-    const previewContent = document.getElementById('preview-content');
+
     const commentInputContainer = textarea?.parentElement;
 
-    if (textarea && previewContainer && previewContent) {
-        textarea.addEventListener('input', () => {
-            const val = textarea.value.trim();
-            if (val) {
-                previewContainer.classList.remove('hidden');
-                previewContent.innerHTML = renderMarkdown(val);
-            } else {
-                previewContainer.classList.add('hidden');
-            }
-        });
-    }
+
 
     async function checkAuth() {
         const { data: { session } } = await supabase.auth.getSession();
@@ -251,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await incrementCommentCount(window.currentStoryId);
 
             textarea.value = '';
-            if (previewContainer) previewContainer.classList.add('hidden');
+
             addBtn.disabled = false;
             addBtn.textContent = 'add comment';
             renderPage();
@@ -421,6 +434,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const origText = e.target.textContent;
                 e.target.textContent = 'link copied!';
                 setTimeout(() => { e.target.textContent = origText; }, 2000);
+            }
+        }
+
+        if (e.target.closest('#show-more-comments')) {
+            const btn = e.target.closest('#show-more-comments');
+            const extraComments = document.getElementById('extra-comments');
+            const icon = btn.querySelector('#expand-icon');
+            const text = btn.querySelector('span:not(.material-symbols-outlined)');
+            const totalCount = btn.getAttribute('data-total');
+
+            if (extraComments.classList.contains('hidden')) {
+                extraComments.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+                text.textContent = 'Hide comments';
+            } else {
+                extraComments.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+                text.textContent = `View all ${totalCount} comments`;
             }
         }
 

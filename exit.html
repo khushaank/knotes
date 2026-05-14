@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Leaving K. Notes</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link href="assets/css/exit.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container-wrap">
+        <header>
+            <div class="flex items-center gap-1 w-full text-[13px]">
+                <a href="index.html" title="K.Notes">K. Notes</a>
+            </div>
+        </header>
+        
+        <main>
+            <div class="message-box">
+                <b style="font-size: 11pt;">Leaving K. Notes</b>
+                <p style="margin-top: 8px; font-size: 10pt;">You are about to visit an external website:</p>
+                
+                <div id="url-display" class="url-box">Loading URL...</div>
+                
+                <p style="font-size: 10pt;">Would you like to continue to this external source?</p>
+                
+                <div style="margin-top: 16px;">
+                    <a id="continue-btn" href="#" class="btn btn-primary">Yes, Continue</a>
+                    <a href="javascript:history.back()" class="btn">No, Go Back</a>
+                </div>
+                
+                <div class="footer-note">
+                    Note: We are not responsible for the content of external websites. Please be careful when sharing personal information.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const targetUrl = params.get('url');
+            
+            if (targetUrl) {
+                const display = document.getElementById('url-display');
+                const continueBtn = document.getElementById('continue-btn');
+                
+                try {
+                    const urlObj = new URL(targetUrl);
+                    display.textContent = urlObj.href;
+                    continueBtn.href = urlObj.href;
+                } catch (e) {
+                    display.textContent = targetUrl;
+                    continueBtn.href = targetUrl;
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

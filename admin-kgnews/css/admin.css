@@ -33,7 +33,11 @@
     --transition: 0.2s ease;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -43,9 +47,11 @@ body {
     overflow-x: hidden;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
-/* ---- Login Gate ---- */
+
 #login-container {
     display: flex;
     align-items: center;
@@ -83,7 +89,7 @@ body {
     font-size: 14px;
 }
 
-/* ---- Buttons ---- */
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -103,37 +109,53 @@ body {
     background: var(--accent);
     color: #fff;
 }
-.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
 
 .btn-secondary {
     background: var(--bg-card-hover);
     color: var(--text-primary);
     border: 1px solid var(--border);
 }
-.btn-secondary:hover { background: var(--border); }
+
+.btn-secondary:hover {
+    background: var(--border);
+}
 
 .btn-outline-danger {
     background: transparent;
     color: var(--red);
     border: 1px solid var(--red);
 }
-.btn-outline-danger:hover { background: var(--red); color: #fff; }
+
+.btn-outline-danger:hover {
+    background: var(--red);
+    color: #fff;
+}
 
 .btn-danger {
     background: var(--red);
     color: #fff;
 }
-.btn-danger:hover { background: var(--red-hover); }
 
-.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-danger:hover {
+    background: var(--red-hover);
+}
 
-/* ---- Dashboard Shell ---- */
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+
 .dashboard-shell {
     display: flex;
     min-height: 100vh;
 }
 
-/* ---- Sidebar ---- */
+
 .sidebar {
     position: fixed;
     left: 0;
@@ -210,7 +232,7 @@ body {
     border-top: 1px solid var(--border);
 }
 
-/* ---- Main Area ---- */
+
 .main-wrap {
     margin-left: var(--sidebar-width);
     flex: 1;
@@ -263,7 +285,7 @@ body {
     padding: 28px;
 }
 
-/* ---- Cards ---- */
+
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -282,7 +304,7 @@ body {
     color: var(--text-primary);
 }
 
-/* ---- Section Header ---- */
+
 .section-title {
     font-size: 22px;
     font-weight: 700;
@@ -298,9 +320,11 @@ body {
     gap: 12px;
 }
 
-.section-header .section-title { margin-bottom: 0; }
+.section-header .section-title {
+    margin-bottom: 0;
+}
 
-/* ---- Metric Cards ---- */
+
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -355,7 +379,7 @@ body {
     line-height: 1;
 }
 
-/* ---- Charts ---- */
+
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -369,7 +393,7 @@ body {
     position: relative;
 }
 
-/* ---- Tables ---- */
+
 .table-container {
     overflow-x: auto;
 }
@@ -379,7 +403,8 @@ table {
     border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
     padding: 12px 18px;
     text-align: left;
     border-bottom: 1px solid var(--border);
@@ -396,22 +421,28 @@ th {
     letter-spacing: 0.6px;
 }
 
-td { color: var(--text-primary); }
+td {
+    color: var(--text-primary);
+}
 
 td a {
     color: var(--accent);
     text-decoration: none;
 }
-td a:hover { text-decoration: underline; }
+
+td a:hover {
+    text-decoration: underline;
+}
 
 tbody tr {
     transition: background var(--transition);
 }
+
 tbody tr:hover {
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* Toggle switch for admin */
+
 .toggle-switch {
     position: relative;
     width: 40px;
@@ -428,7 +459,10 @@ tbody tr:hover {
 .toggle-slider {
     position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: 22px;
@@ -447,22 +481,22 @@ tbody tr:hover {
     transition: var(--transition);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background: var(--accent);
     border-color: var(--accent);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
     transform: translateX(18px);
     background: #fff;
 }
 
-.toggle-switch input:disabled + .toggle-slider {
+.toggle-switch input:disabled+.toggle-slider {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
-/* ---- Activity List ---- */
+
 .activity-list {
     list-style: none;
     padding: 0;
@@ -482,7 +516,9 @@ tbody tr:hover {
     line-height: 1.5;
 }
 
-.activity-item:last-child { border-bottom: none; }
+.activity-item:last-child {
+    border-bottom: none;
+}
 
 .activity-dot {
     width: 8px;
@@ -506,7 +542,7 @@ tbody tr:hover {
     flex-shrink: 0;
 }
 
-/* ---- Health Grid ---- */
+
 .health-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -522,8 +558,13 @@ tbody tr:hover {
     gap: 4px;
 }
 
-.health-item:nth-child(2n) { border-right: none; }
-.health-item:nth-last-child(-n+2) { border-bottom: none; }
+.health-item:nth-child(2n) {
+    border-right: none;
+}
+
+.health-item:nth-last-child(-n+2) {
+    border-bottom: none;
+}
 
 .health-label {
     font-size: 12px;
@@ -536,7 +577,7 @@ tbody tr:hover {
     color: var(--text-primary);
 }
 
-/* ---- Create Post Form ---- */
+
 .create-post-form {
     padding: 22px;
     display: flex;
@@ -582,11 +623,16 @@ tbody tr:hover {
     border-color: var(--accent);
 }
 
-.form-group textarea { resize: vertical; }
+.form-group textarea {
+    resize: vertical;
+}
 
-.text-muted { color: var(--text-muted); font-weight: 400; }
+.text-muted {
+    color: var(--text-muted);
+    font-weight: 400;
+}
 
-/* ---- Toast Notifications ---- */
+
 #toast-container {
     position: fixed;
     bottom: 24px;
@@ -612,21 +658,43 @@ tbody tr:hover {
     min-width: 280px;
 }
 
-.toast.success { border-left: 3px solid var(--green); }
-.toast.error { border-left: 3px solid var(--red); }
-.toast.info { border-left: 3px solid var(--blue); }
+.toast.success {
+    border-left: 3px solid var(--green);
+}
+
+.toast.error {
+    border-left: 3px solid var(--red);
+}
+
+.toast.info {
+    border-left: 3px solid var(--blue);
+}
 
 @keyframes toastIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes toastOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(20px); }
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
 }
 
-/* ---- Status badge ---- */
+
 .status-badge {
     display: inline-block;
     padding: 3px 10px;
@@ -647,11 +715,24 @@ tbody tr:hover {
     color: var(--text-secondary);
 }
 
-/* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-light);
+}
 
 /* ========================================
    RESPONSIVE
@@ -725,7 +806,7 @@ tbody tr:hover {
     }
 }
 
-/* Sidebar overlay for mobile */
+
 .sidebar-overlay {
     display: none;
     position: fixed;

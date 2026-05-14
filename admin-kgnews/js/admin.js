@@ -734,11 +734,11 @@ window.adminActions = {
             showToast(isAdmin ? 'User promoted to admin.' : 'Admin privileges revoked.', 'success');
         }
     },
-    
+
     async sharePost(title, relUrl) {
         const fullUrl = window.location.origin + relUrl.replace('..', '');
         if (navigator.share) {
-            navigator.share({ title, url: fullUrl }).catch(() => {});
+            navigator.share({ title, url: fullUrl }).catch(() => { });
         } else {
             navigator.clipboard.writeText(fullUrl);
             showToast('Link copied to clipboard!', 'info');

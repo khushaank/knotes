@@ -30,45 +30,7 @@
         rel="stylesheet" />
 
 
-    <style>
-        #submit-form,
-        #auth-message {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-        }
-
-        #submit-form.ready,
-        #auth-message.ready {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        #submit-loading {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 16px 0;
-        }
-
-        #submit-loading .skel-bar {
-            height: 14px;
-            background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: 200% 0;
-            }
-
-            100% {
-                background-position: -200% 0;
-            }
-        }
-    </style>
+    <link href="assets/css/submit.css" rel="stylesheet" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -179,11 +141,6 @@
                                 <textarea id="submit-text"
                                     class="border border-gray-400 p-1 text-sm w-full h-32 focus:outline-none focus:border-[#ff6600]"
                                     maxlength="40000" placeholder="Write your text here (supports Markdown)"></textarea>
-                                <div id="markdown-preview"
-                                    class="hidden w-full mt-2 p-2 border border-dashed border-gray-300 bg-gray-50 text-[10pt] leading-snug comment-body opacity-70">
-                                    <div class="text-[9px] uppercase tracking-wider text-gray-400 mb-1">Preview</div>
-                                    <div id="preview-content"></div>
-                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -224,9 +181,7 @@
                         </li>
                         <li><b>Images:</b> Paste a direct link to an image ending in <code>.jpg, .png, .gif</code> and
                             it will auto-embed. Or use Markdown: <code>![alt text](image_url)</code>.</li>
-                        <li><b>Live Previews:</b> Any regular link you type will automatically become clickable. Better
-                            yet, users can <b>hover</b> over your links to see a live preview window of the webpage!
-                        </li>
+
                         <li><b>Markdown & HTML:</b> You can use standard Markdown for bold (<code>**bold**</code>),
                             lists, and even standard HTML tags.</li>
                         <li><b>Indentation:</b> Your spacing and indentation will be preserved perfectly.</li>
@@ -295,6 +250,7 @@
         </div>
     </div>
 
+    <script src="assets/js/exit-interceptor.js"></script>
     <script type="module" src="assets/js/submit.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>

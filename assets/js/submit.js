@@ -304,24 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnUploadImage = document.getElementById('btn-upload-image');
     const imageUploadInput = document.getElementById('image-upload-input');
     const textarea = document.getElementById('submit-text');
-    const previewContainer = document.getElementById('markdown-preview');
-    const previewContent = document.getElementById('preview-content');
 
-    if (textarea && previewContainer && previewContent) {
-        let previewDebounce = null;
-        textarea.addEventListener('input', () => {
-            clearTimeout(previewDebounce);
-            previewDebounce = setTimeout(() => {
-                const val = textarea.value.trim();
-                if (val) {
-                    previewContainer.classList.remove('hidden');
-                    previewContent.innerHTML = renderMarkdown(val);
-                } else {
-                    previewContainer.classList.add('hidden');
-                }
-            }, 200);
-        });
-    }
 
     if (btnUploadImage && imageUploadInput) {
         btnUploadImage.addEventListener('click', () => {
@@ -449,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             insertAtCursor(textarea, `\n[${sanitize(name)}](${url})\n`);
                         }
                         mediaModal.classList.add('hidden');
-                        hidePreview();
+
                     });
 
                     item.addEventListener('mouseenter', (e) => {
