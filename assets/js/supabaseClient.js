@@ -308,7 +308,7 @@ export async function getFollowingList(userId) {
         .from('follows')
         .select(`
             following_id,
-            profiles:following_id (id, username, avatar_url, about)
+            profiles!following_id (id, username, avatar_url, about)
         `)
         .eq('follower_id', userId);
     
@@ -322,7 +322,7 @@ export async function getFollowersList(userId) {
         .from('follows')
         .select(`
             follower_id,
-            profiles:follower_id (id, username, avatar_url, about)
+            profiles!follower_id (id, username, avatar_url, about)
         `)
         .eq('following_id', userId);
     
@@ -504,5 +504,60 @@ export async function listUserMedia() {
                 created_at: f.created_at
             };
         });
+}
+
+export async function getUserComments(userId) {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+        .from('comments')
+        .select(`
+            id,
+            comment_text,
+            created_at,
+            blog_id,
+            blogs (title, slug)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    
+    if (error) return [];
+    return data;
+}
+
+export async function updateComment(commentId, newText) {
+    if (!supabase) return { error: 'Supabase not initialized' };
+    const { error } = await supabase
+        .from('comments')
+        .update({ comment_text: newText })
+        .eq('id', commentId);
+    if (error) return { error: error.message };
+    return { success: true };
+}
+
+export async function deleteComment(commentId, blogId) {
+    if (!supabase) return { error: 'Supabase not initialized' };
+    
+    const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+        
+    if (error) return { error: error.message };
+
+    // Update comment count on the blog
+    const { data: blog } = await supabase
+        .from('blogs')
+        .select('comments_count')
+        .eq('id', blogId)
+        .single();
+
+    if (blog) {
+        await supabase
+            .from('blogs')
+            .update({ comments_count: Math.max(0, (blog.comments_count || 1) - 1) })
+            .eq('id', blogId);
+    }
+
+    return { success: true };
 }
 

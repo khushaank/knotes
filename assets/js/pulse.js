@@ -113,7 +113,11 @@ async function renderPage() {
     trackClick(story.id);
 
     userBookmarks = await getUserBookmarks();
+    const { data: { session } } = await supabase.auth.getSession();
+    const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
+    
     const isBookmarked = userBookmarks.includes(story.id);
+    const currentFolder = folderMapping[story.id];
 
     const cleanTitle = sanitize(story.title);
     const cleanExcerpt = sanitize(story.excerpt || story.content || '').substring(0, 160);
@@ -163,20 +167,22 @@ async function renderPage() {
                     <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
                 </h1>
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
-                <div class="story-meta mt-1 opacity-70">
+                <div class="story-meta mt-1">
                     <span class="text-xs">
                         by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> | 
                         ${timeAgo} | 
                         <a class="hover:underline" href="#">hide</a> | 
                         <span class="bookmark-container inline-block">
                             <span class="knotes-dropdown inline-block" data-id="${story.id}">
-                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button>
+                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? `Saved to ${currentFolder || 'list'}` : 'Add to list'}">
+                                    ${isBookmarked ? 'saved' : '+'}
+                                </button>
                                 <div class="knotes-dropdown-menu hidden">
-                                    <div class="dropdown-item" data-folder="To Learn">To Learn</div>
-                                    <div class="dropdown-item" data-folder="Inspiration">Inspiration</div>
-                                    <div class="dropdown-item" data-folder="Archive">Archive</div>
-                                    <div class="dropdown-item" data-folder="Reading List">Reading List</div>
-                                    ${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}
+                                    <div class="dropdown-item ${currentFolder === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
+                                    <div class="dropdown-item ${currentFolder === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
+                                    <div class="dropdown-item ${currentFolder === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
+                                    <div class="dropdown-item ${currentFolder === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
+                                    ${isBookmarked ? '<div class="dropdown-divider border-t border-gray-100 my-1"></div><div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>' : ''}
                                 </div>
                             </span>
                         </span> | 
@@ -243,21 +249,23 @@ document.addEventListener('DOMContentLoaded', () => {
             addBtn.disabled = true;
             addBtn.textContent = 'posting...';
 
-            const { error } = await supabase
+            const { data: comment, error } = await supabase
                 .from('comments')
-                .insert([
-                    {
-                        blog_id: window.currentStoryId,
-                        comment_text: content,
-                        user_name: user.email.split('@')[0],
-                        user_id: user.id
-                    }
-                ]);
+                .insert({
+                    blog_id: window.currentStoryId,
+                    user_id: user.id,
+                    user_name: user.email.split('@')[0],
+                    comment_text: content,
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .maybeSingle();
 
             if (error) {
-                alert('Failed to add comment.');
+                console.error('Comment error:', error);
+                alert('Failed to post comment: ' + error.message);
                 addBtn.disabled = false;
-                addBtn.textContent = 'add comment';
+                addBtn.textContent = 'post comment';
                 return;
             }
 
@@ -392,13 +400,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
+                
+                // Add Unsave option if not present
                 if (!menu.querySelector('[data-folder="unsave"]')) {
+                    const divider = document.createElement('div');
+                    divider.className = 'dropdown-divider border-t border-gray-100 my-1';
+                    menu.appendChild(divider);
+                    
                     const opt = document.createElement('div');
-                    opt.className = 'dropdown-item text-red-500';
+                    opt.className = 'dropdown-item text-red-500 font-medium';
                     opt.setAttribute('data-folder', 'unsave');
                     opt.textContent = 'Unsave';
                     menu.appendChild(opt);
                 }
+                
+                // Highlight selected folder
+                menu.querySelectorAll('.dropdown-item').forEach(i => {
+                    if (i.getAttribute('data-folder') === folderName) {
+                        i.classList.add('bg-orange-50', 'text-[#ff6600]', 'font-bold');
+                    } else {
+                        i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold');
+                    }
+                });
+
                 showInlineMsg(trigger, `Added to ${folderName}`);
             }
             menu.classList.add('hidden');

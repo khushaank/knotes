@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory, listUserMedia, uploadMediaFile } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory, listUserMedia, uploadMediaFile, getUserComments, updateComment, deleteComment, getFollowingList, getFollowersList } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const profileContainer = document.getElementById('profile-container');
@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (privacyContainer) privacyContainer.style.display = '';
             setupAvatarEdit(profile);
             setupMediaLibrary();
+            document.getElementById('tab-comments')?.classList.remove('hidden');
+            await loadComments(profile.id);
+            await loadSubscriptions(profile.id);
         } else if (session) {
             followBtn.classList.remove('hidden');
             setupFollowButton(profile.id);
@@ -116,9 +119,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadSubmissions(profile?.username || defaultUsername, true);
     await loadBookmarks();
+    await loadComments(userId);
+    await loadSubscriptions(userId);
     await loadHiddenStories();
     setupUpdateButton(userId);
     setupMediaLibrary();
+    document.getElementById('tab-comments')?.classList.remove('hidden');
 
     async function setProfileData(p) {
         usernameEl.textContent = p.username;
@@ -417,15 +423,23 @@ async function loadBookmarks(userId = null) {
                                 <a href="${post.url || `pulse/index.html?s=${post.slug}`}" class="text-[14px] text-black hover:underline leading-tight font-medium">${sanitize(post.title)}</a>
                                 ${domain ? `<span class="text-[11px] text-gray-400">(${domain})</span>` : ''}
                             </div>
-                            <div class="story-meta flex items-center gap-1 opacity-60 ml-4.5">
+                            <div class="story-meta flex items-center gap-1 ml-4.5">
                                 <span class="text-[11px]">
                                     by ${post.author} ${timeAgo} | 
-                                    <span class="bookmark-container">
-                                        <select class="move-folder folder-picker" data-id="${post.id}" data-current-folder="${folderName}">
-                                            <option value="" disabled selected>+</option>
-                                            ${DEFAULT_FOLDERS.map(f => `<option value="${f}" ${f === folderName ? 'disabled' : ''}>${f}</option>`).join('')}
-                                            <option value="Uncategorized" ${folderName === 'Uncategorized' ? 'disabled' : ''}>Uncategorized</option>
-                                        </select>
+                                    <span class="bookmark-container inline-block">
+                                        <span class="knotes-dropdown inline-block" data-id="${post.id}">
+                                            <button class="knotes-dropdown-trigger saved" title="Move to folder">
+                                                saved
+                                            </button>
+                                            <div class="knotes-dropdown-menu hidden">
+                                                <div class="dropdown-item ${folderName === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
+                                                <div class="dropdown-item ${folderName === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
+                                                <div class="dropdown-item ${folderName === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
+                                                <div class="dropdown-item ${folderName === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
+                                                <div class="dropdown-divider border-t border-gray-100 my-1"></div>
+                                                <div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>
+                                            </div>
+                                        </span>
                                         <a href="#" class="remove-bookmark hover:underline text-red-400 ml-0.5" data-id="${post.id}">remove</a>
                                     </span>
                                 </span>
@@ -437,7 +451,7 @@ async function loadBookmarks(userId = null) {
         `;
     }
 
-    let currentFolder = 'Reading List';
+    let currentFolder = 'To Learn';
     const currentHash = window.location.hash.substring(1);
     if (currentHash.startsWith('saved/')) {
         const folderSlug = currentHash.split('/')[1];
@@ -466,7 +480,7 @@ async function loadBookmarks(userId = null) {
     const activeContent = document.getElementById('folder-active-content');
 
     function updateFolderView() {
-        let targetFolder = 'Reading List';
+        let targetFolder = 'To Learn';
         const hash = window.location.hash.substring(1);
         if (hash.startsWith('saved/')) {
             const folderSlug = hash.split('/')[1];
@@ -499,12 +513,36 @@ async function loadBookmarks(userId = null) {
     window.addEventListener('hashchange', window._bookmarkHashListener);
 
     function attachBookmarkListeners(container) {
-        container.querySelectorAll('.move-folder').forEach(select => {
-            select.addEventListener('change', async (e) => {
-                const storyId = e.target.getAttribute('data-id');
-                const newFolder = e.target.value;
-                moveStoryToFolder(currentUserId, storyId, newFolder);
-                await loadBookmarks(currentUserId);
+        container.querySelectorAll('.knotes-dropdown-trigger').forEach(trigger => {
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                const menu = trigger.nextElementSibling;
+                document.querySelectorAll('.knotes-dropdown-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('hidden');
+                });
+                menu.classList.toggle('hidden');
+            });
+        });
+
+        container.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                const folderName = item.getAttribute('data-folder');
+                const dropdown = item.closest('.knotes-dropdown');
+                const storyId = dropdown.getAttribute('data-id');
+                const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
+                
+                if (folderName === 'unsave') {
+                    removeStoryFromFolder(currentUserId, storyId);
+                    // Also trigger the actual bookmark removal if needed, but here it's likely already in Supabase
+                    // Since it's in the "Saved" tab, removing from folder might mean unsaving.
+                    // Let's call toggleBookmark if it's the own profile.
+                    const { toggleBookmark } = await import('./supabaseClient.js');
+                    await toggleBookmark(parseInt(storyId));
+                    await loadBookmarks(currentUserId);
+                } else {
+                    moveStoryToFolder(currentUserId, storyId, folderName);
+                    await loadBookmarks(currentUserId);
+                }
             });
         });
 
@@ -833,4 +871,264 @@ document.addEventListener('click', async (e) => {
             }
         }
     }
+    if (!e.target.closest('.knotes-dropdown')) {
+        document.querySelectorAll('.knotes-dropdown-menu').forEach(m => m.classList.add('hidden'));
+    }
 });
+
+let commentSortOrder = 'newest';
+
+async function loadComments(userId) {
+    const listEl = document.getElementById('comments-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading your comments...</div>';
+
+    const comments = await getUserComments(userId);
+
+    if (comments.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 italic py-4">You haven\'t posted any comments yet.</p>';
+        return;
+    }
+
+    const sortedComments = [...comments].sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return commentSortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
+    let html = `
+        <div class="flex items-center gap-4 mb-4 pb-1 border-b border-gray-100">
+            <button class="sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'newest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-sort="newest">Newest First</button>
+            <button class="sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'oldest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-sort="oldest">Oldest First</button>
+        </div>
+        <div class="space-y-6">
+    `;
+
+    sortedComments.forEach(comment => {
+        const timeAgo = calculateTimeAgo(comment.created_at);
+        const story = comment.blogs || { title: 'Unknown Story', slug: '#' };
+
+        html += `
+            <div class="comment-item pb-4 border-b border-gray-100 last:border-0" data-id="${comment.id}" data-blog-id="${comment.blog_id}">
+                <div class="text-[11px] text-gray-500 mb-1 flex items-center justify-between">
+                    <span>
+                        <span class="text-gray-400 text-[12px] select-none mr-1">›</span>
+                        on <a href="pulse/index.html?s=${story.slug}" class="text-black font-medium hover:underline">${sanitize(story.title)}</a>
+                        · ${timeAgo}
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <button class="edit-comment-btn text-gray-400 hover:text-[#ff6600] cursor-pointer transition-colors" data-id="${comment.id}" title="Edit comment">
+                            <span class="material-symbols-outlined" style="font-size:16px">edit</span>
+                        </button>
+                        <button class="delete-comment-btn text-gray-400 hover:text-red-600 cursor-pointer transition-colors" data-id="${comment.id}" title="Delete comment">
+                            <span class="material-symbols-outlined" style="font-size:16px">delete</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="comment-body text-sm text-gray-800 leading-relaxed whitespace-pre-wrap ml-4">${sanitize(comment.comment_text)}</div>
+                <div class="edit-mode hidden mt-2 ml-4">
+                    <textarea class="w-full border border-gray-300 p-2 text-sm focus:outline-none focus:border-[#ff6600] rounded-sm resize-y h-24 mb-2">${sanitize(comment.comment_text)}</textarea>
+                    <div class="flex items-center gap-2">
+                        <button class="save-comment-btn bg-[#ff6600] text-white px-3 py-1 text-xs rounded hover:bg-[#e65c00] transition-colors cursor-pointer">save</button>
+                        <button class="cancel-edit-btn text-gray-500 text-xs hover:underline cursor-pointer">cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    listEl.innerHTML = html;
+
+    listEl.querySelectorAll('.sort-comments').forEach(btn => {
+        btn.addEventListener('click', () => {
+            commentSortOrder = btn.getAttribute('data-sort');
+            loadComments(userId);
+        });
+    });
+
+    // Attach listeners
+    listEl.querySelectorAll('.delete-comment-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const commentId = btn.getAttribute('data-id');
+            const item = btn.closest('.comment-item');
+            const blogId = item.getAttribute('data-blog-id');
+
+            if (confirm('Are you sure you want to delete this comment?')) {
+                btn.disabled = true;
+                const icon = btn.querySelector('.material-symbols-outlined');
+                const originalText = icon.textContent;
+                icon.textContent = 'sync';
+                icon.classList.add('animate-spin');
+
+                const result = await deleteComment(commentId, blogId);
+                if (result.error) {
+                    alert('Delete failed: ' + result.error);
+                    btn.disabled = false;
+                    icon.textContent = originalText;
+                    icon.classList.remove('animate-spin');
+                } else {
+                    item.remove();
+                    if (listEl.querySelectorAll('.comment-item').length === 0) {
+                        listEl.innerHTML = '<p class="text-gray-500 italic py-4">You haven\'t posted any comments yet.</p>';
+                    }
+                }
+            }
+        });
+    });
+
+    listEl.querySelectorAll('.edit-comment-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = btn.closest('.comment-item');
+            item.querySelector('.comment-body').classList.add('hidden');
+            item.querySelector('.edit-mode').classList.remove('hidden');
+            btn.closest('.flex').classList.add('invisible');
+        });
+    });
+
+    listEl.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = btn.closest('.comment-item');
+            item.querySelector('.comment-body').classList.remove('hidden');
+            item.querySelector('.edit-mode').classList.add('hidden');
+            item.querySelector('.flex.items-center.justify-between .flex').classList.remove('invisible');
+        });
+    });
+
+    listEl.querySelectorAll('.save-comment-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const item = btn.closest('.comment-item');
+            const commentId = item.getAttribute('data-id');
+            const newText = item.querySelector('textarea').value.trim();
+
+            if (!newText) {
+                alert('Comment cannot be empty');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'saving...';
+            const result = await updateComment(commentId, newText);
+            btn.disabled = false;
+            btn.textContent = 'save';
+
+            if (result.error) {
+                alert('Update failed: ' + result.error);
+            } else {
+                item.querySelector('.comment-body').textContent = newText;
+                item.querySelector('.comment-body').classList.remove('hidden');
+                item.querySelector('.edit-mode').classList.add('hidden');
+                item.querySelector('.flex.items-center.justify-between .flex').classList.remove('invisible');
+            }
+        });
+    });
+}
+
+async function loadSubscriptions(userId) {
+    const listEl = document.getElementById('subscriptions-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading subscriptions...</div>';
+
+    const following = await getFollowingList(userId);
+    const followers = await getFollowersList(userId);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session ? session.user.id : null;
+    
+    let myFollowingIds = [];
+    if (currentUserId) {
+        const myFollowing = await getFollowingList(currentUserId);
+        myFollowingIds = myFollowing.map(u => u.id);
+    }
+
+    function renderUserItem(p, type) {
+        const isFollowed = myFollowingIds.includes(p.id);
+        const isMe = currentUserId === p.id;
+        const colorClass = type === 'following' ? 'text-[#ff6600]' : 'text-blue-500';
+        const bgClass = type === 'following' ? 'bg-orange-50' : 'bg-blue-50';
+
+        return `
+            <div class="flex items-center gap-3 p-2 bg-white rounded border border-gray-100 hover:border-[#ff6600] transition-colors">
+                <div class="w-8 h-8 ${bgClass} rounded-full flex items-center justify-center text-xs font-bold ${colorClass} uppercase overflow-hidden">
+                    ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full object-cover">` : (p.username ? p.username.charAt(0) : '?')}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <a href="profile.html?user=${p.username}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
+                    <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || 'No bio available')}</p>
+                </div>
+                ${currentUserId && !isMe ? `
+                    <button class="sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${isFollowed ? 'bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200' : 'bg-white border-[#ff6600] text-[#ff6600] hover:bg-[#ff6600] hover:text-white'}" 
+                            data-id="${p.id}" 
+                            data-followed="${isFollowed}">
+                        ${isFollowed ? 'Following' : 'Follow'}
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    let html = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2">
+                    <span class="material-symbols-outlined" style="font-size:14px">person_add</span>
+                    Following (${following.length})
+                </h3>
+                ${following.length === 0 ? '<p class="text-gray-400 italic text-xs">Not following anyone yet.</p>' : `
+                    <div class="space-y-3">
+                        ${following.map(p => renderUserItem(p, 'following')).join('')}
+                    </div>
+                `}
+            </div>
+            <div>
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2">
+                    <span class="material-symbols-outlined" style="font-size:14px">group</span>
+                    Followers (${followers.length})
+                </h3>
+                ${followers.length === 0 ? '<p class="text-gray-400 italic text-xs">No followers yet.</p>' : `
+                    <div class="space-y-3">
+                        ${followers.map(p => renderUserItem(p, 'followers')).join('')}
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+
+    listEl.innerHTML = html;
+
+    listEl.querySelectorAll('.sub-follow-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const targetId = btn.getAttribute('data-id');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+
+            const result = await toggleFollow(targetId);
+            btn.disabled = false;
+            btn.style.opacity = '1';
+
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            const nowFollowed = result.action === 'followed';
+            btn.setAttribute('data-followed', nowFollowed);
+            btn.textContent = nowFollowed ? 'Following' : 'Follow';
+            
+            if (nowFollowed) {
+                btn.className = 'sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200';
+            } else {
+                btn.className = 'sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap bg-white border-[#ff6600] text-[#ff6600] hover:bg-[#ff6600] hover:text-white';
+            }
+
+            // If we are viewing our own profile, we might want to refresh the counts
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewingUser = urlParams.get('user');
+            if (!viewingUser || (session && viewingUser === session.user.email.split('@')[0])) {
+                // Refresh lists after a short delay
+                setTimeout(() => loadSubscriptions(userId), 500);
+            }
+        });
+    });
+}

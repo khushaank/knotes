@@ -50,7 +50,7 @@
                 exitPath = '../exit.html';
             }
 
-            window.location.href = `${exitPath}?url=${encodeURIComponent(absoluteUrl)}`;
+            window.open(`${exitPath}?url=${encodeURIComponent(absoluteUrl)}`, '_blank');
         }
     }
 

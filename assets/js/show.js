@@ -44,9 +44,14 @@ async function renderStories() {
     let html = '';
     const startIndex = (page - 1) * STORIES_PER_PAGE;
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
+
     stories.forEach((story, index) => {
         const timeAgo = calculateTimeAgo(story.published_at);
         const isBookmarked = userBookmarks.includes(story.id);
+        const currentFolder = folderMapping[story.id];
+
         html += `
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
@@ -60,11 +65,24 @@ async function renderStories() {
             </tr>
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
-                <td class="story-meta opacity-70">
+                <td class="story-meta">
                     by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
                     ${timeAgo} | 
                     <a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a> | 
-                    <span class="bookmark-container"><span class="knotes-dropdown inline-block" data-id="${story.id}"><button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}">${isBookmarked ? 'saved' : '+'}</button><div class="knotes-dropdown-menu hidden"><div class="dropdown-item" data-folder="To Learn">To Learn</div><div class="dropdown-item" data-folder="Inspiration">Inspiration</div><div class="dropdown-item" data-folder="Archive">Archive</div><div class="dropdown-item" data-folder="Reading List">Reading List</div>${isBookmarked ? '<div class="dropdown-item text-red-500" data-folder="unsave">Unsave</div>' : ''}</div></span></span> | 
+                    <span class="bookmark-container">
+                        <span class="knotes-dropdown inline-block" data-id="${story.id}">
+                            <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? `Saved to ${currentFolder || 'list'}` : 'Add to list'}">
+                                ${isBookmarked ? 'saved' : '+'}
+                            </button>
+                            <div class="knotes-dropdown-menu hidden">
+                                <div class="dropdown-item ${currentFolder === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
+                                <div class="dropdown-item ${currentFolder === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
+                                <div class="dropdown-item ${currentFolder === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
+                                <div class="dropdown-item ${currentFolder === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
+                                ${isBookmarked ? '<div class="dropdown-divider border-t border-gray-100 my-1"></div><div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>' : ''}
+                            </div>
+                        </span>
+                    </span> | 
                     <a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a> | 
                     <a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
                 </td>
@@ -203,13 +221,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
+                
+                // Add Unsave option if not present
                 if (!menu.querySelector('[data-folder="unsave"]')) {
+                    const divider = document.createElement('div');
+                    divider.className = 'dropdown-divider border-t border-gray-100 my-1';
+                    menu.appendChild(divider);
+                    
                     const opt = document.createElement('div');
-                    opt.className = 'dropdown-item text-red-500';
+                    opt.className = 'dropdown-item text-red-500 font-medium';
                     opt.setAttribute('data-folder', 'unsave');
                     opt.textContent = 'Unsave';
                     menu.appendChild(opt);
                 }
+                
+                // Highlight selected folder
+                menu.querySelectorAll('.dropdown-item').forEach(i => {
+                    if (i.getAttribute('data-folder') === folderName) {
+                        i.classList.add('bg-orange-50', 'text-[#ff6600]', 'font-bold');
+                    } else {
+                        i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold');
+                    }
+                });
+
                 showTip(trigger, `Added to ${folderName}`);
             }
             menu.classList.add('hidden');

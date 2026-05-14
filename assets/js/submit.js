@@ -253,26 +253,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { data, error } = await supabase
                 .from('blogs')
-                .insert([
-                    {
-                        title,
-                        url: url || null,
-                        content: text || null,
-                        author,
-                        category: finalCategory,
-                        status: 'published',
-                        published_at: new Date().toISOString(),
-                        slug
-                    }
-                ])
-                .select();
+                .insert({
+                    title,
+                    url: url || '',
+                    content: text || '',
+                    author,
+                    category: finalCategory,
+                    status: 'published',
+                    published_at: new Date().toISOString(),
+                    slug,
+                    likes_count: 0,
+                    comments_count: 0,
+                    clicks_count: 0
+                })
+                .select()
+                .maybeSingle();
 
             if (error) {
                 console.error('Submit error:', error);
-                const userMsg = error.message?.includes('duplicate')
-                    ? 'A post with this title already exists.'
-                    : 'Failed to submit. Please try again.';
-                showStatus(userMsg, true);
+                let userMsg = error.message;
+                if (error.code === '23505') userMsg = 'A post with this title already exists.';
+                if (error.details) userMsg += ' (' + error.details + ')';
+                
+                showStatus('Submit Error: ' + userMsg, true);
                 if (btnSubmit) {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = 'submit';
