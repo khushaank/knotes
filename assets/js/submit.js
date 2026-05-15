@@ -12,11 +12,18 @@ function generateSlug(title) {
 
 function sanitize(str) {
     if (typeof str !== 'string') return '';
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(str, {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre', 'blockquote'],
+            ALLOWED_ATTR: ['href', 'title', 'target']
+        });
+    }
     return str
-        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/javascript\s*:/gi, '')
-        .trim();
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 const rateLimit = {
@@ -61,7 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await supabase.auth.getSession();
         session = result?.data?.session ?? null;
     } catch (err) {
-        console.error('Auth check failed:', err);
     }
 
     if (loadingSkeleton) {
@@ -237,8 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             title = `Show KN: ${title}`;
         }
 
-        const userEmail = session.user.email;
-        const author = userEmail.split('@')[0];
         const slug = generateSlug(title);
 
         if (btnSubmit) {
@@ -257,7 +261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     title,
                     url: url || '',
                     content: text || '',
-                    author,
                     category: finalCategory,
                     status: 'published',
                     published_at: new Date().toISOString(),
@@ -270,7 +273,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .maybeSingle();
 
             if (error) {
-                console.error('Submit error:', error);
                 let userMsg = error.message;
                 if (error.code === '23505') userMsg = 'A post with this title already exists.';
                 if (error.details) userMsg += ' (' + error.details + ')';
@@ -294,7 +296,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 400);
             }
         } catch (err) {
-            console.error('Unexpected submit error:', err);
             showStatus('An unexpected error occurred. Please try again.', true);
             if (btnSubmit) {
                 btnSubmit.disabled = false;
@@ -348,7 +349,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             } catch (err) {
-                console.error('Upload error:', err);
                 alert('Upload failed unexpectedly. Please try again.');
             }
 
@@ -447,7 +447,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     item.addEventListener('mouseleave', hidePreview);
                 });
             } catch (err) {
-                console.error('Media load error:', err);
                 mediaGrid.innerHTML = '<div class="col-span-full text-sm text-red-500 text-center py-8">Failed to load media. Please try again.</div>';
             }
         }

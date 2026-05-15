@@ -6,6 +6,19 @@ function getAvatarColor(name) {
     return AVATAR_COLORS[(name || '?').charCodeAt(0) % AVATAR_COLORS.length];
 }
 
+// Escape special PostgREST filter characters to prevent filter injection
+function sanitizeSearchInput(input) {
+    if (typeof input !== 'string') return '';
+    return input
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/\./g, '\\.')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/%/g, '\\%')
+        .substring(0, 100); // Limit length
+}
+
 function avatarHtml(user, size = 36) {
     const initial = (user.username || '?').charAt(0).toUpperCase();
     const bg = getAvatarColor(user.username);
@@ -47,13 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (follows) follows.forEach(f => myFollows.add(f.following_id));
         }
     } catch (err) {
-        console.error('Session check failed:', err);
     }
 
     try {
         await loadLeaderboard();
     } catch (err) {
-        console.error('Leaderboard load failed:', err);
         if (loadingSkeleton) loadingSkeleton.style.display = 'none';
         if (mainContent) mainContent.classList.add('ready');
         container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">Could not load leaderboard. Please try again later.</div>';
@@ -166,7 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } catch (err) {
-            console.error('Karma update failed:', err);
         } finally {
             btn.disabled = false;
             btn.style.opacity = '1';
@@ -234,10 +244,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             abortController = new AbortController();
 
             try {
+                const safeQuery = sanitizeSearchInput(query);
                 const { data: users, error } = await supabase
                     .from('profiles')
                     .select('id, username, avatar_url, about')
-                    .ilike('username', `%${query}%`)
+                    .ilike('username', `%${safeQuery}%`)
                     .limit(10);
 
                 if (input.value.trim() !== query) return;
@@ -288,7 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } catch (err) {
                 if (err.name !== 'AbortError') {
-                    console.error('Search error:', err);
                     dropdown.innerHTML = '<div class="search-no-results">Something went wrong.</div>';
                 }
             }

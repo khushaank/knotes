@@ -41,7 +41,6 @@ async function performSearch(query) {
         .in('blog_id', blogIds);
 
     if (commentError) {
-        console.error('Comment fetch error:', commentError);
     }
 
     const results = blogs.map(blog => ({

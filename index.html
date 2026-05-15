@@ -36,7 +36,7 @@
             style="max-width: 100%;">
             <div class="flex items-center gap-1 w-full text-[13px]">
                 <a href="index.html" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-                <div class="flex items-center gap-1 text-black">
+                <div class="flex flex-wrap items-center gap-1 text-black">
                     <a class="hover:underline" href="index.html">Feed</a> |
                     <a class="hover:underline" href="comments.html">comments</a> |
                     <a class="hover:underline" href="ask.html">ask</a> |
@@ -58,8 +58,8 @@
                 <a href="#" class="filter-link" data-filter="new">new</a>
             </div>
             <div class="flex items-center gap-2">
-                <span id="stats-summary" class="text-[10px] text-gray-400"></span>
-                <button id="refresh-trending" class="hover:text-black flex items-center gap-1 focus:outline-none">
+                <span id="stats-summary" class="hidden sm:inline text-[10px] text-gray-400"></span>
+                <button id="refresh-trending" class="flex-shrink-0 hover:text-black flex items-center gap-1 focus:outline-none">
                     <span class="material-symbols-outlined text-sm">refresh</span> refresh
                 </button>
             </div>
@@ -100,6 +100,7 @@
         </footer>
     </div>
     <script src="assets/js/exit-interceptor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script type="module" src="assets/js/index.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>

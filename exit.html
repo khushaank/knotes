@@ -27,7 +27,7 @@
                 
                 <div style="margin-top: 16px;">
                     <a id="continue-btn" href="#" class="btn btn-primary">Yes, Continue</a>
-                    <a href="javascript:history.back()" class="btn">No, Go Back</a>
+                    <a href="javascript:void(0)" onclick="handleGoBack()" class="btn">No, Go Back</a>
                 </div>
                 
                 <div class="footer-note">
@@ -58,6 +58,18 @@
                 window.location.href = 'index.html';
             }
         });
+        
+        function handleGoBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // If it's a new tab, try to close it. If that fails, go home.
+                window.close();
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 100);
+            }
+        }
     </script>
 </body>
 </html>

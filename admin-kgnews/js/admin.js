@@ -3,6 +3,17 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// HTML escape helper to prevent XSS in admin templates
+function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 let currentUser = null;
 let currentProfile = null;
 let allUsers = [];
@@ -232,19 +243,19 @@ async function loadUsers() {
 
     tbody.innerHTML = allUsers.map(user => `
         <tr>
-            <td title="${user.id}" style="font-family: monospace; font-size:12px; color:var(--text-muted);">${user.id.substring(0, 8)}…</td>
-            <td><strong>${user.username || 'N/A'}</strong></td>
+            <td title="${escapeHtml(user.id)}" style="font-family: monospace; font-size:12px; color:var(--text-muted);">${escapeHtml(user.id.substring(0, 8))}…</td>
+            <td><strong>${escapeHtml(user.username || 'N/A')}</strong></td>
             <td>
                 <label class="toggle-switch">
                     <input type="checkbox" ${user.is_admin ? 'checked' : ''} 
-                        onchange="window.adminActions.toggleAdmin('${user.id}', this.checked)"
+                        onchange="window.adminActions.toggleAdmin('${escapeHtml(user.id)}', this.checked)"
                         ${user.id === currentUser.id ? 'disabled' : ''}>
                     <span class="toggle-slider"></span>
                 </label>
             </td>
             <td>${new Date(user.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-danger btn-sm" onclick="window.adminActions.deleteProfile('${user.id}')"
+                <button class="btn btn-danger btn-sm" onclick="window.adminActions.deleteProfile('${escapeHtml(user.id)}')"
                     ${user.id === currentUser.id ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>Delete</button>
             </td>
         </tr>
@@ -273,19 +284,19 @@ async function loadPosts() {
     }
 
     tbody.innerHTML = allPosts.map(post => {
-        const pulseUrl = `../pulse/index.html?s=${post.slug}`;
+        const pulseUrl = `../pulse/index.html?s=${escapeHtml(post.slug)}`;
         return `
             <tr>
-                <td><a href="${pulseUrl}" target="_blank">${post.title.substring(0, 50)}${post.title.length > 50 ? '…' : ''}</a></td>
-                <td>${post.author}</td>
-                <td><span class="status-badge ${post.status || 'published'}">${post.status || 'published'}</span></td>
+                <td><a href="${pulseUrl}" target="_blank">${escapeHtml(post.title.substring(0, 50))}${post.title.length > 50 ? '…' : ''}</a></td>
+                <td>${escapeHtml(post.author)}</td>
+                <td><span class="status-badge ${escapeHtml(post.status || 'published')}">${escapeHtml(post.status || 'published')}</span></td>
                 <td>${new Date(post.published_at).toLocaleDateString()}</td>
                 <td style="display: flex; gap: 8px; align-items: center;">
                     <a href="${pulseUrl}" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px;">Pulse</a>
                     <button class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px;" 
-                        onclick="window.adminActions.sharePost('${post.title.replace(/'/g, "\\'")}', '${pulseUrl}')">Share</button>
+                        onclick="window.adminActions.sharePost('${escapeHtml(post.title).replace(/'/g, "\\'")}', '${pulseUrl}')">Share</button>
                     <button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 11px;" 
-                        onclick="window.adminActions.deletePost('${post.id}')">Delete</button>
+                        onclick="window.adminActions.deletePost('${escapeHtml(String(post.id))}')">Delete</button>
                 </td>
             </tr>
         `;
@@ -315,11 +326,11 @@ async function loadComments() {
 
     tbody.innerHTML = allComments.map(c => `
         <tr>
-            <td>${c.comment_text.substring(0, 60)}${c.comment_text.length > 60 ? '…' : ''}</td>
-            <td><strong>${c.user_name}</strong></td>
+            <td>${escapeHtml(c.comment_text.substring(0, 60))}${c.comment_text.length > 60 ? '…' : ''}</td>
+            <td><strong>${escapeHtml(c.user_name)}</strong></td>
             <td>${new Date(c.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-danger btn-sm" onclick="window.adminActions.deleteComment('${c.id}')">Delete</button>
+                <button class="btn btn-danger btn-sm" onclick="window.adminActions.deleteComment('${escapeHtml(String(c.id))}')">Delete</button>
             </td>
         </tr>
     `).join('');
@@ -395,7 +406,7 @@ function populateTopAuthors() {
     }
 
     tbody.innerHTML = sorted.map(([author, count]) => `
-        <tr><td><strong>${author}</strong></td><td>${count}</td></tr>
+        <tr><td><strong>${escapeHtml(author)}</strong></td><td>${count}</td></tr>
     `).join('');
 }
 
@@ -414,7 +425,7 @@ function populateTopCommenters() {
     }
 
     tbody.innerHTML = sorted.map(([user, count]) => `
-        <tr><td><strong>${user}</strong></td><td>${count}</td></tr>
+        <tr><td><strong>${escapeHtml(user)}</strong></td><td>${count}</td></tr>
     `).join('');
 }
 
@@ -429,21 +440,21 @@ function populateRecentActivity() {
 
     allPosts.slice(0, 5).forEach(p => {
         activities.push({
-            text: `<strong>${p.author}</strong> published <strong>${p.title.substring(0, 35)}${p.title.length > 35 ? '…' : ''}</strong>`,
+            text: `<strong>${escapeHtml(p.author)}</strong> published <strong>${escapeHtml(p.title.substring(0, 35))}${p.title.length > 35 ? '…' : ''}</strong>`,
             date: p.published_at
         });
     });
 
     allComments.slice(0, 3).forEach(c => {
         activities.push({
-            text: `<strong>${c.user_name}</strong> commented: "${c.comment_text.substring(0, 30)}…"`,
+            text: `<strong>${escapeHtml(c.user_name)}</strong> commented: "${escapeHtml(c.comment_text.substring(0, 30))}…"`,
             date: c.created_at
         });
     });
 
     allUsers.slice(0, 2).forEach(u => {
         activities.push({
-            text: `<strong>${u.username || 'New user'}</strong> joined the platform`,
+            text: `<strong>${escapeHtml(u.username || 'New user')}</strong> joined the platform`,
             date: u.created_at
         });
     });

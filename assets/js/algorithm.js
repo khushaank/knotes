@@ -15,13 +15,14 @@ export function calculateTrendingScore(story) {
     const updatedAt = story.updated_at ? new Date(story.updated_at) : publishedAt;
     const now = new Date();
 
-    const hoursSincePublished = (now - publishedAt) / (1000 * 60 * 60);
-    const hoursSinceUpdated = (now - updatedAt) / (1000 * 60 * 60);
+    const hoursSincePublished = Math.max(0, (now - publishedAt) / (1000 * 60 * 60));
+    const hoursSinceUpdated = Math.max(0, (now - updatedAt) / (1000 * 60 * 60));
 
     const freshnessBoost = hoursSinceUpdated < 24 ? (1 / (hoursSinceUpdated + 1)) : 0;
 
-    const gravity = 1.5;
-    return (baseScore + freshnessBoost) / Math.pow(hoursSincePublished + 2, gravity);
+    const gravity = 1.8;
+    const denominator = Math.pow(hoursSincePublished + 2, gravity);
+    return denominator > 0 ? (baseScore + freshnessBoost) / denominator : 0;
 }
 
 /**
@@ -67,12 +68,13 @@ export function filterBySearch(stories, query) {
     if (!query) return stories;
     const q = query.toLowerCase();
 
-    return stories.filter(story =>
-        (story.title && story.title.toLowerCase().includes(q)) ||
-        (story.author && story.author.toLowerCase().includes(q)) ||
-        (story.category && story.category.toLowerCase().includes(q)) ||
-        (story.content && story.content.toLowerCase().includes(q))
-    );
+    return stories.filter(story => {
+        const title = (story.title || '').toLowerCase();
+        const author = (story.author || '').toLowerCase();
+        const category = (story.category || '').toLowerCase();
+        const content = (story.content || '').toLowerCase();
+        return title.includes(q) || author.includes(q) || category.includes(q) || content.includes(q);
+    });
 }
 
 /**

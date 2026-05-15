@@ -5,6 +5,34 @@ export const supabase = (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
+// =============================================
+// CACHING UTILITIES
+// =============================================
+const CACHE_PREFIX = 'kn-cache-';
+const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
+
+export function setCache(key, data, ttl = DEFAULT_TTL) {
+    const cacheData = {
+        data,
+        expiry: Date.now() + ttl
+    };
+    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(cacheData));
+}
+
+export function getCache(key) {
+    const cached = localStorage.getItem(CACHE_PREFIX + key);
+    if (!cached) return null;
+    try {
+        const { data, expiry } = JSON.parse(cached);
+        if (Date.now() > expiry) {
+            return { data, stale: true };
+        }
+        return { data, stale: false };
+    } catch {
+        return null;
+    }
+}
+
 export function calculateTimeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
@@ -26,9 +54,19 @@ export function calculateTimeAgo(dateString) {
 
 export function sanitize(text) {
     if (typeof text !== 'string') return text;
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(text, {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre', 'blockquote'],
+            ALLOWED_ATTR: ['href', 'title', 'target']
+        });
+    }
+    // Fallback: Escape HTML characters if DOMPurify is missing
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 export async function upvoteStory(storyId) {
@@ -57,18 +95,8 @@ export async function upvoteStory(storyId) {
 
         if (deleteError) return { error: deleteError.message };
 
-        const { data: blog } = await supabase
-            .from('blogs')
-            .select('likes_count')
-            .eq('id', storyId)
-            .single();
-
-        if (blog) {
-            await supabase
-                .from('blogs')
-                .update({ likes_count: Math.max(0, (blog.likes_count || 1) - 1) })
-                .eq('id', storyId);
-        }
+        // Use RPC to safely decrement
+        await supabase.rpc('decrement_blog_likes', { blog_id: storyId });
 
         return { success: true, action: 'removed' };
     }
@@ -84,39 +112,15 @@ export async function upvoteStory(storyId) {
         return { error: likeError.message };
     }
 
-    const { data: blog, error: fetchError } = await supabase
-        .from('blogs')
-        .select('likes_count')
-        .eq('id', storyId)
-        .single();
-
-    if (fetchError) return { error: fetchError.message };
-
-    const { error: updateError } = await supabase
-        .from('blogs')
-        .update({ likes_count: (blog.likes_count || 0) + 1 })
-        .eq('id', storyId);
-
-    if (updateError) return { error: updateError.message };
+    // Use RPC to safely increment
+    await supabase.rpc('increment_blog_likes', { blog_id: storyId });
 
     return { success: true, action: 'added' };
 }
 
 export async function trackClick(storyId) {
     if (!supabase) return;
-
-    const { data: blog, error: fetchError } = await supabase
-        .from('blogs')
-        .select('clicks_count')
-        .eq('id', storyId)
-        .single();
-
-    if (fetchError) return;
-
-    await supabase
-        .from('blogs')
-        .update({ clicks_count: (blog.clicks_count || 0) + 1 })
-        .eq('id', storyId);
+    await supabase.rpc('increment_blog_clicks', { blog_id: storyId });
 }
 
 export async function toggleBookmark(storyId) {
@@ -210,19 +214,7 @@ export async function getBookmarkedPosts(userId = null) {
 
 export async function incrementCommentCount(blogId) {
     if (!supabase) return;
-
-    const { data: blog } = await supabase
-        .from('blogs')
-        .select('comments_count')
-        .eq('id', blogId)
-        .single();
-
-    if (blog) {
-        await supabase
-            .from('blogs')
-            .update({ comments_count: (blog.comments_count || 0) + 1 })
-            .eq('id', blogId);
-    }
+    await supabase.rpc('increment_blog_comments', { blog_id: blogId });
 }
 
 export async function sharePost(title, url) {
@@ -326,7 +318,7 @@ export async function getFollowingList(userId) {
             profiles!following_id (id, username, avatar_url, about)
         `)
         .eq('follower_id', userId);
-    
+
     if (error) return [];
     return data.map(d => d.profiles);
 }
@@ -340,7 +332,7 @@ export async function getFollowersList(userId) {
             profiles!follower_id (id, username, avatar_url, about)
         `)
         .eq('following_id', userId);
-    
+
     if (error) return [];
     return data.map(d => d.profiles);
 }
@@ -449,16 +441,21 @@ export async function deleteStory(storyId) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'Please login' };
 
+    // The RLS policy will handle the actual security, 
+    // but we can check here to provide a better UI message.
     const { data: blog, error: fetchError } = await supabase
         .from('blogs')
-        .select('author')
+        .select('author_id')
         .eq('id', storyId)
         .single();
 
-    if (fetchError || !blog) return { error: 'Story not found or you are not authorized' };
+    if (fetchError || !blog) return { error: 'Story not found' };
 
-    const username = session.user.email.split('@')[0];
-    if (blog.author !== username) return { error: 'Unauthorized' };
+    if (blog.author_id !== session.user.id) {
+        // Also check if admin
+        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
+        if (!profile?.is_admin) return { error: 'Unauthorized' };
+    }
 
     const { error } = await supabase
         .from('blogs')
@@ -534,44 +531,55 @@ export async function getUserComments(userId) {
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-    
+
     if (error) return [];
     return data;
 }
 
 export async function updateComment(commentId, newText) {
     if (!supabase) return { error: 'Supabase not initialized' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login' };
+
     const { error } = await supabase
         .from('comments')
-        .update({ comment_text: newText })
-        .eq('id', commentId);
+        .update({ comment_text: sanitize(newText) })
+        .eq('id', commentId)
+        .eq('user_id', session.user.id); // Extra safety, though RLS handles it
+
     if (error) return { error: error.message };
     return { success: true };
 }
 
 export async function deleteComment(commentId, blogId) {
     if (!supabase) return { error: 'Supabase not initialized' };
-    
-    const { error } = await supabase
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login' };
+
+    // Check if user is admin (admins can delete any comment)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+
+    let query = supabase
         .from('comments')
         .delete()
         .eq('id', commentId);
-        
+
+    // Non-admins can only delete their own comments (defense-in-depth with RLS)
+    if (!profile?.is_admin) {
+        query = query.eq('user_id', session.user.id);
+    }
+
+    const { error } = await query;
+
     if (error) return { error: error.message };
 
-    // Update comment count on the blog
-    const { data: blog } = await supabase
-        .from('blogs')
-        .select('comments_count')
-        .eq('id', blogId)
-        .single();
-
-    if (blog) {
-        await supabase
-            .from('blogs')
-            .update({ comments_count: Math.max(0, (blog.comments_count || 1) - 1) })
-            .eq('id', blogId);
-    }
+    await supabase.rpc('decrement_blog_comments', { blog_id: blogId });
 
     return { success: true };
 }

@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, incrementCommentCount, sharePost, toggleFollow, getCache, setCache } from './supabaseClient.js';
 import { renderMarkdown } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -15,6 +15,13 @@ let userLikes = [];
 async function fetchStory() {
     if (!supabase) return null;
 
+    const cacheKey = activeSlug ? `pulse-${activeSlug}` : `pulse-${storyId}`;
+    const cached = getCache(cacheKey);
+
+    if (cached && !cached.stale) {
+        return cached.data;
+    }
+
     let query = supabase.from('blogs').select('*');
 
     if (storyId) {
@@ -30,6 +37,11 @@ async function fetchStory() {
     if (error) {
         return null;
     }
+
+    if (data) {
+        setCache(cacheKey, data, 1000 * 60 * 10);
+    }
+
     return data;
 }
 
@@ -57,9 +69,9 @@ function renderCommentList(comments) {
 
     comments.forEach((comment, index) => {
         const timeAgo = calculateTimeAgo(comment.created_at);
-        
+
         if (index === visibleCount) {
-             html += `<div id="extra-comments" class="hidden">`;
+            html += `<div id="extra-comments" class="hidden">`;
         }
 
         html += `
@@ -71,7 +83,7 @@ function renderCommentList(comments) {
                     <div class="w-full">
                         <div class="story-meta opacity-70">
                             <a class="hover:underline text-black font-medium" href="../profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
-                            <a class="hover:underline mx-0.5" href="#" onclick="alert('Posted on ' + new Date('${comment.created_at}').toLocaleString() + ' by ${sanitize(comment.user_name) || 'anonymous'}'); return false;">${timeAgo}</a>
+                            <a class="hover:underline mx-0.5 comment-time-link" href="#" data-created="${comment.created_at}" data-user="${sanitize(comment.user_name) || 'anonymous'}">${timeAgo}</a>
                             <span class="cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
                         </div>
                         <div class="text-black mt-0.5 text-[10pt] leading-snug comment-body pr-4" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">${renderMarkdown(comment.comment_text).trim()}</div>
@@ -104,25 +116,47 @@ function renderCommentList(comments) {
     return html;
 }
 
+
 async function renderPage() {
+    const cacheKey = activeSlug ? `pulse-${activeSlug}` : `pulse-${storyId}`;
+    const cached = getCache(cacheKey);
+
+    if (cached) {
+        renderStoryDetails(cached.data);
+        if (!cached.stale) {
+            // Fetch fresh comments even if story is fresh
+            const comments = await fetchComments(cached.data.id);
+            renderCommentsSection(comments, cached.data.id);
+            loadUserStats(); // Background refresh
+            return;
+        }
+    }
+
     const story = await fetchStory();
     if (!story) {
         document.querySelector('main').innerHTML = '<div class="p-4">Pulse not found. <a href="../index.html" class="underline">Go home</a></div>';
         return;
     }
 
-    trackClick(story.id);
+    renderStoryDetails(story);
 
+    const [comments] = await Promise.all([
+        fetchComments(story.id),
+        loadUserStats()
+    ]);
+
+    renderCommentsSection(comments, story.id);
+}
+
+async function loadUserStats() {
     [userBookmarks, userLikes] = await Promise.all([
         getUserBookmarks(),
         getUserLikes()
     ]);
-    const { data: { session } } = await supabase.auth.getSession();
-    const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
-    
-    const isBookmarked = userBookmarks.includes(story.id);
-    const isUpvoted = userLikes.includes(story.id);
-    const currentFolder = folderMapping[story.id];
+}
+
+function renderStoryDetails(story) {
+    trackClick(story.id);
 
     const cleanTitle = sanitize(story.title);
     const cleanExcerpt = sanitize(story.excerpt || story.content || '').substring(0, 160);
@@ -130,6 +164,7 @@ async function renderPage() {
 
     document.title = `${cleanTitle} | K. Notes`;
 
+    // SEO updates
     document.querySelector('meta[name="description"]')?.setAttribute('content', cleanExcerpt);
     document.querySelector('meta[property="og:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="og:description"]')?.setAttribute('content', cleanExcerpt);
@@ -137,6 +172,7 @@ async function renderPage() {
     document.querySelector('meta[property="twitter:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="twitter:description"]')?.setAttribute('content', cleanExcerpt);
 
+    // JSON-LD
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "NewsArticle",
@@ -163,8 +199,14 @@ async function renderPage() {
     }
     script.text = JSON.stringify(jsonLd);
 
+    const isBookmarked = userBookmarks.includes(story.id);
+    const isUpvoted = userLikes.includes(story.id);
     const timeAgo = calculateTimeAgo(story.published_at);
-    document.querySelector('article').innerHTML = `
+
+    const articleEl = document.querySelector('article');
+    if (!articleEl) return;
+
+    articleEl.innerHTML = `
         <div class="flex items-start gap-1">
             <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''} mt-[6px]" data-id="${story.id}"></div>
             <div>
@@ -179,14 +221,14 @@ async function renderPage() {
                         <a class="hover:underline" href="#">hide</a> | 
                         <span class="bookmark-container inline-block">
                             <span class="knotes-dropdown inline-block" data-id="${story.id}">
-                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? `Saved to ${currentFolder || 'list'}` : 'Add to list'}">
+                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? 'Saved to list' : 'Add to list'}">
                                     ${isBookmarked ? 'saved' : '+'}
                                 </button>
                                 <div class="knotes-dropdown-menu hidden">
-                                    <div class="dropdown-item ${currentFolder === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
-                                    <div class="dropdown-item ${currentFolder === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
-                                    <div class="dropdown-item ${currentFolder === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
-                                    <div class="dropdown-item ${currentFolder === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
+                                    <div class="dropdown-item" data-folder="To Learn">To Learn</div>
+                                    <div class="dropdown-item" data-folder="Inspiration">Inspiration</div>
+                                    <div class="dropdown-item" data-folder="Archive">Archive</div>
+                                    <div class="dropdown-item" data-folder="Reading List">Reading List</div>
                                     ${isBookmarked ? '<div class="dropdown-divider border-t border-gray-100 my-1"></div><div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>' : ''}
                                 </div>
                             </span>
@@ -205,11 +247,14 @@ async function renderPage() {
         <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">${renderMarkdown(story.content).trim()}</div>` : ''}
     `;
 
-    const commentsContainer = document.getElementById('comments-container');
-    const comments = await fetchComments(story.id);
-    commentsContainer.innerHTML = renderCommentList(comments);
-
     window.currentStoryId = story.id;
+}
+
+function renderCommentsSection(comments, blogId) {
+    const commentsListEl = document.getElementById('comments-container');
+    if (commentsListEl) {
+        commentsListEl.innerHTML = renderCommentList(comments);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -254,33 +299,35 @@ document.addEventListener('DOMContentLoaded', () => {
             addBtn.disabled = true;
             addBtn.textContent = 'posting...';
 
-            const { data: comment, error } = await supabase
-                .from('comments')
-                .insert({
-                    blog_id: window.currentStoryId,
-                    user_id: user.id,
-                    user_name: user.email.split('@')[0],
-                    comment_text: content,
-                    created_at: new Date().toISOString()
-                })
-                .select()
-                .maybeSingle();
+            try {
+                const { data: comment, error } = await supabase
+                    .from('comments')
+                    .insert({
+                        blog_id: window.currentStoryId,
+                        comment_text: content,
+                        created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .maybeSingle();
 
-            if (error) {
-                console.error('Comment error:', error);
-                alert('Failed to post comment: ' + error.message);
+                if (error) {
+                    alert('Failed to post comment: ' + error.message);
+                    addBtn.disabled = false;
+                    addBtn.textContent = 'add comment';
+                    return;
+                }
+
+                await incrementCommentCount(window.currentStoryId);
+
+                textarea.value = '';
                 addBtn.disabled = false;
-                addBtn.textContent = 'post comment';
-                return;
+                addBtn.textContent = 'add comment';
+                renderPage();
+            } catch (err) {
+                alert('An unexpected error occurred. Please try again.');
+                addBtn.disabled = false;
+                addBtn.textContent = 'add comment';
             }
-
-            await incrementCommentCount(window.currentStoryId);
-
-            textarea.value = '';
-
-            addBtn.disabled = false;
-            addBtn.textContent = 'add comment';
-            renderPage();
         });
         checkAuth();
     }
@@ -306,6 +353,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('reply-btn')) {
             e.preventDefault();
             if (textarea) textarea.focus();
+        }
+
+        if (e.target.classList.contains('comment-time-link')) {
+            e.preventDefault();
+            const created = e.target.getAttribute('data-created');
+            const user = e.target.getAttribute('data-user');
+            if (created) {
+                alert('Posted on ' + new Date(created).toLocaleString() + ' by ' + (user || 'anonymous'));
+            }
         }
 
         if (e.target.classList.contains('knotes-upvote-triangle')) {
@@ -406,20 +462,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
-                
+
                 // Add Unsave option if not present
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');
                     divider.className = 'dropdown-divider border-t border-gray-100 my-1';
                     menu.appendChild(divider);
-                    
+
                     const opt = document.createElement('div');
                     opt.className = 'dropdown-item text-red-500 font-medium';
                     opt.setAttribute('data-folder', 'unsave');
                     opt.textContent = 'Unsave';
                     menu.appendChild(opt);
                 }
-                
+
                 // Highlight selected folder
                 menu.querySelectorAll('.dropdown-item').forEach(i => {
                     if (i.getAttribute('data-folder') === folderName) {

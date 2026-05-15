@@ -56,5 +56,4 @@
 
     document.addEventListener('click', handleLinkClick, true);
 
-    console.log('Link interceptor active');
 })();

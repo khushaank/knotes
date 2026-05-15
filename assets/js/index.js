@@ -1,10 +1,23 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, toggleFollow } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, toggleFollow, getCache, setCache } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 let userLikes = [];
+
+// Escape special PostgREST filter characters to prevent filter injection
+function sanitizeSearchInput(input) {
+    if (typeof input !== 'string') return '';
+    return input
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/\./g, '\\.')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/%/g, '\\%')
+        .substring(0, 200); // Limit length
+}
 
 function getHiddenStories() {
     try {
@@ -36,7 +49,8 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     }
 
     if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,author.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+        const safeQuery = sanitizeSearchInput(searchQuery);
+        query = query.or(`title.ilike.%${safeQuery}%,author.ilike.%${safeQuery}%,category.ilike.%${safeQuery}%`);
     }
 
     const start = (page - 1) * STORIES_PER_PAGE;
@@ -45,7 +59,6 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const { data: stories, error, count } = await query.range(start, end);
 
     if (error) {
-        console.error('Fetch error:', error);
         return { stories: [], count: 0 };
     }
 
@@ -62,15 +75,34 @@ async function renderStories(searchQuery = '', filter = 'trending') {
 
     const tbody = document.querySelector('main table tbody');
     const statsSummary = document.getElementById('stats-summary');
+    const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
+    const cached = getCache(cacheKey);
 
-    tbody.style.opacity = '0.5';
+    if (cached) {
+        await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
+        if (!cached.stale) {
+            if (tbody) tbody.style.opacity = '1';
+            return; // Cache is fresh
+        }
+    }
+
+    if (tbody) tbody.style.opacity = '0.5';
     if (statsSummary) statsSummary.textContent = 'Updating...';
+
     const [storiesResult] = await Promise.all([
         fetchStories(searchQuery, filter, page),
         loadUserStats()
     ]);
 
     const { stories, count } = storiesResult;
+    setCache(cacheKey, { stories, count });
+    
+    await renderHtml(stories, count, page, filter, searchQuery);
+}
+
+async function renderHtml(stories, count, page, filter, searchQuery) {
+    const tbody = document.querySelector('main table tbody');
+    const statsSummary = document.getElementById('stats-summary');
     tbody.style.opacity = '1';
 
     if (!stories || stories.length === 0) {
@@ -151,6 +183,35 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     }
 
     tbody.innerHTML = html;
+    setupPrefetching();
+}
+
+function setupPrefetching() {
+    const storyLinks = document.querySelectorAll('.story-link');
+    storyLinks.forEach(link => {
+        link.addEventListener('mouseenter', () => {
+            const id = link.getAttribute('data-id');
+            const href = link.getAttribute('href');
+            if (href && href.includes('pulse/index.html')) {
+                const slug = new URLSearchParams(href.split('?')[1]).get('s');
+                if (slug) prefetchPulseData(slug);
+            }
+        }, { once: true });
+    });
+}
+
+async function prefetchPulseData(slug) {
+    if (getCache(`pulse-${slug}`)) return;
+    
+    const { data } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+        
+    if (data) {
+        setCache(`pulse-${slug}`, data, 1000 * 60 * 10); // 10 min cache
+    }
 }
 
 async function loadUserStats() {
@@ -226,6 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function logSearchTerm(term) {
         if (!supabase) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return; // Backend now requires auth for search stats
 
         const { data, error } = await supabase.rpc('increment_search_count', { search_term: term });
 

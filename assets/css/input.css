@@ -166,22 +166,33 @@
 
     header .flex.items-center.gap-1.w-full {
         flex-wrap: wrap;
-        gap: 2px;
-        padding: 4px 8px;
+        gap: 4px 2px;
+        padding: 6px 8px;
     }
 
     header .flex.flex-wrap.items-center.gap-1 {
         gap: 2px;
-        font-size: 12px;
+        font-size: 11px;
     }
 
     header .ml-auto {
-        font-size: 12px;
+        margin-left: 0 !important;
+        font-size: 11px;
     }
 
     .bg-\[\#f6f6ef\].px-2.py-1 {
-        padding-left: 8px;
-        padding-right: 8px;
+        padding: 8px !important;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center !important;
+    }
+
+    #stats-summary {
+        display: none !important;
+    }
+
+    #refresh-trending {
+        font-size: 11px;
     }
 
     main {
@@ -208,7 +219,18 @@
     }
 
     .knotes-upvote-triangle {
-        padding: 5px;
+        position: relative;
+    }
+
+    .knotes-upvote-triangle::before {
+        content: '';
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        right: -8px;
+        bottom: -8px;
+        min-width: 24px;
+        min-height: 24px;
     }
 
     footer {

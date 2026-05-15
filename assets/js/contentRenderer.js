@@ -20,6 +20,13 @@ export function renderMarkdown(text) {
         parsed = sanitize(processedText);
     }
 
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(parsed, {
+            ADD_TAGS: ['iframe'],
+            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
+        });
+    }
+
     return parsed;
 }
 
