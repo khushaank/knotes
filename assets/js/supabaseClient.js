@@ -165,6 +165,21 @@ export async function getUserBookmarks() {
     return data.map(b => b.blog_id);
 }
 
+export async function getUserLikes() {
+    if (!supabase) return [];
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data, error } = await supabase
+        .from('likes')
+        .select('blog_id')
+        .eq('user_id', session.user.id);
+
+    if (error) return [];
+    return data.map(b => b.blog_id);
+}
+
 export async function getBookmarkedPosts(userId = null) {
     if (!supabase) return [];
 

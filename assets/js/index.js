@@ -1,9 +1,10 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, toggleFollow } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, toggleFollow } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
+let userLikes = [];
 
 function getHiddenStories() {
     try {
@@ -66,7 +67,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     if (statsSummary) statsSummary.textContent = 'Updating...';
     const [storiesResult] = await Promise.all([
         fetchStories(searchQuery, filter, page),
-        loadUserBookmarks()
+        loadUserStats()
     ]);
 
     const { stories, count } = storiesResult;
@@ -95,13 +96,14 @@ async function renderStories(searchQuery = '', filter = 'trending') {
         const timeAgo = calculateTimeAgo(story.published_at);
         const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : null;
         const isBookmarked = userBookmarks.includes(story.id);
+        const isUpvoted = userLikes.includes(story.id);
         const currentFolder = folderMapping[story.id];
 
         html += `
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
-                    <div class="knotes-upvote-triangle" title="upvote" data-id="${story.id}"></div>
+                    <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''}" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
                     <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
@@ -151,8 +153,11 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     tbody.innerHTML = html;
 }
 
-async function loadUserBookmarks() {
-    userBookmarks = await getUserBookmarks();
+async function loadUserStats() {
+    [userBookmarks, userLikes] = await Promise.all([
+        getUserBookmarks(),
+        getUserLikes()
+    ]);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -353,9 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.action === 'removed') {
                     showInlineMsg(e.target, 'Vote removed');
-                    e.target.style.visibility = 'visible';
+                    e.target.classList.remove('upvoted');
                 } else {
-                    e.target.style.visibility = 'hidden';
+                    e.target.classList.add('upvoted');
                 }
             }
         }

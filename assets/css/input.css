@@ -44,6 +44,11 @@
         border-bottom-color: #ff6600;
     }
 
+    .knotes-upvote-triangle.upvoted {
+        border-bottom-color: #ff6600;
+        filter: drop-shadow(0 0 0.5px #ff6600);
+    }
+
     .story-title {
         font-size: 10pt;
         color: #000000;

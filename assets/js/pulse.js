@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, incrementCommentCount, sharePost, toggleFollow } from './supabaseClient.js';
 import { renderMarkdown } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -10,6 +10,7 @@ const slugFromPath = pathParts.length > 1 && pathParts[0] === 'pulse' ? pathPart
 
 const activeSlug = slugParam || slugFromPath;
 let userBookmarks = [];
+let userLikes = [];
 
 async function fetchStory() {
     if (!supabase) return null;
@@ -112,11 +113,15 @@ async function renderPage() {
 
     trackClick(story.id);
 
-    userBookmarks = await getUserBookmarks();
+    [userBookmarks, userLikes] = await Promise.all([
+        getUserBookmarks(),
+        getUserLikes()
+    ]);
     const { data: { session } } = await supabase.auth.getSession();
     const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
     
     const isBookmarked = userBookmarks.includes(story.id);
+    const isUpvoted = userLikes.includes(story.id);
     const currentFolder = folderMapping[story.id];
 
     const cleanTitle = sanitize(story.title);
@@ -161,7 +166,7 @@ async function renderPage() {
     const timeAgo = calculateTimeAgo(story.published_at);
     document.querySelector('article').innerHTML = `
         <div class="flex items-start gap-1">
-            <div class="knotes-upvote-triangle mt-[6px]" data-id="${story.id}"></div>
+            <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''} mt-[6px]" data-id="${story.id}"></div>
             <div>
                 <h1 class="story-title text-lg font-bold leading-tight">
                     <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
@@ -338,10 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     tip.style.cssText = 'font-size:10px;color:#888;margin-left:4px;';
                     e.target.parentElement.appendChild(tip);
                     setTimeout(() => tip.remove(), 2000);
-                    e.target.style.visibility = 'visible';
+                    e.target.classList.remove('upvoted');
                     e.target.style.opacity = '1';
                 } else {
-                    e.target.style.visibility = 'hidden';
+                    e.target.classList.add('upvoted');
+                    e.target.style.opacity = '1';
                 }
             }
         }

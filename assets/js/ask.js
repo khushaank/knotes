@@ -1,8 +1,9 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
+let userLikes = [];
 
 async function fetchAskStories(page = 1) {
     if (!supabase) return { stories: [], count: 0 };
@@ -33,7 +34,7 @@ async function renderStories() {
 
     const [{ stories, count }] = await Promise.all([
         fetchAskStories(page),
-        loadUserBookmarks()
+        loadUserStats()
     ]);
 
     if (!stories || stories.length === 0) {
@@ -50,13 +51,14 @@ async function renderStories() {
     stories.forEach((story, index) => {
         const timeAgo = calculateTimeAgo(story.published_at);
         const isBookmarked = userBookmarks.includes(story.id);
+        const isUpvoted = userLikes.includes(story.id);
         const currentFolder = folderMapping[story.id];
 
         html += `
             <tr class="story-row" data-id="${story.id}">
                 <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
                 <td class="align-top w-4 pt-[2px] text-center">
-                    <div class="knotes-upvote-triangle" title="upvote" data-id="${story.id}"></div>
+                    <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''}" title="upvote" data-id="${story.id}"></div>
                 </td>
                 <td class="story-title align-top">
                     <a href="pulse/index.html?s=${story.slug}" class="story-link" data-id="${story.id}">${sanitize(story.title)}</a>
@@ -105,8 +107,11 @@ async function renderStories() {
     tbody.innerHTML = html;
 }
 
-async function loadUserBookmarks() {
-    userBookmarks = await getUserBookmarks();
+async function loadUserStats() {
+    [userBookmarks, userLikes] = await Promise.all([
+        getUserBookmarks(),
+        getUserLikes()
+    ]);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -158,10 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.action === 'removed') {
                     showTip(e.target, 'Vote removed');
-                    e.target.style.visibility = 'visible';
+                    e.target.classList.remove('upvoted');
                     e.target.style.opacity = '1';
                 } else {
-                    e.target.style.visibility = 'hidden';
+                    e.target.classList.add('upvoted');
+                    e.target.style.opacity = '1';
                 }
             }
         }
