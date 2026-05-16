@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const identifier = document.getElementById('login-email').value; // identifier can be username or email
             const password = document.getElementById('login-password').value;
 
-            if (!email || !password) {
+            if (!identifier || !password) {
                 showMessage('Please enter both username/email and password.', true);
                 return;
             }
@@ -31,6 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const loginBtn = loginForm.querySelector('button[type="submit"]');
             loginBtn.disabled = true;
             loginBtn.textContent = 'logging in...';
+
+            // Resolve username to email if necessary
+            let email = identifier;
+            if (!identifier.includes('@')) {
+                const { getEmailByUsername } = await import('./supabaseClient.js');
+                const resolvedEmail = await getEmailByUsername(identifier);
+                if (!resolvedEmail) {
+                    showMessage('Username not found.', true);
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'login';
+                    return;
+                }
+                email = resolvedEmail;
+            }
 
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
@@ -75,13 +89,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 password: password,
             });
 
-            signupBtn.disabled = false;
-            signupBtn.textContent = 'create account';
-
             if (error) {
                 showMessage(error.message, true);
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'create account';
             } else {
+                const { generateUniqueUsername } = await import('./supabaseClient.js');
+                const uniqueUsername = await generateUniqueUsername(email);
+
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: data.user.id,
+                        username: uniqueUsername,
+                        email: email
+                    }]);
+
+                if (profileError) {
+                    console.error('Profile creation error:', profileError);
+                }
+
                 showMessage('Account created successfully! You can now login.', false);
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'create account';
                 document.getElementById('login-email')?.focus();
             }
         });

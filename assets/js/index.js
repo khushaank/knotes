@@ -78,25 +78,24 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
     const cached = getCache(cacheKey);
 
+    await loadUserStats();
+
     if (cached) {
         await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
         if (!cached.stale) {
             if (tbody) tbody.style.opacity = '1';
-            return; // Cache is fresh
+            return;
         }
     }
 
     if (tbody) tbody.style.opacity = '0.5';
     if (statsSummary) statsSummary.textContent = 'Updating...';
 
-    const [storiesResult] = await Promise.all([
-        fetchStories(searchQuery, filter, page),
-        loadUserStats()
-    ]);
+    const storiesResult = await fetchStories(searchQuery, filter, page);
 
     const { stories, count } = storiesResult;
     setCache(cacheKey, { stories, count });
-    
+
     await renderHtml(stories, count, page, filter, searchQuery);
 }
 
@@ -202,13 +201,13 @@ function setupPrefetching() {
 
 async function prefetchPulseData(slug) {
     if (getCache(`pulse-${slug}`)) return;
-    
+
     const { data } = await supabase
         .from('blogs')
         .select('*')
         .eq('slug', slug)
         .single();
-        
+
     if (data) {
         setCache(`pulse-${slug}`, data, 1000 * 60 * 10); // 10 min cache
     }
@@ -443,60 +442,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = e.target;
             const folderName = item.getAttribute('data-folder');
             const dropdown = item.closest('.knotes-dropdown');
-            const storyId = dropdown.getAttribute('data-id');
+            const storyId = parseInt(dropdown.getAttribute('data-id'));
             const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
             const menu = dropdown.querySelector('.knotes-dropdown-menu');
 
             if (!storyId || !folderName) return;
 
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                showInlineMsg(trigger, 'Please login');
-                menu.classList.add('hidden');
-                return;
-            }
+            menu.classList.add('hidden');
 
             if (folderName === 'unsave') {
-                await toggleBookmark(parseInt(storyId));
-                const key = `kn-folders-${session.user.id}`;
-                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-                delete mapping[storyId];
-                localStorage.setItem(key, JSON.stringify(mapping));
-
                 trigger.textContent = '+';
                 trigger.classList.remove('saved');
-                item.remove();
                 showInlineMsg(trigger, 'Removed');
-                const idx = userBookmarks.indexOf(parseInt(storyId));
+
+                const idx = userBookmarks.indexOf(storyId);
                 if (idx > -1) userBookmarks.splice(idx, 1);
-            } else {
-                if (!userBookmarks.includes(parseInt(storyId))) {
-                    await toggleBookmark(parseInt(storyId));
-                    userBookmarks.push(parseInt(storyId));
+
+                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                if (userId) {
+                    const key = `kn-folders-${userId}`;
+                    const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                    delete mapping[storyId];
+                    localStorage.setItem(key, JSON.stringify(mapping));
                 }
-
-                const key = `kn-folders-${session.user.id}`;
-                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-                mapping[storyId] = folderName;
-                localStorage.setItem(key, JSON.stringify(mapping));
-
+                toggleBookmark(storyId).catch(err => {
+                    console.error('Failed to unsave:', err);
+                });
+            } else {
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
-                
-                // Add Unsave option if not present
+                showInlineMsg(trigger, `Added to ${folderName}`);
+
+                if (!userBookmarks.includes(storyId)) {
+                    userBookmarks.push(storyId);
+                }
+
+                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                if (userId) {
+                    const key = `kn-folders-${userId}`;
+                    const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                    mapping[storyId] = folderName;
+                    localStorage.setItem(key, JSON.stringify(mapping));
+                }
+
+                toggleBookmark(storyId).catch(err => {
+                    console.error('Failed to save:', err);
+                });
+
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');
                     divider.className = 'dropdown-divider border-t border-gray-100 my-1';
                     menu.appendChild(divider);
-                    
+
                     const opt = document.createElement('div');
                     opt.className = 'dropdown-item text-red-500 font-medium';
                     opt.setAttribute('data-folder', 'unsave');
                     opt.textContent = 'Unsave';
                     menu.appendChild(opt);
                 }
-                
-                // Highlight selected folder
                 menu.querySelectorAll('.dropdown-item').forEach(i => {
                     if (i.getAttribute('data-folder') === folderName) {
                         i.classList.add('bg-orange-50', 'text-[#ff6600]', 'font-bold');
@@ -504,10 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold');
                     }
                 });
-
-                showInlineMsg(trigger, `Added to ${folderName}`);
             }
-            menu.classList.add('hidden');
             return;
         }
 
@@ -603,5 +603,27 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => tip.remove(), 300);
         }, 1500);
     }
+
+    async function loadBroadcast() {
+        if (!supabase) return;
+        const banner = document.getElementById('broadcast-banner');
+        if (!banner) return;
+
+        const { data } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('id', 'broadcast_message')
+            .maybeSingle();
+
+        if (data && data.value && data.value.trim() !== '') {
+            const cleanHtml = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(data.value) : data.value;
+            banner.innerHTML = cleanHtml;
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+    }
+
+    loadBroadcast();
 
 });

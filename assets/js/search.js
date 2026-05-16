@@ -15,6 +15,8 @@ async function performSearch(query) {
     container.innerHTML = '<div class="p-8 text-center text-gray-600">Searching...</div>';
     status.textContent = `Searching for "${query}"...`;
 
+    supabase.rpc('increment_search_stat', { search_term: query.toLowerCase().trim() }).catch(() => { });
+
     const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', {
         search_query: query,
         page_limit: RESULTS_PER_PAGE,

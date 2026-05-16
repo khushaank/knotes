@@ -17,9 +17,12 @@
 
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
     <link href="assets/css/maintenance.css" rel="stylesheet" />
+    <style>
+        body { visibility: hidden; } /* Hide until session.js decides */
+    </style>
 </head>
 
-<body>
+<body class="bg-surface-bright">
     <div class="container">
         <div class="logo">K</div>
         <div class="status-badge">
@@ -35,6 +38,7 @@
             Einstein
         </div>
     </div>
+    <script type="module" src="assets/js/session.js"></script>
 </body>
 
 </html>

@@ -11,6 +11,61 @@ export const supabase = (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
 const CACHE_PREFIX = 'kn-cache-';
 const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
 
+export async function generateUniqueUsername(email) {
+    if (!supabase) return email.split('@')[0];
+    
+    const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    let username = base;
+    let attempts = 0;
+    
+    while (attempts < 5) {
+        const { data } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('username', username)
+            .maybeSingle();
+            
+        if (!data) return username;
+        
+        // If exists, add a random number (user requested "in front")
+        const rand = Math.floor(Math.random() * 10000);
+        username = `${rand}${base}`;
+        attempts++;
+    }
+    return `${Math.floor(Math.random() * 100000)}${base}`;
+}
+
+export async function getEmailByUsername(username) {
+    if (!supabase) return null;
+    
+    // Check if it's already an email
+    if (username.includes('@')) return username;
+    
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+        
+    if (error || !data) return null;
+    
+    // Since we can't directly get email from auth.users via public client easily,
+    // we assume the user might need to be looked up or we store email in profile.
+    // However, Supabase Auth signIn only takes email.
+    // If we want to support username login, we either need a mapping table or 
+    // we need to have the email in the profiles table.
+    
+    // Let's check if 'profiles' has email. Looking at existing code, it doesn't seem to.
+    // I will add 'email' to the profiles table in the SQL setup.
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('username', username)
+        .maybeSingle();
+        
+    return profile?.email || null;
+}
+
 export function setCache(key, data, ttl = DEFAULT_TTL) {
     const cacheData = {
         data,

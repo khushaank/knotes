@@ -16,6 +16,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const avatarFileInput = document.getElementById('avatar-file-input');
     const privacyContainer = document.getElementById('profile-privacy-container');
     const isPublicCheckbox = document.getElementById('profile-is-public');
+    const usernameEditBtn = document.getElementById('btn-edit-username');
+    const usernameInputWrapper = document.getElementById('username-input-wrapper');
+    const usernameInput = document.getElementById('username-input');
+    const usernameSaveBtn = document.getElementById('btn-save-username');
+    const usernameCancelBtn = document.getElementById('btn-cancel-username');
+    const usernameError = document.getElementById('username-error');
+    const usernameHint = document.getElementById('username-hint');
 
     if (!supabase) return;
 
@@ -64,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setupFollowButton(profile.id);
         }
 
-        await setProfileData(profile);
+        await setProfileData(profile, isOwnProfile);
         await loadSubmissions(profile.username, isOwnProfile);
 
         document.getElementById('tab-saved')?.classList.remove('hidden');
@@ -97,9 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         .maybeSingle();
 
     if (!profile) {
+        const { generateUniqueUsername } = await import('./supabaseClient.js');
+        const uniqueUsername = await generateUniqueUsername(userEmail);
+
         const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
-            .insert([{ id: userId, username: defaultUsername }])
+            .insert([{ id: userId, username: uniqueUsername, email: userEmail }])
             .select()
             .single();
 
@@ -109,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (profile) {
-        await setProfileData(profile);
+        await setProfileData(profile, true);
         setupAvatarEdit(profile);
         if (privacyContainer) privacyContainer.style.display = '';
     } else {
@@ -126,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupMediaLibrary();
     document.getElementById('tab-comments')?.classList.remove('hidden');
 
-    async function setProfileData(p) {
+    async function setProfileData(p, isOwn) {
         usernameEl.textContent = p.username;
         document.title = `${p.username}'s Profile - K. Notes`;
         createdEl.textContent = new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -144,6 +154,100 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isPublicCheckbox && p.is_public !== undefined) {
             isPublicCheckbox.checked = p.is_public === true;
         }
+
+        if (isOwn) {
+            setupUsernameEdit(p);
+        }
+    }
+
+    function setupUsernameEdit(profile) {
+        if (!usernameEditBtn) return;
+        usernameEditBtn.classList.remove('hidden');
+
+        const currentYear = new Date().getFullYear();
+        const changesCount = profile.username_changes_count || 0;
+        const lastChangeDate = profile.last_username_change_at ? new Date(profile.last_username_change_at) : null;
+
+        let canChange = true;
+        if (lastChangeDate && lastChangeDate.getFullYear() === currentYear && changesCount >= 2) {
+            canChange = false;
+        }
+
+        usernameEditBtn.addEventListener('click', () => {
+            if (!canChange) {
+                usernameError.textContent = "You've already changed your username twice this year. Try again in " + (currentYear + 1) + ".";
+                usernameError.classList.remove('hidden');
+                setTimeout(() => usernameError.classList.add('hidden'), 5000);
+                return;
+            }
+            usernameInputWrapper.classList.remove('hidden');
+            document.getElementById('username-edit-container').classList.add('hidden');
+            usernameInput.value = profile.username;
+            usernameInput.focus();
+            usernameHint.textContent = `You have used ${lastChangeDate && lastChangeDate.getFullYear() === currentYear ? changesCount : 0}/2 changes this year.`;
+            usernameHint.classList.remove('hidden');
+        });
+
+        usernameCancelBtn.addEventListener('click', () => {
+            usernameInputWrapper.classList.add('hidden');
+            document.getElementById('username-edit-container').classList.remove('hidden');
+            usernameError.classList.add('hidden');
+            usernameHint.classList.add('hidden');
+        });
+
+        usernameSaveBtn.addEventListener('click', async () => {
+            const newUsername = usernameInput.value.trim().toLowerCase();
+            if (newUsername === profile.username.toLowerCase()) {
+                usernameCancelBtn.click();
+                return;
+            }
+
+            if (!/^[a-z0-9_]{3,20}$/.test(newUsername)) {
+                usernameError.textContent = "Username must be 3-20 characters (letters, numbers, underscores).";
+                usernameError.classList.remove('hidden');
+                return;
+            }
+
+            usernameSaveBtn.disabled = true;
+            usernameSaveBtn.textContent = "saving...";
+
+            // Check if username taken
+            const { data: existing } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('username', newUsername)
+                .maybeSingle();
+
+            if (existing) {
+                usernameError.textContent = "This username is already taken.";
+                usernameError.classList.remove('hidden');
+                usernameSaveBtn.disabled = false;
+                usernameSaveBtn.textContent = "save";
+                return;
+            }
+
+            // Update profile
+            const now = new Date().toISOString();
+            const newCount = (lastChangeDate && lastChangeDate.getFullYear() === currentYear) ? changesCount + 1 : 1;
+
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    username: newUsername,
+                    username_changes_count: newCount,
+                    last_username_change_at: now
+                })
+                .eq('id', profile.id);
+
+            if (updateError) {
+                usernameError.textContent = "Failed to update: " + updateError.message;
+                usernameError.classList.remove('hidden');
+                usernameSaveBtn.disabled = false;
+                usernameSaveBtn.textContent = "save";
+            } else {
+                window.location.reload(); // Simplest way to refresh all references
+            }
+        });
     }
 
     function setAvatarLetter(username) {
@@ -530,7 +634,7 @@ async function loadBookmarks(userId = null) {
                 const dropdown = item.closest('.knotes-dropdown');
                 const storyId = dropdown.getAttribute('data-id');
                 const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
-                
+
                 if (folderName === 'unsave') {
                     removeStoryFromFolder(currentUserId, storyId);
                     // Also trigger the actual bookmark removal if needed, but here it's likely already in Supabase
@@ -1035,7 +1139,7 @@ async function loadSubscriptions(userId) {
 
     const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session ? session.user.id : null;
-    
+
     let myFollowingIds = [];
     if (currentUserId) {
         const myFollowing = await getFollowingList(currentUserId);
@@ -1055,7 +1159,7 @@ async function loadSubscriptions(userId) {
                 </div>
                 <div class="flex-1 min-w-0">
                     <a href="profile.html?user=${p.username}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
-                    <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || 'No bio available')}</p>
+                    <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || '')}</p>
                 </div>
                 ${currentUserId && !isMe ? `
                     <button class="sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${isFollowed ? 'bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200' : 'bg-white border-[#ff6600] text-[#ff6600] hover:bg-[#ff6600] hover:text-white'}" 
@@ -1115,7 +1219,7 @@ async function loadSubscriptions(userId) {
             const nowFollowed = result.action === 'followed';
             btn.setAttribute('data-followed', nowFollowed);
             btn.textContent = nowFollowed ? 'Following' : 'Follow';
-            
+
             if (nowFollowed) {
                 btn.className = 'sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200';
             } else {

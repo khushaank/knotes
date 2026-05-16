@@ -121,13 +121,15 @@ async function renderPage() {
     const cacheKey = activeSlug ? `pulse-${activeSlug}` : `pulse-${storyId}`;
     const cached = getCache(cacheKey);
 
+    // ALWAYS load user stats first so upvotes/bookmarks show up correctly
+    await loadUserStats();
+
     if (cached) {
         renderStoryDetails(cached.data);
         if (!cached.stale) {
             // Fetch fresh comments even if story is fresh
             const comments = await fetchComments(cached.data.id);
             renderCommentsSection(comments, cached.data.id);
-            loadUserStats(); // Background refresh
             return;
         }
     }
@@ -140,10 +142,7 @@ async function renderPage() {
 
     renderStoryDetails(story);
 
-    const [comments] = await Promise.all([
-        fetchComments(story.id),
-        loadUserStats()
-    ]);
+    const comments = await fetchComments(story.id);
 
     renderCommentsSection(comments, story.id);
 }
@@ -423,47 +422,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = e.target;
             const folderName = item.getAttribute('data-folder');
             const dropdown = item.closest('.knotes-dropdown');
-            const storyId = dropdown.getAttribute('data-id');
+            const storyId = parseInt(dropdown.getAttribute('data-id'));
             const trigger = dropdown.querySelector('.knotes-dropdown-trigger');
             const menu = dropdown.querySelector('.knotes-dropdown-menu');
 
             if (!storyId || !folderName) return;
 
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                showInlineMsg(trigger, 'Please login');
-                menu.classList.add('hidden');
-                return;
-            }
+            menu.classList.add('hidden');
 
             if (folderName === 'unsave') {
-                await toggleBookmark(parseInt(storyId));
-                const key = `kn-folders-${session.user.id}`;
-                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-                delete mapping[storyId];
-                localStorage.setItem(key, JSON.stringify(mapping));
-
                 trigger.textContent = '+';
                 trigger.classList.remove('saved');
-                item.remove();
                 showInlineMsg(trigger, 'Removed');
-                const idx = userBookmarks.indexOf(parseInt(storyId));
+
+                const idx = userBookmarks.indexOf(storyId);
                 if (idx > -1) userBookmarks.splice(idx, 1);
-            } else {
-                if (!userBookmarks.includes(parseInt(storyId))) {
-                    await toggleBookmark(parseInt(storyId));
-                    userBookmarks.push(parseInt(storyId));
+
+                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                if (userId) {
+                    const key = `kn-folders-${userId}`;
+                    const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                    delete mapping[storyId];
+                    localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                const key = `kn-folders-${session.user.id}`;
-                const mapping = JSON.parse(localStorage.getItem(key) || '{}');
-                mapping[storyId] = folderName;
-                localStorage.setItem(key, JSON.stringify(mapping));
-
+                toggleBookmark(storyId).catch(err => {
+                    console.error('Failed to unsave:', err);
+                });
+            } else {
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
+                showInlineMsg(trigger, `Added to ${folderName}`);
 
-                // Add Unsave option if not present
+                if (!userBookmarks.includes(storyId)) {
+                    userBookmarks.push(storyId);
+                }
+
+                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                if (userId) {
+                    const key = `kn-folders-${userId}`;
+                    const mapping = JSON.parse(localStorage.getItem(key) || '{}');
+                    mapping[storyId] = folderName;
+                    localStorage.setItem(key, JSON.stringify(mapping));
+                }
+
+                toggleBookmark(storyId).catch(err => {
+                    console.error('Failed to save:', err);
+                });
+
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');
                     divider.className = 'dropdown-divider border-t border-gray-100 my-1';
@@ -476,7 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     menu.appendChild(opt);
                 }
 
-                // Highlight selected folder
                 menu.querySelectorAll('.dropdown-item').forEach(i => {
                     if (i.getAttribute('data-folder') === folderName) {
                         i.classList.add('bg-orange-50', 'text-[#ff6600]', 'font-bold');
@@ -484,10 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold');
                     }
                 });
-
-                showInlineMsg(trigger, `Added to ${folderName}`);
             }
-            menu.classList.add('hidden');
             return;
         }
 

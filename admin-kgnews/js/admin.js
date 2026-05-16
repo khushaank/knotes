@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSidebar();
     setupAddPostForm();
     setupExportButtons();
+    setupSystemSettings();
 });
 
 // =============================================
@@ -58,6 +59,7 @@ async function checkAdminAuth() {
     document.getElementById('admin-name').textContent = profile.username || currentUser.email;
 
     document.getElementById('login-container').classList.add('hidden');
+    document.getElementById('loading-overlay')?.classList.add('hidden');
     document.getElementById('admin-dashboard').classList.remove('hidden');
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -65,12 +67,12 @@ async function checkAdminAuth() {
         window.location.reload();
     });
 
-    // Load all data
     await Promise.all([loadUsers(), loadPosts(), loadComments()]);
     populateOverviewMetrics();
 }
 
 function showLoginRequired() {
+    document.getElementById('loading-overlay')?.classList.add('hidden');
     document.getElementById('login-container').classList.remove('hidden');
     document.getElementById('admin-dashboard').classList.add('hidden');
 }
@@ -360,6 +362,14 @@ function populateOverviewMetrics() {
         document.getElementById('metric-avg-posts').textContent = '0';
     }
 
+    // Engagement (Comments per post)
+    const engagement = allPosts.length > 0 ? (allComments.length / allPosts.length).toFixed(2) : '0';
+    document.getElementById('metric-engagement').textContent = engagement;
+
+    // Signups Today
+    const signupsToday = allUsers.filter(u => u.created_at && u.created_at.startsWith(today)).length;
+    document.getElementById('metric-signups-today').textContent = signupsToday;
+
     // Content Health
     const postsToday = allPosts.filter(p => p.published_at && p.published_at.startsWith(today)).length;
     const postsWeek = allPosts.filter(p => p.published_at && p.published_at >= weekAgo).length;
@@ -389,6 +399,109 @@ function populateOverviewMetrics() {
     drawCumulativeUsersChart();
     drawHourlyChart();
     populateTopCommenters();
+    populateUsernameAudit();
+    populateTopSearches();
+}
+
+// =============================================
+// SYSTEM SETTINGS & BROADCAST
+// =============================================
+async function setupSystemSettings() {
+    const input = document.getElementById('broadcast-message-input');
+    const saveBtn = document.getElementById('btn-save-broadcast');
+    const maintToggle = document.getElementById('maintenance-mode-toggle');
+    if (!input || !saveBtn || !maintToggle) return;
+
+    // Load current settings
+    const { data: settings } = await supabase
+        .from('site_settings')
+        .select('*')
+        .in('id', ['broadcast_message', 'maintenance_mode']);
+
+    const broadcast = settings?.find(s => s.id === 'broadcast_message');
+    const maintenance = settings?.find(s => s.id === 'maintenance_mode');
+
+    if (broadcast) input.value = broadcast.value || '';
+    if (maintenance) maintToggle.checked = maintenance.value === 'true';
+
+    // Save Broadcast
+    saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({ id: 'broadcast_message', value: input.value, updated_by: currentUser.id, updated_at: new Date().toISOString() });
+
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Update Broadcast';
+
+        if (error) showToast('Error: ' + error.message, 'error');
+        else showToast('Broadcast updated!', 'success');
+    });
+
+    // Toggle Maintenance
+    maintToggle.addEventListener('change', async () => {
+        const val = maintToggle.checked ? 'true' : 'false';
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({ id: 'maintenance_mode', value: val, updated_by: currentUser.id, updated_at: new Date().toISOString() });
+
+        if (error) {
+            showToast('Error: ' + error.message, 'error');
+            maintToggle.checked = !maintToggle.checked;
+        } else {
+            showToast(`Maintenance mode ${maintToggle.checked ? 'enabled' : 'disabled'}`, 'info');
+        }
+    });
+}
+
+function populateUsernameAudit() {
+    const tbody = document.querySelector('#username-audit-table tbody');
+    if (!tbody) return;
+
+    const changedUsers = allUsers.filter(u => u.last_username_change_at);
+
+    if (changedUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);">No username changes recorded.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = changedUsers.map(u => `
+        <tr>
+            <td><strong>${escapeHtml(u.username)}</strong></td>
+            <td><span class="status-badge ${u.username_changes_count >= 2 ? 'draft' : 'published'}">${u.username_changes_count || 0}/2</span></td>
+            <td>${new Date(u.last_username_change_at).toLocaleString()}</td>
+        </tr>
+    `).join('');
+}
+
+async function populateTopSearches() {
+    const tbody = document.querySelector('#top-searches-table tbody');
+    if (!tbody) return;
+
+    const { data, error } = await supabase
+        .from('search_stats')
+        .select('*')
+        .order('count', { ascending: false })
+        .limit(10);
+
+    if (error || !data) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:12px;color:var(--red);">Failed to load stats.</td></tr>';
+        return;
+    }
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:12px;color:var(--text-muted);">No searches yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map(s => `
+        <tr>
+            <td>${escapeHtml(s.term)}</td>
+            <td><strong>${s.count}</strong></td>
+        </tr>
+    `).join('');
 }
 
 // =============================================
@@ -740,10 +853,11 @@ window.adminActions = {
         const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('id', id);
         if (error) {
             showToast('Error: ' + error.message, 'error');
-            loadUsers();
         } else {
             showToast(isAdmin ? 'User promoted to admin.' : 'Admin privileges revoked.', 'success');
         }
+        await loadUsers();
+        populateOverviewMetrics();
     },
 
     async sharePost(title, relUrl) {

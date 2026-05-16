@@ -1,4 +1,4 @@
-import { supabase, sanitize, toggleFollow, getFollowerCount } from './supabaseClient.js';
+import { supabase, sanitize, toggleFollow, getFollowerCount, getCache, setCache } from './supabaseClient.js';
 
 const AVATAR_COLORS = ['#fecaca', '#bfdbfe', '#bbf7d0', '#fef08a', '#e9d5ff', '#fbcfe8'];
 
@@ -74,28 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // LEADERBOARD RENDERING
 
-    async function loadLeaderboard() {
-        const { data: profiles, error } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url, created_at')
-            .eq('is_public', true);
-
-        if (error || !profiles || profiles.length === 0) {
-            if (loadingSkeleton) loadingSkeleton.style.display = 'none';
-            if (mainContent) mainContent.classList.add('ready');
-            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No users found yet. Be the first to join!</div>';
-            return;
-        }
-
-        const results = [];
-        for (const p of profiles) {
-            const count = await getFollowerCount(p.id);
-            results.push({ ...p, followers: count });
-        }
-
-        results.sort((a, b) => b.followers - a.followers);
-        const leaders = results.slice(0, 20);
-
+    function renderLeaders(leaders) {
         let html = '';
         leaders.forEach((user, index) => {
             const rank = index + 1;
@@ -140,6 +119,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.querySelectorAll('.boost-karma-btn').forEach(btn => {
             btn.addEventListener('click', handleKarmaClick);
         });
+    }
+
+    async function loadLeaderboard() {
+        const cacheKey = 'leaderboard_data';
+        const cached = getCache(cacheKey);
+
+        if (cached) {
+            renderLeaders(cached.data);
+            if (!cached.stale) return; // if fresh, stop. If stale, fetch in background.
+        }
+
+        const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, created_at')
+            .eq('is_public', true);
+
+        if (error || !profiles || profiles.length === 0) {
+            if (!cached) {
+                if (loadingSkeleton) loadingSkeleton.style.display = 'none';
+                if (mainContent) mainContent.classList.add('ready');
+                container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No users found yet. Be the first to join!</div>';
+            }
+            return;
+        }
+
+        const results = [];
+        for (const p of profiles) {
+            const count = await getFollowerCount(p.id);
+            results.push({ ...p, followers: count });
+        }
+
+        results.sort((a, b) => b.followers - a.followers);
+        const leaders = results.slice(0, 20);
+
+        setCache(cacheKey, leaders, 1000 * 60 * 5); // Cache for 5 mins
+        renderLeaders(leaders);
     }
 
     async function handleKarmaClick(e) {

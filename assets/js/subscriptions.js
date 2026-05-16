@@ -1,4 +1,4 @@
-import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow } from './supabaseClient.js';
+import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow, getCache, setCache } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loadingEl = document.getElementById('subs-loading');
@@ -39,8 +39,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     async function refreshData() {
-        loadingEl.style.display = 'flex';
-        containerEl.innerHTML = '';
+        const cacheKey = `subs_${userId}`;
+        const cached = getCache(cacheKey);
+
+        if (cached) {
+            window.followingData = cached.data.following;
+            window.followersData = cached.data.followers;
+            followingCountEl.textContent = cached.data.following.length;
+            followersCountEl.textContent = cached.data.followers.length;
+            loadingEl.style.display = 'none';
+            contentEl.classList.add('ready');
+            renderList();
+            if (!cached.stale) return;
+        } else {
+            loadingEl.style.display = 'block';
+            containerEl.innerHTML = '';
+        }
 
         const [following, followers] = await Promise.all([
             getFollowingList(userId),
@@ -49,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         window.followingData = following;
         window.followersData = followers;
+
+        setCache(cacheKey, { following, followers }, 1000 * 60 * 5); // 5 mins cache
 
         followingCountEl.textContent = following.length;
         followersCountEl.textContent = followers.length;
@@ -96,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="sub-info">
                         <a href="profile.html?user=${person.username}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
-                        <div class="sub-bio" title="${sanitize(person.about || '')}">${sanitize(person.about || 'No bio provided.')}</div>
+                        <div class="sub-bio" title="${sanitize(person.about || '')}">${sanitize(person.about || '')}</div>
                     </div>
                     ${currentTab === 'following' ? `
                         <button class="sub-unfollow-btn" data-id="${person.id}">Unfollow</button>
