@@ -1,8 +1,6 @@
 (function () {
     const WHITELISTED_DOMAINS = [
-        window.location.hostname,
-        'khushaank.github.io',
-        'knotes.vercel.app'
+        window.location.hostname
     ];
 
     function isExternalLink(url) {

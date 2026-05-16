@@ -144,7 +144,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    by <a href="profile.html?user=${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
+                    by <a href="@${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
                     ${timeAgo} | 
                     <a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a> | 
                     <span class="bookmark-container">

@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${avatarHtml}
                     </div>
                     <div class="sub-info">
-                        <a href="profile.html?user=${person.username}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
+                        <a href="@${person.username}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
                         <div class="sub-bio" title="${sanitize(person.about || '')}">${sanitize(person.about || '')}</div>
                     </div>
                     ${currentTab === 'following' ? `

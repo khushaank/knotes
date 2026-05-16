@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const viewingUser = urlParams.get('user');
 
+    if (viewingUser && window.history && window.history.replaceState) {
+        const newUrl = '@' + viewingUser + window.location.hash;
+        window.history.replaceState(null, '', newUrl);
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
 
     setupTabs();
@@ -1158,7 +1163,7 @@ async function loadSubscriptions(userId) {
                     ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full object-cover">` : (p.username ? p.username.charAt(0) : '?')}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <a href="profile.html?user=${p.username}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
+                    <a href="@${p.username}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
                     <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || '')}</p>
                 </div>
                 ${currentUserId && !isMe ? `

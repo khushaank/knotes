@@ -82,7 +82,7 @@ function renderCommentList(comments) {
                     </div>
                     <div class="w-full">
                         <div class="story-meta opacity-70">
-                            <a class="hover:underline text-black font-medium" href="../profile.html?user=${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
+                            <a class="hover:underline text-black font-medium" href="../@${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
                             <a class="hover:underline mx-0.5 comment-time-link" href="#" data-created="${comment.created_at}" data-user="${sanitize(comment.user_name) || 'anonymous'}">${timeAgo}</a>
                             <span class="cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
                         </div>
@@ -215,7 +215,7 @@ function renderStoryDetails(story) {
                 ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
                 <div class="story-meta mt-1">
                     <span class="text-xs">
-                        by <a class="hover:underline" href="../profile.html?user=${story.author}">${sanitize(story.author) || 'anonymous'}</a> | 
+                        by <a class="hover:underline" href="../@${story.author}">${sanitize(story.author) || 'anonymous'}</a> | 
                         ${timeAgo} | 
                         <a class="hover:underline" href="#">hide</a> | 
                         <span class="bookmark-container inline-block">

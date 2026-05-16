@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="leader-rank ${rankClass}">${rank}.</span>
                     ${avatarHtml(user, 36)}
                     <div class="leader-info">
-                        <a href="profile.html?user=${encodeURIComponent(user.username)}" class="leader-name block">${sanitize(user.username)}</a>
+                        <a href="@${encodeURIComponent(user.username)}" class="leader-name block">${sanitize(user.username)}</a>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="leader-karma">
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     const avatarBg = getAvatarColor(user.username);
                     html += `
-                        <a href="profile.html?user=${encodeURIComponent(user.username)}" class="search-result-item">
+                        <a href="@${encodeURIComponent(user.username)}" class="search-result-item">
                             <div class="sr-avatar" style="background:${avatarBg}">${avatarInner(user)}</div>
                             <div class="sr-info">
                                 <div class="sr-name">${highlightMatch(sanitize(user.username), query)}</div>

@@ -1,48 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://khushaank.github.io/knotes/</loc>
+    <loc></loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/login.html</loc>
+    <loc>login.html</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/guidelines.html</loc>
+    <loc>guidelines.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/faq.html</loc>
+    <loc>faq.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/lists.html</loc>
+    <loc>lists.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/api.html</loc>
+    <loc>api.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/security.html</loc>
+    <loc>security.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/legal.html</loc>
+    <loc>legal.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/contact.html</loc>
+    <loc>contact.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/about.html</loc>
+    <loc>about.html</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://khushaank.github.io/knotes/author.html</loc>
+    <loc>author.html</loc>
     <priority>0.5</priority>
   </url>
 </urlset>

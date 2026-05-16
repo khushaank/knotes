@@ -12,6 +12,30 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
+
+    <script>
+        (function () {
+            var path = window.location.pathname;
+            var segments = path.split('/');
+            var lastSegment = segments.pop();
+
+            // Handle trailing slash
+            if (lastSegment === '') {
+                lastSegment = segments.pop();
+            }
+
+            if (lastSegment) {
+                if (lastSegment.startsWith('@')) {
+                    var username = lastSegment.substring(1);
+                    var basePath = segments.join('/') + '/';
+                    window.location.href = basePath + 'profile.html?user=' + username;
+                } else if (!lastSegment.includes('.')) {
+                    var basePath = segments.join('/') + '/';
+                    window.location.href = basePath + lastSegment + '.html' + window.location.search + window.location.hash;
+                }
+            }
+        })();
+    </script>
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">

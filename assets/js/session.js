@@ -1,5 +1,13 @@
 import { supabase } from './supabaseClient.js';
 
+if (window.history && window.history.replaceState) {
+    const path = window.location.pathname;
+    if (path.endsWith('.html') && !path.endsWith('index.html') && !path.includes('profile.html') && !path.includes('404.html')) {
+        const cleanPath = path.substring(0, path.length - 5) + window.location.search + window.location.hash;
+        window.history.replaceState(null, '', cleanPath);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const authLinks = document.querySelectorAll('a[href="login.html"], a[href="../login.html"]');
     if (!supabase) return;
@@ -70,7 +78,7 @@ function updateAuthUI(authLinks, username) {
         userContainer.className = 'flex items-center gap-2';
 
         const userSpan = document.createElement('a');
-        userSpan.href = prefix + 'profile.html';
+        userSpan.href = prefix + '@' + username;
         userSpan.className = 'hover:underline text-black';
         userSpan.textContent = username;
 
