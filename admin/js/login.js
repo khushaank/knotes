@@ -1,13 +1,29 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
+
+try {
+    const config = await import('./supabaseConfig.js');
+    SUPABASE_URL = config.SUPABASE_URL;
+    SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
+} catch (e) {
+    console.warn('admin/js/supabaseConfig.js not found or failed to load.', e);
+}
+
+const supabase = (SUPABASE_URL) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const errorMsg = document.getElementById('error-msg');
+
+    if (!supabase && errorMsg) {
+        errorMsg.textContent = 'Configuration missing: admin/js/supabaseConfig.js could not be loaded.';
+        errorMsg.style.display = 'block';
+        if (loginBtn) loginBtn.disabled = true;
+    }
 
     async function handleLogin() {
         errorMsg.style.display = 'none';

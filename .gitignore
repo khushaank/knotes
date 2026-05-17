@@ -4,4 +4,6 @@ dist/
 build/
 .env
 *.log
-supabaseConfig.js
+# supabaseConfig.js (Tracked in Git to ensure successful deployment and prevent 404 errors)
+# supabaseConfig.js
+

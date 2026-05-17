@@ -1,7 +1,17 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
+
+try {
+    const config = await import('./supabaseConfig.js');
+    SUPABASE_URL = config.SUPABASE_URL;
+    SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
+} catch (e) {
+    console.warn('dashboard/js/supabaseConfig.js not found or failed to load.', e);
+}
+
+const supabase = (SUPABASE_URL) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // HTML escape helper to prevent XSS
 function escapeHtml(str) {
@@ -41,6 +51,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 // AUTHENTICATION
 // =============================================
 async function checkUserAuth() {
+    if (!supabase) {
+        document.getElementById('loading-overlay')?.classList.add('hidden');
+        document.body.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; font-family:Inter, sans-serif; background:var(--bg-body); color:var(--text-primary); text-align:center; padding: 20px;">
+                <img src="../assets/img/logo.png" alt="K. Notes" style="height: 64px;">
+                <h1 style="font-size:24px; font-weight:700; color:#ff6600;">Configuration Missing</h1>
+                <p style="color:var(--text-secondary); max-width:400px; line-height:1.6;">
+                    The Creator Dashboard configuration file (<strong>supabaseConfig.js</strong>) is missing or could not be loaded. Please ensure your environment is set up correctly.
+                </p>
+                <a href="../index.html" class="btn btn-primary" style="text-decoration:none; padding:10px 20px; font-weight:600; border-radius: 4px; border: none; cursor: pointer; color: white; background: #ff6600;">Back to Site</a>
+            </div>
+        `;
+        return;
+    }
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {

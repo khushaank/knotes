@@ -1,5 +1,15 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig.js';
+
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
+
+try {
+    const config = await import('./supabaseConfig.js');
+    SUPABASE_URL = config.SUPABASE_URL;
+    SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
+} catch (e) {
+    console.warn('Supabase configuration file (supabaseConfig.js) not found or failed to load. Please ensure it is present in assets/js/.', e);
+}
 
 export const supabase = (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
