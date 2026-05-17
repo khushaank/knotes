@@ -130,6 +130,7 @@ async function renderPage() {
             // Fetch fresh comments even if story is fresh
             const comments = await fetchComments(cached.data.id);
             renderCommentsSection(comments, cached.data.id);
+            document.getElementById('comment-box')?.classList.remove('hidden');
             return;
         }
     }
@@ -145,6 +146,7 @@ async function renderPage() {
     const comments = await fetchComments(story.id);
 
     renderCommentsSection(comments, story.id);
+    document.getElementById('comment-box')?.classList.remove('hidden');
 }
 
 async function loadUserStats() {
@@ -217,7 +219,7 @@ function renderStoryDetails(story) {
                     <span class="text-xs">
                         by <a class="hover:underline" href="../@${story.author}">${sanitize(story.author) || 'anonymous'}</a> | 
                         ${timeAgo} | 
-                        <a class="hover:underline" href="#">hide</a> | 
+                        <a class="hover:underline" href="../index.html">hide</a> | 
                         <span class="bookmark-container inline-block">
                             <span class="knotes-dropdown inline-block" data-id="${story.id}">
                                 <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? 'Saved to list' : 'Add to list'}">
@@ -234,7 +236,7 @@ function renderStoryDetails(story) {
                         </span> | 
                         <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a> | 
                         <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
-                        <a href="#add-comment" class="hover:underline">add</a>
+                        <a href="#comment-input" class="hover:underline add-comment-link">add</a>
                     </span>
                 </div>
             </div>
@@ -349,9 +351,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (e.target.classList.contains('reply-btn')) {
+        if (e.target.classList.contains('reply-btn') || e.target.classList.contains('add-comment-link')) {
             e.preventDefault();
-            if (textarea) textarea.focus();
+            const activeTextarea = document.getElementById('comment-input');
+            if (activeTextarea) {
+                activeTextarea.scrollIntoView({ behavior: 'smooth' });
+                activeTextarea.focus();
+            } else {
+                const container = document.getElementById('comment-box');
+                if (container) {
+                    container.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
         }
 
         if (e.target.classList.contains('comment-time-link')) {
@@ -434,6 +445,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 trigger.textContent = '+';
                 trigger.classList.remove('saved');
                 showInlineMsg(trigger, 'Removed');
+
+                const unsaveOpt = menu.querySelector('[data-folder="unsave"]');
+                if (unsaveOpt) unsaveOpt.remove();
+                const divider = menu.querySelector('.dropdown-divider');
+                if (divider) divider.remove();
+                
+                menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
 
                 const idx = userBookmarks.indexOf(storyId);
                 if (idx > -1) userBookmarks.splice(idx, 1);

@@ -21,8 +21,10 @@ CREATE TABLE IF NOT EXISTS public.search_stats (
 );
 
 ALTER TABLE public.search_stats ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Everyone can increment search stats" ON public.search_stats FOR ALL USING (true);
-CREATE POLICY "Admins can view search stats" ON public.search_stats FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+DROP POLICY IF EXISTS "Search stats are viewable by everyone" ON public.search_stats;
+CREATE POLICY "Search stats are viewable by everyone" ON public.search_stats FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins can manage search stats" ON public.search_stats;
+CREATE POLICY "Admins can manage search stats" ON public.search_stats FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
 
 -- RPC to increment search stats
 CREATE OR REPLACE FUNCTION public.increment_search_stat(search_term TEXT)

@@ -1,5 +1,12 @@
 import { supabase } from './supabaseClient.js';
 
+const currentTheme = localStorage.getItem('kn-theme') || 'light';
+if (currentTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+} else {
+    document.documentElement.setAttribute('data-theme', 'light');
+}
+
 if (window.history && window.history.replaceState) {
     const path = window.location.pathname;
     if (path.endsWith('.html') && !path.endsWith('index.html') && !path.includes('profile.html') && !path.includes('404.html')) {
@@ -23,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const path = window.location.pathname;
         const isMaintPage = path.includes('maintenance.html');
         const isLoginPage = path.includes('login.html');
-        const isAdminPage = path.includes('/admin-kgnews/');
+        const isAdminPage = path.includes('/admin/');
 
         const { data: { session } } = await supabase.auth.getSession();
         let isAdmin = false;
@@ -47,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isMaintPage) {
                 document.body.style.visibility = 'visible';
             } else if (!isLoginPage && !isAdminPage) {
-                const isSubdir = path.includes('/pulse/') || path.includes('/admin-kgnews/');
+                const isSubdir = path.includes('/pulse/') || path.includes('/admin/');
                 window.location.replace(isSubdir ? '../maintenance.html' : 'maintenance.html');
             }
         } else if (!isMaintenance && isMaintPage) {
@@ -59,6 +66,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         console.error('Session error:', err);
         document.body.style.visibility = 'visible';
+    }
+
+    const headerRight = document.querySelector('header .ml-auto');
+    if (headerRight) {
+        const separator = document.createElement('span');
+        separator.textContent = ' | ';
+        
+        const toggleBtn = document.createElement('a');
+        toggleBtn.href = '#';
+        toggleBtn.className = 'hover:underline text-black';
+        toggleBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light mode' : 'dark mode';
+        toggleBtn.style.cursor = 'pointer';
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('kn-theme', 'light');
+                toggleBtn.textContent = 'dark mode';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('kn-theme', 'dark');
+                toggleBtn.textContent = 'light mode';
+            }
+        });
+
+        headerRight.appendChild(separator);
+        headerRight.appendChild(toggleBtn);
     }
 
     setTimeout(() => {
@@ -78,7 +113,7 @@ function updateAuthUI(authLinks, username) {
         userContainer.className = 'flex items-center gap-2';
 
         const userSpan = document.createElement('a');
-        userSpan.href = prefix + '@' + username;
+        userSpan.href = prefix + 'profile.html?user=' + username;
         userSpan.className = 'hover:underline text-black';
         userSpan.textContent = username;
 

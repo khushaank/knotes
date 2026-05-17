@@ -44,7 +44,7 @@
             // If we are in 'pulse' or any other subdirectory, we need to go up
             // This project seems to have one level of subdirectories (e.g., /pulse/)
             let exitPath = 'exit.html';
-            if (window.location.pathname.includes('/pulse/') || window.location.pathname.includes('/admin-kgnews/')) {
+            if (window.location.pathname.includes('/pulse/') || window.location.pathname.includes('/admin/')) {
                 exitPath = '../exit.html';
             }
 

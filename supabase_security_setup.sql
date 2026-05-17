@@ -107,6 +107,24 @@ CREATE TRIGGER on_comment_insert
   BEFORE INSERT ON public.comments
   FOR EACH ROW EXECUTE FUNCTION public.handle_comment_insert();
 
+-- Prevent users from moving comments to other blogs
+CREATE OR REPLACE FUNCTION public.handle_comment_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true) THEN
+    NEW.user_id := OLD.user_id;
+    NEW.blog_id := OLD.blog_id;
+    NEW.user_name := OLD.user_name;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_comment_update ON public.comments;
+CREATE TRIGGER on_comment_update
+  BEFORE UPDATE ON public.comments
+  FOR EACH ROW EXECUTE FUNCTION public.handle_comment_update();
+
 -- Rate limit blog submissions: max 1 post per 30 seconds per user
 CREATE OR REPLACE FUNCTION public.enforce_blog_rate_limit()
 RETURNS TRIGGER AS $$
@@ -131,6 +149,26 @@ DROP TRIGGER IF EXISTS on_blog_rate_limit ON public.blogs;
 CREATE TRIGGER on_blog_rate_limit
   BEFORE INSERT ON public.blogs
   FOR EACH ROW EXECUTE FUNCTION public.enforce_blog_rate_limit();
+
+-- Prevent users from spoofing counters or author_id on update
+CREATE OR REPLACE FUNCTION public.handle_blog_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true) THEN
+    NEW.author_id := OLD.author_id;
+    NEW.likes_count := OLD.likes_count;
+    NEW.comments_count := OLD.comments_count;
+    NEW.clicks_count := OLD.clicks_count;
+    NEW.author := OLD.author;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_blog_update ON public.blogs;
+CREATE TRIGGER on_blog_update
+  BEFORE UPDATE ON public.blogs
+  FOR EACH ROW EXECUTE FUNCTION public.handle_blog_update();
 
 
 -- 3. PROFILES POLICIES
@@ -244,74 +282,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Like counter: require auth AND verify the like row actually exists
-CREATE OR REPLACE FUNCTION increment_blog_likes(blog_id BIGINT)
-RETURNS void AS $$
+-- Like and Comment triggers to replace vulnerable RPCs
+CREATE OR REPLACE FUNCTION public.handle_like_insert_delete()
+RETURNS TRIGGER AS $$
 BEGIN
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.blogs SET likes_count = COALESCE(likes_count, 0) + 1 WHERE id = NEW.blog_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE public.blogs SET likes_count = GREATEST(0, COALESCE(likes_count, 0) - 1) WHERE id = OLD.blog_id;
+    RETURN OLD;
   END IF;
-
-  -- Only increment if the calling user actually has a like on this blog
-  IF NOT EXISTS (SELECT 1 FROM public.likes WHERE likes.blog_id = increment_blog_likes.blog_id AND likes.user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'Cannot increment: no matching like found';
-  END IF;
-
-  UPDATE public.blogs
-  SET likes_count = COALESCE(likes_count, 0) + 1
-  WHERE id = increment_blog_likes.blog_id;
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION decrement_blog_likes(blog_id BIGINT)
-RETURNS void AS $$
+DROP TRIGGER IF EXISTS on_like_insert_delete ON public.likes;
+CREATE TRIGGER on_like_insert_delete
+  AFTER INSERT OR DELETE ON public.likes
+  FOR EACH ROW EXECUTE FUNCTION public.handle_like_insert_delete();
+
+CREATE OR REPLACE FUNCTION public.handle_comment_insert_delete()
+RETURNS TRIGGER AS $$
 BEGIN
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.blogs SET comments_count = COALESCE(comments_count, 0) + 1 WHERE id = NEW.blog_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE public.blogs SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1) WHERE id = OLD.blog_id;
+    RETURN OLD;
   END IF;
-
-  -- Only decrement if the calling user does NOT have a like (they just removed it)
-  IF EXISTS (SELECT 1 FROM public.likes WHERE likes.blog_id = decrement_blog_likes.blog_id AND likes.user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'Cannot decrement: like still exists';
-  END IF;
-
-  UPDATE public.blogs
-  SET likes_count = GREATEST(0, COALESCE(likes_count, 0) - 1)
-  WHERE id = decrement_blog_likes.blog_id;
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Comment counter: require auth AND verify a comment exists
-CREATE OR REPLACE FUNCTION increment_blog_comments(blog_id BIGINT)
-RETURNS void AS $$
-BEGIN
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
+DROP TRIGGER IF EXISTS on_comment_insert_delete ON public.comments;
+CREATE TRIGGER on_comment_insert_delete
+  AFTER INSERT OR DELETE ON public.comments
+  FOR EACH ROW EXECUTE FUNCTION public.handle_comment_insert_delete();
 
-  -- Verify the user has at least one comment on this blog
-  IF NOT EXISTS (SELECT 1 FROM public.comments WHERE comments.blog_id = increment_blog_comments.blog_id AND comments.user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'Cannot increment: no matching comment found';
-  END IF;
-
-  UPDATE public.blogs
-  SET comments_count = COALESCE(comments_count, 0) + 1
-  WHERE id = increment_blog_comments.blog_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION decrement_blog_comments(blog_id BIGINT)
-RETURNS void AS $$
-BEGIN
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
-
-  UPDATE public.blogs
-  SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1)
-  WHERE id = decrement_blog_comments.blog_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Deprecated RPCs (made no-ops to prevent breaking existing client code while fixing the vulnerability)
+CREATE OR REPLACE FUNCTION increment_blog_likes(blog_id BIGINT) RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION decrement_blog_likes(blog_id BIGINT) RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION increment_blog_comments(blog_id BIGINT) RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION decrement_blog_comments(blog_id BIGINT) RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
 
 
 -- 8. STORAGE POLICIES
@@ -374,12 +388,12 @@ DROP POLICY IF EXISTS "Anon users can insert search stats" ON public.search_stat
 -- REMOVED: old open policy that allowed anyone to insert
 
 DROP POLICY IF EXISTS "Authenticated users can insert search stats" ON public.search_stats;
-CREATE POLICY "Authenticated users can insert search stats" ON public.search_stats 
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Admins can insert search stats" ON public.search_stats 
+  FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
 
 DROP POLICY IF EXISTS "Authenticated users can update search stats" ON public.search_stats;
-CREATE POLICY "Authenticated users can update search stats" ON public.search_stats 
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can update search stats" ON public.search_stats 
+  FOR UPDATE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
 
 -- PROTECTED RPC FOR SEARCH (now requires auth)
 CREATE OR REPLACE FUNCTION increment_search_count(search_term TEXT)

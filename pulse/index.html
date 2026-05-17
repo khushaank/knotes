@@ -34,7 +34,7 @@
             <div class="flex items-center gap-1 w-full">
                 <a href="../index.html" class="font-bold text-black px-1 mr-2 hover:underline">K. Notes</a>
                 <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
-                    <a class="hover:underline" href="../index.html">feed</a> |
+                    <a class="hover:underline" href="../index.html">Feed</a> |
                     <a class="hover:underline" href="../comments.html">comments</a> |
                     <a class="hover:underline" href="../ask.html">ask</a> |
                     <a class="hover:underline" href="../show.html">show</a> |
@@ -53,7 +53,7 @@
             </article>
 
 
-            <div class="ml-[17px] mb-8">
+            <div class="ml-[17px] mb-8 hidden" id="comment-box">
                 <textarea
                     class="w-full max-w-lg h-24 border border-outline bg-surface p-1 font-body-md text-body-md focus:outline-none focus:border-primary-container resize-y"
                     id="comment-input" placeholder=""></textarea>
@@ -63,9 +63,7 @@
                     id="add-comment-btn">add comment</button>
             </div>
 
-            <div class="ml-[17px] font-body-md text-body-md" id="comments-container">
-                <div class="p-4">Loading comments...</div>
-            </div>
+            <div class="ml-[17px] font-body-md text-body-md" id="comments-container"></div>
             <div class="flex flex-col items-center mt-8 pb-4"></div>
         </main>
 

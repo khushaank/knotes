@@ -200,6 +200,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 trigger.classList.remove('saved');
                 showTip(trigger, 'Removed');
 
+                const unsaveOpt = menu.querySelector('[data-folder="unsave"]');
+                if (unsaveOpt) unsaveOpt.remove();
+                const divider = menu.querySelector('.dropdown-divider');
+                if (divider) divider.remove();
+                
+                menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
+
                 const idx = userBookmarks.indexOf(storyId);
                 if (idx > -1) userBookmarks.splice(idx, 1);
 

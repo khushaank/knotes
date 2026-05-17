@@ -29,11 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const viewingUser = urlParams.get('user');
 
-    if (viewingUser && window.history && window.history.replaceState) {
-        const newUrl = '@' + viewingUser + window.location.hash;
-        window.history.replaceState(null, '', newUrl);
-    }
-
     const { data: { session } } = await supabase.auth.getSession();
 
     setupTabs();
@@ -68,8 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (privacyContainer) privacyContainer.style.display = '';
             setupAvatarEdit(profile);
             setupMediaLibrary();
-            document.getElementById('tab-comments')?.classList.remove('hidden');
-            await loadComments(profile.id);
             await loadSubscriptions(profile.id);
         } else if (session) {
             followBtn.classList.remove('hidden');
@@ -79,14 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await setProfileData(profile, isOwnProfile);
         await loadSubmissions(profile.username, isOwnProfile);
 
-        document.getElementById('tab-saved')?.classList.remove('hidden');
-        await loadBookmarks(profile.id);
-
         if (isOwnProfile) {
             setupUpdateButton(session.user.id);
         }
 
-        await loadHiddenStories();
+
 
         return;
     }
@@ -96,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     profileContainer.classList.remove('hidden');
-    document.getElementById('tab-saved')?.classList.remove('hidden');
 
     const userId = session.user.id;
     const userEmail = session.user.email;
@@ -162,6 +151,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (isOwn) {
             setupUsernameEdit(p);
+            const creatorBtn = document.getElementById('btn-creator-dashboard');
+            if (creatorBtn) creatorBtn.style.display = 'inline-flex';
         }
     }
 
