@@ -41,11 +41,17 @@ let myWrittenComments = [];
 // =============================================
 // INIT
 // =============================================
-document.addEventListener('DOMContentLoaded', async () => {
+async function initDashboard() {
     await checkUserAuth();
     setupSidebar();
     setupResponsiveMenu();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+    initDashboard();
+}
 
 // =============================================
 // AUTHENTICATION
