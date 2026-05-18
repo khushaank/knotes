@@ -1,6 +1,6 @@
 import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory, listUserMedia, uploadMediaFile, getUserComments, updateComment, deleteComment, getFollowingList, getFollowersList } from './supabaseClient.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const profileContainer = document.getElementById('profile-container');
     const authMessage = document.getElementById('auth-message');
     const usernameEl = document.getElementById('profile-username');

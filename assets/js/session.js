@@ -15,7 +15,7 @@ if (window.history && window.history.replaceState) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const authLinks = document.querySelectorAll('a[href="login.html"], a[href="../login.html"]');
     if (!supabase) return;
 

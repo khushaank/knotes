@@ -141,7 +141,7 @@ function renderResults(results, query, totalCount, page) {
     container.innerHTML = html;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');
     const mainSearchInput = document.getElementById('main-search-input');

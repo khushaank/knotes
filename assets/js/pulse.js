@@ -258,7 +258,7 @@ function renderCommentsSection(comments, blogId) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
     renderPage();
 
 

@@ -48,7 +48,7 @@ const HASH_TO_CATEGORY = {
 };
 
 
-document.addEventListener('DOMContentLoaded', async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const form = document.getElementById('submit-form');
     const authMessage = document.getElementById('auth-message');
     const loadingSkeleton = document.getElementById('submit-loading');

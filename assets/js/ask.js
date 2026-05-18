@@ -30,6 +30,9 @@ async function renderStories() {
     const page = parseInt(urlParams.get('p')) || 1;
 
     const tbody = document.querySelector('main table tbody');
+    if (!tbody) return;
+
+    try {
     tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Loading stories...</td></tr>';
 
     const [{ stories, count }] = await Promise.all([
@@ -105,6 +108,10 @@ async function renderStories() {
     }
 
     tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Failed to render ask stories:', error);
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Could not load questions right now. Please refresh in a moment.</td></tr>';
+    }
 }
 
 async function loadUserStats() {
@@ -114,7 +121,7 @@ async function loadUserStats() {
     ]);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
     document.title = "Ask | K. Notes";
     renderStories();
 

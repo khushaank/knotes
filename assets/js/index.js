@@ -75,6 +75,9 @@ async function renderStories(searchQuery = '', filter = 'trending') {
 
     const tbody = document.querySelector('main table tbody');
     const statsSummary = document.getElementById('stats-summary');
+    if (!tbody) return;
+
+    try {
     const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
     const cached = getCache(cacheKey);
 
@@ -97,6 +100,12 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     setCache(cacheKey, { stories, count });
 
     await renderHtml(stories, count, page, filter, searchQuery);
+    } catch (error) {
+        console.error('Failed to render stories:', error);
+        tbody.style.opacity = '1';
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Could not load stories right now. Please refresh in a moment.</td></tr>';
+        if (statsSummary) statsSummary.textContent = 'Unavailable';
+    }
 }
 
 async function renderHtml(stories, count, page, filter, searchQuery) {
@@ -220,7 +229,7 @@ async function loadUserStats() {
     ]);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');
     const filterParam = urlParams.get('filter');

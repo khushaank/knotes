@@ -38,7 +38,7 @@ function avatarInner(user) {
     return initial;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const container = document.getElementById('leaderboard-container');
     const loadingSkeleton = document.getElementById('leaderboard-loading');
     const mainContent = document.getElementById('leaderboard-main-content');

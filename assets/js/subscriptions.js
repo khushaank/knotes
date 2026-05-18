@@ -1,6 +1,6 @@
 import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow, getCache, setCache } from './supabaseClient.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const loadingEl = document.getElementById('subs-loading');
     const contentEl = document.getElementById('subs-main-content');
     const containerEl = document.getElementById('subs-container');

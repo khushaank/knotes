@@ -85,7 +85,7 @@ async function init() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
     document.title = "New Comments | K. Notes";
     init();
 });
