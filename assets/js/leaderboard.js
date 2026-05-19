@@ -38,6 +38,10 @@ function avatarInner(user) {
     return initial;
 }
 
+function profileHref(username) {
+    return `profile.html?user=${encodeURIComponent(username || '')}`;
+}
+
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
     const container = document.getElementById('leaderboard-container');
     const loadingSkeleton = document.getElementById('leaderboard-loading');
@@ -99,7 +103,7 @@ function avatarInner(user) {
                     <span class="leader-rank ${rankClass}">${rank}.</span>
                     ${avatarHtml(user, 36)}
                     <div class="leader-info">
-                        <a href="@${encodeURIComponent(user.username)}" class="leader-name block">${sanitize(user.username)}</a>
+                        <a href="${profileHref(user.username)}" class="leader-name block">${sanitize(user.username)}</a>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="leader-karma">
@@ -309,7 +313,7 @@ function avatarInner(user) {
 
                     const avatarBg = getAvatarColor(user.username);
                     html += `
-                        <a href="@${encodeURIComponent(user.username)}" class="search-result-item">
+                        <a href="${profileHref(user.username)}" class="search-result-item">
                             <div class="sr-avatar" style="background:${avatarBg}">${avatarInner(user)}</div>
                             <div class="sr-info">
                                 <div class="sr-name">${highlightMatch(sanitize(user.username), query)}</div>

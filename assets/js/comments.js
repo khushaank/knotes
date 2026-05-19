@@ -1,5 +1,9 @@
 import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
 
+function profileHref(username) {
+    return `profile.html?user=${encodeURIComponent(username || '')}`;
+}
+
 async function fetchAllComments() {
     if (!supabase) return [];
 
@@ -39,7 +43,7 @@ function renderAllComments(comments) {
                     </div>
                     <div class="flex-1">
                         <div class="story-meta opacity-70">
-                            <a class="hover:underline text-black font-medium" href="@${comment.user_name}">${sanitize(comment.user_name) || 'anonymous'}</a>
+                            <a class="hover:underline text-black font-medium" href="${profileHref(comment.user_name)}">${sanitize(comment.user_name) || 'anonymous'}</a>
                             <span class="mx-0.5">${timeAgo}</span> | 
                             on: <a class="hover:underline italic" href="pulse/index.html?s=${blogSlug}">${sanitize(blogTitle)}</a>
                         </div>

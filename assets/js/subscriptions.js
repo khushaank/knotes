@@ -1,5 +1,9 @@
 import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow, getCache, setCache } from './supabaseClient.js';
 
+function profileHref(username) {
+    return `profile.html?user=${encodeURIComponent(username || '')}`;
+}
+
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const loadingEl = document.getElementById('subs-loading');
     const contentEl = document.getElementById('subs-main-content');
@@ -111,7 +115,7 @@ import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow, g
                         ${avatarHtml}
                     </div>
                     <div class="sub-info">
-                        <a href="@${person.username}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
+                        <a href="${profileHref(person.username)}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
                         <div class="sub-bio" title="${sanitize(person.about || '')}">${sanitize(person.about || '')}</div>
                     </div>
                     ${currentTab === 'following' ? `

@@ -5,6 +5,10 @@ const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 let userLikes = [];
 
+function profileHref(username) {
+    return `profile.html?user=${encodeURIComponent(username || '')}`;
+}
+
 async function fetchShowStories(page = 1) {
     if (!supabase) return { stories: [], count: 0 };
 
@@ -48,7 +52,7 @@ async function renderStories() {
     let html = '';
     const startIndex = (page - 1) * STORIES_PER_PAGE;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
 
     stories.forEach((story, index) => {
@@ -71,7 +75,7 @@ async function renderStories() {
             <tr class="story-meta-row" data-id="${story.id}">
                 <td colspan="2"></td>
                 <td class="story-meta">
-                    by <a href="@${story.author}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
+                    by <a href="${profileHref(story.author)}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
                     ${timeAgo} | 
                     <a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a> | 
                     <span class="bookmark-container">
@@ -218,7 +222,7 @@ async function loadUserStats() {
                 const idx = userBookmarks.indexOf(storyId);
                 if (idx > -1) userBookmarks.splice(idx, 1);
 
-                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                const userId = supabase ? (await supabase.auth.getSession()).data.session?.user?.id : null;
                 if (userId) {
                     const key = `kn-folders-${userId}`;
                     const mapping = JSON.parse(localStorage.getItem(key) || '{}');
@@ -238,7 +242,7 @@ async function loadUserStats() {
                     userBookmarks.push(storyId);
                 }
 
-                const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+                const userId = supabase ? (await supabase.auth.getSession()).data.session?.user?.id : null;
                 if (userId) {
                     const key = `kn-folders-${userId}`;
                     const mapping = JSON.parse(localStorage.getItem(key) || '{}');

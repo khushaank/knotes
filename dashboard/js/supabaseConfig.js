@@ -1,14 +1,24 @@
-// Dynamic secrets loader for K. Notes (xtrasecurity.in integration)
+function getProjectRoot() {
+    const loc = window.location.pathname;
+    const subfolders = ['/admin/', '/dashboard/', '/pulse/'];
+    for (const folder of subfolders) {
+        const idx = loc.indexOf(folder);
+        if (idx !== -1) {
+            return loc.substring(0, idx) + '/';
+        }
+    }
+    const lastSlash = loc.lastIndexOf('/');
+    return loc.substring(0, lastSlash + 1);
+}
+
 let localEnv = {};
 
 try {
-    // Dynamically fetch the synced env.json file from the web server root in development
-    const response = await fetch('/env.json');
+    const response = await fetch(getProjectRoot() + 'env.json');
     if (response.ok) {
         localEnv = await response.json();
     }
 } catch (e) {
-    // Fallback if env.json is missing or fetch fails (e.g. in production)
 }
 
 export const SUPABASE_URL = localEnv.SUPABASE_URL || window.process?.env?.SUPABASE_URL || '';

@@ -50,14 +50,16 @@
                 </div>
             </div>
         </header>
-        <main class="bg-[#f6f6ef] p-6 min-h-[50vh]">
+        <main class="profile-main bg-[#f6f6ef] p-6 min-h-[50vh]">
+            <div id="profile-loading" class="p-6 text-center text-gray-500 text-sm">Loading profile...</div>
             <div id="profile-container" class="hidden">
 
-                <div class="profile-header flex items-start gap-6 mb-6 p-4 bg-white rounded border border-gray-200">
+                <section class="profile-header">
+                    <div class="profile-identity">
 
                     <div class="avatar-wrapper flex-shrink-0">
                         <div id="profile-avatar"
-                            class="w-16 h-16 bg-gray-300 rounded flex items-center justify-center text-2xl font-bold text-gray-600 uppercase overflow-hidden">
+                            class="profile-avatar bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-600 uppercase overflow-hidden">
                             ?
                         </div>
                         <div class="avatar-edit hidden" id="avatar-edit-btn" title="Change photo">
@@ -72,9 +74,9 @@
 
 
                     <div class="profile-info flex-1 min-w-0">
-                        <div class="flex items-center gap-3 mb-1 flex-wrap">
+                        <div class="profile-title-row">
                             <div id="username-edit-container" class="flex items-center gap-2">
-                                <span id="profile-username" class="font-bold text-black text-base"></span>
+                                <span id="profile-username" class="profile-name"></span>
                                 <button id="btn-edit-username"
                                     class="hidden text-gray-400 hover:text-[#ff6600] transition-colors"
                                     title="Change username">
@@ -91,26 +93,36 @@
                         </div>
                         <div id="username-error" class="text-[10px] text-red-500 hidden mb-2"></div>
                         <div id="username-hint" class="text-[10px] text-gray-400 hidden mb-2"></div>
-                        <div class="text-xs text-gray-500 mb-3 flex items-center flex-wrap gap-1">
-                            <span>Joined <span id="profile-created" class="text-gray-700"></span></span>
-                            <span>&middot;</span>
-                            <span class="karma-trigger relative inline-flex items-center gap-0.5 cursor-help">
-                                <span id="profile-karma" class="text-gray-700 font-bold">0</span>
-                                <span>karma</span>
-                                <span
-                                    class="text-[10px] bg-gray-200 hover:bg-gray-300 transition-colors text-gray-600 rounded-full inline-flex items-center justify-center cursor-help"
-                                    style="width:14px;height:14px;font-size:9px">?</span>
-                                <div class="karma-tip">
-                                    <b>What is Karma?</b>
-                                    Karma represents your community standing. You earn karma when other users follow you
-                                    for your great content!
-                                </div>
-                            </span>
+                        <div class="profile-meta">
+                            <span id="profile-link-pill" class="profile-link-pill">@profile</span>
+                            <span>Joined <span id="profile-created"></span></span>
                         </div>
-                        <div class="mb-2">
-                            <label class="text-xs text-gray-500 block mb-1">about</label>
+                        <div class="profile-stats" aria-label="Profile stats">
+                            <div class="profile-stat">
+                                <span id="profile-karma" class="profile-stat-value">0</span>
+                                <span class="profile-stat-label">karma</span>
+                                <span class="karma-trigger relative inline-flex items-center cursor-help">
+                                    <span class="profile-help">?</span>
+                                    <div class="karma-tip">
+                                        <b>What is Karma?</b>
+                                        Karma represents your community standing. You earn karma when other users follow you
+                                        for your great content!
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="profile-stat">
+                                <span id="profile-posts-count" class="profile-stat-value">0</span>
+                                <span class="profile-stat-label">posts</span>
+                            </div>
+                            <div class="profile-stat">
+                                <span id="profile-following-count" class="profile-stat-value">0</span>
+                                <span class="profile-stat-label">following</span>
+                            </div>
+                        </div>
+                        <div class="profile-about-block">
+                            <label class="profile-label">about</label>
                             <textarea id="profile-about"
-                                class="border border-gray-300 p-2 text-sm w-full max-w-md h-20 focus:outline-none focus:border-[#ff6600] rounded-sm resize-y bg-gray-50"></textarea>
+                                class="profile-about-field border border-gray-300 p-2 text-sm w-full focus:outline-none focus:border-[#ff6600] rounded-sm resize-y bg-gray-50"></textarea>
                         </div>
                         <div class="mb-3 flex items-center gap-2" id="profile-privacy-container" style="display: none;">
                             <input type="checkbox" id="profile-is-public" class="cursor-pointer">
@@ -118,34 +130,41 @@
                                 Public profile (show on leaderboard)
                             </label>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="profile-actions">
+                            <button type="button" id="btn-share-profile"
+                                class="profile-action-secondary flex items-center gap-1">
+                                <span class="material-symbols-outlined" style="font-size:14px">ios_share</span>
+                                Share profile
+                            </button>
                             <button type="button" id="btn-update-profile"
-                                class="bg-gray-100 border border-gray-300 px-3 py-1 hover:bg-gray-200 text-black cursor-pointer text-xs rounded-sm transition-colors">update</button>
+                                class="profile-action-secondary">update</button>
                             <button type="button" id="btn-media-library-profile"
-                                class="bg-white border border-gray-300 px-3 py-1 hover:bg-gray-50 text-black cursor-pointer text-xs rounded-sm transition-colors flex items-center gap-1">
+                                style="display: none;"
+                                class="profile-action-secondary flex items-center gap-1">
                                 <span class="material-symbols-outlined" style="font-size:14px">photo_library</span>
                                 Media Library
                             </button>
                             <a href="dashboard/index.html" id="btn-creator-dashboard" style="display: none; text-decoration: none;"
-                                class="bg-[#ff6600] border border-[#ff6600] px-3 py-1 hover:bg-[#ea580c] text-white cursor-pointer text-xs rounded-sm transition-colors flex items-center gap-1">
+                                class="profile-action-primary flex items-center gap-1">
                                 <span class="material-symbols-outlined" style="font-size:14px">dashboard</span>
                                 Creator Dashboard
                             </a>
                         </div>
                     </div>
-                </div>
+                    </div>
+                </section>
 
 
-                <div class="profile-tabs border-b border-gray-300 mb-4 flex gap-4 text-[13px]">
-                    <a href="#" class="profile-tab font-bold text-black border-b-2 border-[#ff6600] pb-1"
+                <nav class="profile-tabs" aria-label="Profile sections">
+                    <a href="#" class="profile-tab font-bold text-black border-b-2 border-[#ff6600]"
                         data-tab="all">All</a>
-                    <a href="#" class="profile-tab text-gray-600 pb-1 hover:text-black" data-tab="news">Links</a>
-                    <a href="#" class="profile-tab text-gray-600 pb-1 hover:text-black" data-tab="show">Show</a>
-                    <a href="#" class="profile-tab text-gray-600 pb-1 hover:text-black" data-tab="ask">Ask</a>
+                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="news">Links</a>
+                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="show">Show</a>
+                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="ask">Ask</a>
 
-                    <a href="#" class="profile-tab text-gray-600 pb-1 hover:text-black"
+                    <a href="#" class="profile-tab text-gray-600 hover:text-black"
                         data-tab="subscriptions">Subscriptions</a>
-                </div>
+                </nav>
 
 
                 <div id="tab-content-all" class="tab-pane">

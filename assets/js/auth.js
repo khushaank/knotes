@@ -20,6 +20,11 @@ import { supabase } from './supabaseClient.js';
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!supabase) {
+                showMessage('Authentication service is currently unavailable.', true);
+                return;
+            }
+
             const identifier = document.getElementById('login-email').value; // identifier can be username or email
             const password = document.getElementById('login-password').value;
 
@@ -67,6 +72,11 @@ import { supabase } from './supabaseClient.js';
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!supabase) {
+                showMessage('Authentication service is currently unavailable.', true);
+                return;
+            }
+
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
 
@@ -121,6 +131,11 @@ import { supabase } from './supabaseClient.js';
     if (forgotLink) {
         forgotLink.addEventListener('click', async (e) => {
             e.preventDefault();
+
+            if (!supabase) {
+                showMessage('Authentication service is currently unavailable.', true);
+                return;
+            }
 
             const email = document.getElementById('login-email')?.value?.trim();
             if (!email) {
@@ -213,6 +228,12 @@ function showResetPasswordForm() {
             return;
         }
 
+        if (!supabase) {
+            messageContainer.textContent = 'Authentication service is currently unavailable.';
+            messageContainer.classList.remove('hidden');
+            messageContainer.classList.add('text-red-600');
+            return;
+        }
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
             const hashParams = new URLSearchParams(window.location.hash.substring(1));

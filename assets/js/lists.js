@@ -6,6 +6,10 @@ async function loadReadingLists() {
     const container = document.getElementById('lists-container');
     if (!container) return;
 
+    if (!supabase) {
+        container.innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">Please <a href="login.html" class="underline font-bold">login</a> to view your personal reading lists.</div>';
+        return;
+    }
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         container.innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">Please <a href="login.html" class="underline font-bold">login</a> to view your personal reading lists.</div>';

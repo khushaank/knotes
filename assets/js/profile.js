@@ -2,10 +2,15 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
 
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
     const profileContainer = document.getElementById('profile-container');
+    const profileLoading = document.getElementById('profile-loading');
     const authMessage = document.getElementById('auth-message');
     const usernameEl = document.getElementById('profile-username');
     const createdEl = document.getElementById('profile-created');
     const karmaEl = document.getElementById('profile-karma');
+    const postsCountEl = document.getElementById('profile-posts-count');
+    const followingCountEl = document.getElementById('profile-following-count');
+    const profileLinkPill = document.getElementById('profile-link-pill');
+    const shareProfileBtn = document.getElementById('btn-share-profile');
     const aboutInput = document.getElementById('profile-about');
     const updateBtn = document.getElementById('btn-update-profile');
     const submissionsEl = document.getElementById('profile-submissions');
@@ -24,7 +29,28 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
     const usernameError = document.getElementById('username-error');
     const usernameHint = document.getElementById('username-hint');
 
-    if (!supabase) return;
+    function showProfileContainer() {
+        if (profileLoading) profileLoading.classList.add('hidden');
+        profileContainer.classList.remove('hidden');
+    }
+
+    function showAuthMessage() {
+        if (profileLoading) profileLoading.classList.add('hidden');
+        authMessage.classList.remove('hidden');
+    }
+
+    function goToNotFound() {
+        window.location.replace('404.html');
+    }
+
+    function isValidUsername(username) {
+        return /^[a-z0-9_.-]{3,40}$/i.test(username || '');
+    }
+
+    if (!supabase) {
+        if (profileLoading) profileLoading.textContent = 'Could not load profile right now.';
+        return;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const viewingUser = urlParams.get('user');
@@ -32,9 +58,14 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
     const { data: { session } } = await supabase.auth.getSession();
 
     setupTabs();
+    setupShareButton();
 
     if (viewingUser) {
-        profileContainer.classList.remove('hidden');
+        if (!isValidUsername(viewingUser)) {
+            goToNotFound();
+            return;
+        }
+        showProfileContainer();
 
         if (aboutInput) aboutInput.disabled = true;
         if (updateBtn) updateBtn.style.display = 'none';
@@ -46,11 +77,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
             .maybeSingle();
 
         if (!profile) {
-            usernameEl.textContent = viewingUser;
-            createdEl.textContent = 'Unknown';
-            karmaEl.textContent = '0';
-            if (aboutInput) aboutInput.value = '';
-            submissionsEl.innerHTML = '<p class="text-gray-500 italic">User not found or no profile.</p>';
+            goToNotFound();
             return;
         }
 
@@ -81,11 +108,11 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         return;
     }
     if (!session) {
-        authMessage.classList.remove('hidden');
+        showAuthMessage();
         return;
     }
 
-    profileContainer.classList.remove('hidden');
+    showProfileContainer();
 
     const userId = session.user.id;
     const userEmail = session.user.email;
@@ -135,6 +162,8 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         document.title = `${p.username}'s Profile - K. Notes`;
         createdEl.textContent = new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         if (aboutInput) aboutInput.value = p.about || '';
+        if (profileLinkPill) profileLinkPill.textContent = `@${p.username}`;
+        if (shareProfileBtn) shareProfileBtn.dataset.profileUrl = getProfileUrl(p.username);
 
         if (p.avatar_url) {
             setAvatarImage(p.avatar_url, p.username);
@@ -144,6 +173,8 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
 
         const followers = await getFollowerCount(p.id);
         if (karmaEl) karmaEl.textContent = followers;
+        const following = await getFollowingCount(p.id);
+        if (followingCountEl) followingCountEl.textContent = following;
 
         if (isPublicCheckbox && p.is_public !== undefined) {
             isPublicCheckbox.checked = p.is_public === true;
@@ -154,6 +185,34 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
             const creatorBtn = document.getElementById('btn-creator-dashboard');
             if (creatorBtn) creatorBtn.style.display = 'inline-flex';
         }
+    }
+
+    function getProfileUrl(username) {
+        const url = new URL('profile.html', window.location.href);
+        url.searchParams.set('user', username);
+        return url.href;
+    }
+
+    function setupShareButton() {
+        if (!shareProfileBtn) return;
+        shareProfileBtn.addEventListener('click', async () => {
+            const url = shareProfileBtn.dataset.profileUrl || window.location.href;
+            const oldText = shareProfileBtn.lastChild?.textContent || 'Share profile';
+            try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: document.title,
+                        url
+                    });
+                } else {
+                    await navigator.clipboard.writeText(url);
+                    shareProfileBtn.lastChild.textContent = 'Copied';
+                    setTimeout(() => {
+                        shareProfileBtn.lastChild.textContent = oldText;
+                    }, 1500);
+                }
+            } catch { }
+        });
     }
 
     function setupUsernameEdit(profile) {
@@ -248,17 +307,17 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
 
     function setAvatarLetter(username) {
         if (!avatarEl) return;
-        const colors = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200'];
+        const colors = ['profile-avatar-red', 'profile-avatar-blue', 'profile-avatar-green', 'profile-avatar-gold', 'profile-avatar-rose', 'profile-avatar-cyan'];
         const charCode = (username || '?').charCodeAt(0) || 0;
         const colorClass = colors[charCode % colors.length];
-        avatarEl.className = `w-16 h-16 rounded flex items-center justify-center text-2xl font-bold text-gray-700 uppercase flex-shrink-0 overflow-hidden ${colorClass}`;
+        avatarEl.className = `profile-avatar flex items-center justify-center text-2xl font-bold uppercase flex-shrink-0 overflow-hidden ${colorClass}`;
         avatarEl.innerHTML = '';
         avatarEl.textContent = (username || '?').charAt(0).toUpperCase();
     }
 
     function setAvatarImage(url, username) {
         if (!avatarEl) return;
-        avatarEl.className = 'w-16 h-16 rounded flex-shrink-0 overflow-hidden bg-gray-200';
+        avatarEl.className = 'profile-avatar flex-shrink-0 overflow-hidden bg-gray-200';
         avatarEl.innerHTML = `<img src="${url}" alt="${sanitize(username)}" class="avatar-img" onerror="this.remove()">`;
     }
 
@@ -399,22 +458,34 @@ function setupTabs() {
 
 function generateListHtml(blogs, showDelete = false) {
     if (blogs.length === 0) {
-        return '<p class="text-gray-500 italic py-2">Nothing here yet.</p>';
+        return '<div class="profile-empty">Nothing here yet.</div>';
     }
 
-    let html = '<ul class="space-y-4">';
+    let html = '<ul class="profile-post-list">';
     blogs.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
-        const deleteBtnHtml = showDelete ? `<span class="material-symbols-outlined delete-post-btn cursor-pointer text-gray-400 hover:text-red-600 ml-1.5 align-middle transition-colors" style="font-size: 14px;" data-id="${blog.id}" title="Delete post">delete</span>` : '';
+        const deleteBtnHtml = showDelete ? `<button type="button" class="profile-post-icon delete-post-btn" data-id="${blog.id}" title="Delete post"><span class="material-symbols-outlined" style="font-size: 14px;">delete</span></button>` : '';
+        const category = blog.category || 'link';
+        const domain = blog.url ? new URL(blog.url).hostname.replace('www.', '') : '';
 
         html += `
-            <li class="py-1.5 last:border-0">
-                <div class="flex items-baseline gap-2">
-                    <span class="text-gray-400 text-[12px] select-none">›</span>
-                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-[14px] text-black font-medium leading-tight">${sanitize(blog.title)}</a>
-                    ${deleteBtnHtml}
+            <li class="profile-post">
+                <div class="profile-post-main">
+                    <span class="profile-post-marker">${category.charAt(0).toUpperCase()}</span>
+                    <div class="profile-post-copy">
+                        <div class="profile-post-title-row">
+                            <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="profile-post-title">${sanitize(blog.title)}</a>
+                            ${domain ? `<span class="profile-post-domain">${sanitize(domain)}</span>` : ''}
+                            ${deleteBtnHtml}
+                        </div>
+                        <div class="profile-post-meta">
+                            <span>${timeAgo}</span>
+                            <span>${blog.likes_count || 0} karma</span>
+                            <span>${blog.comments_count || 0} comments</span>
+                            <span class="profile-post-chip">${sanitize(category)}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-[11px] text-gray-500 opacity-60 ml-4">${timeAgo} · ${blog.comments_count || 0} comments</div>
             </li>
         `;
     });
@@ -430,6 +501,8 @@ async function loadSubmissions(username, isOwnProfile = false) {
         .order('published_at', { ascending: false });
 
     if (blogsError) return;
+    const postsCountEl = document.getElementById('profile-posts-count');
+    if (postsCountEl) postsCountEl.textContent = blogs.length;
 
     const allEl = document.getElementById('profile-submissions');
     const newsEl = document.getElementById('profile-submissions-news');
@@ -463,13 +536,17 @@ function removeStoryFromFolder(userId, storyId) {
     localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
 }
 
+function profileHref(username) {
+    return `profile.html?user=${encodeURIComponent(username || '')}`;
+}
+
 async function loadBookmarks(userId = null) {
     const listEl = document.getElementById('bookmarks-list');
     if (!listEl) return;
 
     listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading your library...</div>';
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const currentUserId = userId || (session ? session.user.id : null);
 
     if (!currentUserId) {
@@ -789,6 +866,7 @@ function setupMediaLibrary() {
     const uploadInput = document.getElementById('media-upload-input');
 
     if (!btnMedia || !modal) return;
+    btnMedia.style.display = 'inline-flex';
 
     btnMedia.addEventListener('click', async () => {
         modal.classList.remove('hidden');
@@ -951,18 +1029,19 @@ function setupMediaLibrary() {
 }
 
 document.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('delete-post-btn')) {
-        const id = e.target.getAttribute('data-id');
+    const deletePostBtn = e.target.closest?.('.delete-post-btn');
+    if (deletePostBtn) {
+        const id = deletePostBtn.getAttribute('data-id');
         if (confirm('Are you sure you want to delete this post? This cannot be undone.')) {
-            e.target.style.opacity = '0.5';
-            e.target.style.pointerEvents = 'none';
+            deletePostBtn.style.opacity = '0.5';
+            deletePostBtn.style.pointerEvents = 'none';
             const result = await deleteStory(id);
             if (result.error) {
                 alert(result.error);
-                e.target.style.opacity = '1';
-                e.target.style.pointerEvents = 'auto';
+                deletePostBtn.style.opacity = '1';
+                deletePostBtn.style.pointerEvents = 'auto';
             } else {
-                const li = e.target.closest('li');
+                const li = deletePostBtn.closest('li');
                 if (li) {
                     li.style.transition = 'opacity 0.3s';
                     li.style.opacity = '0';
@@ -1133,7 +1212,7 @@ async function loadSubscriptions(userId) {
     const following = await getFollowingList(userId);
     const followers = await getFollowersList(userId);
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const currentUserId = session ? session.user.id : null;
 
     let myFollowingIds = [];
@@ -1154,7 +1233,7 @@ async function loadSubscriptions(userId) {
                     ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full object-cover">` : (p.username ? p.username.charAt(0) : '?')}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <a href="@${p.username}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
+                    <a href="${profileHref(p.username)}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
                     <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || '')}</p>
                 </div>
                 ${currentUserId && !isMe ? `
