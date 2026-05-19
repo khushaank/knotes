@@ -175,3 +175,92 @@
         transform: none;
     }
 }
+
+/* Dark Mode Overrides */
+html.dark #profile-avatar {
+    background-color: #44403c !important;
+    color: #e5e7eb !important;
+}
+
+html.dark .avatar-wrapper .avatar-edit {
+    border-color: #292524 !important;
+}
+
+html.dark .avatar-menu {
+    background: #292524 !important;
+    border-color: #44403c !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .avatar-menu button {
+    color: #e5e7eb !important;
+}
+
+html.dark .avatar-menu button:hover {
+    background: #3e3a38 !important;
+}
+
+html.dark .follow-btn.following {
+    background: #292524 !important;
+    color: #9ca3af !important;
+    border-color: #44403c !important;
+}
+
+html.dark .follow-btn.following:hover {
+    background: #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-color: #991b1b !important;
+}
+
+html.dark .karma-tip {
+    background: #292524 !important;
+    color: #d1d5db !important;
+    border-color: #44403c !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .karma-tip b {
+    color: #f3f4f6 !important;
+}
+
+html.dark .karma-tip::after {
+    border-top-color: #292524 !important;
+}
+
+html.dark .karma-tip::before {
+    border-top-color: #44403c !important;
+}
+
+html.dark #profile-about {
+    background-color: #1c1917 !important;
+    color: #e5e7eb !important;
+    border-color: #44403c !important;
+}
+
+html.dark #profile-about:focus {
+    border-color: #ff6600 !important;
+}
+
+html.dark .profile-tab.text-gray-600 {
+    color: #9ca3af !important;
+}
+
+html.dark .profile-tab.text-black {
+    color: #e5e7eb !important;
+}
+
+html.dark .profile-tab:hover {
+    color: #ff6600 !important;
+}
+
+html.dark #btn-update-profile,
+html.dark #btn-media-library-profile {
+    background-color: #292524 !important;
+    color: #e5e7eb !important;
+    border-color: #44403c !important;
+}
+
+html.dark #btn-update-profile:hover,
+html.dark #btn-media-library-profile:hover {
+    background-color: #3e3a38 !important;
+}

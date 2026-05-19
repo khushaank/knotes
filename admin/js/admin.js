@@ -34,10 +34,13 @@ try {
     console.warn('Supabase client library could not be loaded.', e);
 }
 
+let DEFAULT_ADMIN_PASSWORD = '';
+
 try {
     const config = await import('./supabaseConfig.js');
     SUPABASE_URL = config.SUPABASE_URL;
     SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
+    DEFAULT_ADMIN_PASSWORD = config.DEFAULT_ADMIN_PASSWORD;
 } catch (e) {
     console.warn('admin/js/supabaseConfig.js not found or failed to load.', e);
 }
@@ -169,8 +172,8 @@ function setupLoginForm() {
 
             if (!setting || !setting.value) {
                 // Self-heal: insert default admin password
-                await supabase.from('site_settings').insert([{ id: 'admin_password', value: 'India@123' }]);
-                setting = { value: 'India@123' };
+                await supabase.from('site_settings').insert([{ id: 'admin_password', value: DEFAULT_ADMIN_PASSWORD }]);
+                setting = { value: DEFAULT_ADMIN_PASSWORD };
             }
 
             // 2. Validate password

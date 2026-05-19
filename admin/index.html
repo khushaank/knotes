@@ -2,6 +2,20 @@
 <html lang="en">
 
 <head>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('kn-theme') || 'light';
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
@@ -701,10 +715,12 @@
 
         if (currentTheme === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
+            document.documentElement.classList.remove('dark');
             themeIconSun.style.display = 'block';
             themeIconMoon.style.display = 'none';
         } else {
             document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
             themeIconSun.style.display = 'none';
             themeIconMoon.style.display = 'block';
         }
@@ -712,11 +728,13 @@
         themeToggleBtn.addEventListener('click', () => {
             if (document.documentElement.getAttribute('data-theme') === 'light') {
                 document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.classList.add('dark');
                 localStorage.setItem('kn-theme', 'dark');
                 themeIconSun.style.display = 'none';
                 themeIconMoon.style.display = 'block';
             } else {
                 document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.classList.remove('dark');
                 localStorage.setItem('kn-theme', 'light');
                 themeIconSun.style.display = 'block';
                 themeIconMoon.style.display = 'none';

@@ -35,3 +35,97 @@
         background-position: -200% 0;
     }
 }
+
+/* Dark Mode Overrides */
+html.dark td {
+    color: #e5e7eb !important;
+}
+
+html.dark #submit-quick-links span {
+    color: #9ca3af !important;
+}
+
+html.dark #submit-form select,
+html.dark #submit-form input[type="text"],
+html.dark #submit-form input[type="url"],
+html.dark #submit-form textarea {
+    background-color: #292524 !important;
+    color: #e5e7eb !important;
+    border-color: #44403c !important;
+}
+
+html.dark #submit-form select:focus,
+html.dark #submit-form input[type="text"]:focus,
+html.dark #submit-form input[type="url"]:focus,
+html.dark #submit-form textarea:focus {
+    border-color: #ff6600 !important;
+}
+
+html.dark #text-toolbar button {
+    background-color: #292524 !important;
+    border-color: #44403c !important;
+    color: #e5e7eb !important;
+}
+
+html.dark #text-toolbar button:hover {
+    background-color: #3e3a38 !important;
+}
+
+html.dark #btn-submit {
+    background-color: #292524 !important;
+    border-color: #44403c !important;
+    color: #e5e7eb !important;
+}
+
+html.dark #btn-submit:hover {
+    background-color: #ff6600 !important;
+    color: #ffffff !important;
+    border-color: #ff6600 !important;
+}
+
+html.dark #submit-form .border-t {
+    border-color: #44403c !important;
+}
+
+html.dark #submit-form .text-gray-700 {
+    color: #9ca3af !important;
+}
+
+html.dark #submit-form code {
+    background-color: #1c1917 !important;
+    color: #fca5a5 !important;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+/* Modal Dark Mode Styles */
+html.dark #media-library-modal .bg-white {
+    background-color: #292524 !important;
+    border-color: #44403c !important;
+}
+
+html.dark #media-library-modal h3 {
+    color: #e5e7eb !important;
+}
+
+html.dark #media-library-modal .border-b,
+html.dark #media-library-modal .border-t {
+    border-color: #44403c !important;
+}
+
+html.dark #media-library-modal .bg-gray-50\/50 {
+    background-color: #1c1917 !important;
+}
+
+html.dark #media-library-modal .text-gray-500 {
+    color: #9ca3af !important;
+}
+
+html.dark .media-item-card {
+    background: #292524 !important;
+    border-color: #44403c !important;
+}
+
+html.dark .media-item-card:hover {
+    border-color: #ff6600 !important;
+}

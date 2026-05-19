@@ -38,7 +38,7 @@ function avatarInner(user) {
     return initial;
 }
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
     const container = document.getElementById('leaderboard-container');
     const loadingSkeleton = document.getElementById('leaderboard-loading');
     const mainContent = document.getElementById('leaderboard-main-content');
@@ -144,11 +144,21 @@ function avatarInner(user) {
             return;
         }
 
-        const results = [];
-        for (const p of profiles) {
-            const count = await getFollowerCount(p.id);
-            results.push({ ...p, followers: count });
+        const { data: follows } = await supabase
+            .from('follows')
+            .select('following_id');
+
+        const followCounts = {};
+        if (follows) {
+            follows.forEach(f => {
+                followCounts[f.following_id] = (followCounts[f.following_id] || 0) + 1;
+            });
         }
+
+        const results = profiles.map(p => ({
+            ...p,
+            followers: followCounts[p.id] || 0
+        }));
 
         results.sort((a, b) => b.followers - a.followers);
         const leaders = results.slice(0, 20);

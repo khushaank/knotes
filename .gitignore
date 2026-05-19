@@ -7,3 +7,7 @@ build/
 # supabaseConfig.js (Tracked in Git to ensure successful deployment and prevent 404 errors)
 # supabaseConfig.js
 
+
+# XtraSecurity config
+.xtrarc
+env.json
