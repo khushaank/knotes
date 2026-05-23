@@ -40,14 +40,14 @@
 
 </head>
 
-<body class="bg-background text-on-background min-h-screen">
-    <div class="max-w-[85%] mx-auto bg-surface-container-lowest pb-8 mt-2">
+<body class="font-body-md text-body-md text-on-surface min-h-screen">
+    <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
         <header
-            class="bg-[#ff6600] text-black  text-sm  rounded-none w-full flat no shadows flex items-center justify-between px-2 py-0.5 max-w-[85%] mx-auto"
+            class="bg-[#ff6600] text-black text-sm rounded-none w-full flat no shadows flex items-center px-2 py-0.5"
             style="max-width: 100%;">
-            <div class="flex items-center gap-1 w-full">
-                <a href="../index.html" class="font-bold text-black px-1 mr-2 hover:underline">K. Notes</a>
-                <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
+            <div class="flex items-center gap-1 w-full text-[13px]">
+                <a href="../index.html" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
+                <div class="flex flex-wrap items-center gap-1 text-black">
                     <a class="hover:underline" href="../index.html">Feed</a> |
                     <a class="hover:underline" href="../comments.html">comments</a> |
                     <a class="hover:underline" href="../ask.html">ask</a> |
@@ -55,25 +55,25 @@
                     <a class="hover:underline" href="../submit.html">submit</a> |
                     <a class="hover:underline" href="../leaderboard.html">leaders</a>
                 </div>
-                <div class="ml-auto text-black text-[13px] flex items-center gap-4"> <a
+                <div class="ml-auto text-black flex items-center gap-4"> <a
                         class="hover:underline text-black" href="../login.html">login</a> </div>
             </div>
         </header>
 
-        <main class="bg-surface-container-lowest p-2">
+        <main class="bg-[#f6f6ef] p-2">
 
             <article class="mb-4">
                 <div class="p-4">Loading pulse...</div>
             </article>
 
 
-            <div class="ml-[17px] mb-8 hidden" id="comment-box">
+            <div class="ml-[17px] mb-8 hidden flex flex-col items-start" id="comment-box">
                 <textarea
-                    class="w-full max-w-lg h-24 border border-outline bg-surface p-1 font-body-md text-body-md focus:outline-none focus:border-primary-container resize-y"
-                    id="comment-input" placeholder=""></textarea>
+                    class="w-full max-w-2xl h-28 border border-gray-300 dark:border-stone-700 bg-white dark:bg-stone-800 p-3 rounded font-body-md text-sm text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-[#ff6600] focus:ring-1 focus:ring-[#ff6600] transition-colors resize-y shadow-sm"
+                    id="comment-input" placeholder="What are your thoughts?"></textarea>
 
                 <button
-                    class="mt-2 bg-secondary-container border border-outline px-2 py-1 font-body-md text-body-md hover:bg-surface-variant text-on-background cursor-pointer"
+                    class="mt-2 bg-[#ff6600] hover:bg-[#e65c00] text-white font-bold text-[11px] uppercase tracking-wider px-4 py-2 rounded shadow-sm hover:shadow transition-all cursor-pointer outline-none"
                     id="add-comment-btn">add comment</button>
             </div>
 

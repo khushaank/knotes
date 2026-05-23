@@ -278,8 +278,8 @@ function renderCommentsSection(comments, blogId) {
         if (!session) {
             if (commentInputContainer) {
                 commentInputContainer.innerHTML = `
-                    <div class="p-2 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
-                        Please <a href="../login.html" class="underline font-bold">login</a> to add a comment.
+                    <div class="w-full max-w-2xl p-4 bg-yellow-50 dark:bg-stone-900 border border-yellow-200 dark:border-stone-800 text-yellow-800 dark:text-yellow-200 rounded text-sm shadow-sm">
+                        Please <a href="../login.html" class="underline font-bold text-[#ff6600] hover:text-[#e65c00]">login</a> to add a comment.
                     </div>
                 `;
             }
