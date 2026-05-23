@@ -168,13 +168,9 @@ export function sanitize(text) {
             ALLOWED_ATTR: ['href', 'title', 'target']
         });
     }
-    // Fallback: Escape HTML characters if DOMPurify is missing
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    // Fail securely if DOMPurify is not loaded
+    console.error('DOMPurify not loaded. Sanitization failed.');
+    return '[Content blocked for security: Sanitizer not available]';
 }
 
 export async function upvoteStory(storyId) {
