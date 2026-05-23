@@ -13,14 +13,18 @@ function getProjectRoot() {
 
 let localEnv = {};
 
-try {
-    // Dynamically fetch the synced env.json file from the web server root in development
-    const response = await fetch(getProjectRoot() + 'env.json');
-    if (response.ok) {
-        localEnv = await response.json();
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '::1';
+
+if (isLocal) {
+    try {
+        // Dynamically fetch the synced env.json file from the web server root in development
+        const response = await fetch(getProjectRoot() + 'env.json');
+        if (response.ok) {
+            localEnv = await response.json();
+        }
+    } catch (e) {
+        // Fallback if env.json is missing or fetch fails (e.g. in production)
     }
-} catch (e) {
-    // Fallback if env.json is missing or fetch fails (e.g. in production)
 }
 
 export const SUPABASE_URL = localEnv.SUPABASE_URL || window.process?.env?.SUPABASE_URL || 'https://tixugcvwvvtbgcaryjvu.supabase.co';
