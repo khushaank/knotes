@@ -138,6 +138,37 @@
     a:hover {
         text-decoration: underline;
     }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f6f6ef;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+
+    html.dark ::-webkit-scrollbar-track {
+        background: #1c1917;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background: #44403c;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb:hover {
+        background: #57534e;
+    }
 }
 
 @layer components {
