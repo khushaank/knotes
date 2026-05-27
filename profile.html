@@ -17,7 +17,7 @@
         })();
     </script>
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src *;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Profile - K. Notes</title>
@@ -30,8 +30,8 @@
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
-<body class="font-body-md text-body-md text-on-surface">
-    <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
+<body class="profile-page font-body-md text-body-md text-on-surface">
+    <div class="profile-shell max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
         <header
             class="bg-[#ff6600] text-black text-sm rounded-none w-full flat no shadows flex items-center px-2 py-0.5"
             style="max-width: 100%;">
@@ -100,7 +100,7 @@
                         <div class="profile-stats" aria-label="Profile stats">
                             <div class="profile-stat">
                                 <span id="profile-karma" class="profile-stat-value">0</span>
-                                <span class="profile-stat-label">karma</span>
+                                <span class="profile-stat-label">followers</span>
                                 <span class="karma-trigger relative inline-flex items-center cursor-help">
                                     <span class="profile-help">?</span>
                                     <div class="karma-tip">
@@ -137,7 +137,10 @@
                                 Share profile
                             </button>
                             <button type="button" id="btn-update-profile"
-                                class="profile-action-secondary">update</button>
+                                class="profile-action-secondary">
+                                <span class="material-symbols-outlined" style="font-size:14px">check</span>
+                                Update
+                            </button>
                             <button type="button" id="btn-media-library-profile"
                                 style="display: none;"
                                 class="profile-action-secondary flex items-center gap-1">
@@ -149,6 +152,11 @@
                                 <span class="material-symbols-outlined" style="font-size:14px">dashboard</span>
                                 Creator Dashboard
                             </a>
+                            <button type="button" id="btn-logout-profile" style="display: none;"
+                                class="profile-action-secondary profile-action-danger flex items-center gap-1">
+                                <span class="material-symbols-outlined" style="font-size:14px">logout</span>
+                                Logout
+                            </button>
                         </div>
                     </div>
                     </div>

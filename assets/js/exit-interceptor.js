@@ -2,7 +2,6 @@
     function showPageLoading() {
         if (document.getElementById('knotes-page-loading')) return;
 
-        // Create style element for the beautiful loading overlay
         const style = document.createElement('style');
         style.id = 'knotes-loading-styles';
         style.textContent = `
@@ -157,52 +156,55 @@
         window.location.hostname
     ];
 
+    const currentPage = window.location.pathname.split('/').pop();
+    if (currentPage === 'exit.html') {
+        return;
+    }
+
     function isExternalLink(url) {
-        if (!url || url.startsWith('javascript:') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+        const rawUrl = (url || '').trim();
+        if (!rawUrl || rawUrl.startsWith('javascript:') || rawUrl.startsWith('#') || rawUrl.startsWith('mailto:') || rawUrl.startsWith('tel:')) {
             return false;
         }
 
         try {
-            const target = new URL(url, window.location.origin);
+            const target = new URL(rawUrl, window.location.origin);
+            if (!['http:', 'https:'].includes(target.protocol)) return false;
+
             const isInternal = WHITELISTED_DOMAINS.some(domain =>
                 target.hostname === domain || target.hostname.endsWith('.' + domain)
             );
 
-            const isRelative = url.startsWith('/') || url.startsWith('./') || url.startsWith('../') || !url.includes('://');
-
-            return !isInternal && !isRelative;
+            return !isInternal;
         } catch (e) {
             return false;
         }
     }
 
+    function getExitPath() {
+        const scriptSrc = document.currentScript?.getAttribute('src') || '';
+        const parentSegments = scriptSrc.match(/(?:^|\/)\.\.\//g);
+        return `${'../'.repeat(parentSegments ? parentSegments.length : 0)}exit.html`;
+    }
+
     function handleLinkClick(e) {
         const link = e.target.closest('a');
         if (!link) return;
+        if (link.hasAttribute('download') || link.dataset.noIntercept === 'true') return;
 
         const url = link.getAttribute('href');
         if (isExternalLink(url)) {
             e.preventDefault();
 
             const absoluteUrl = new URL(url, window.location.origin).href;
-            
-            // Determine the relative path to exit.html based on current location
-            // This is safer for sites hosted in subdirectories (like GitHub Pages)
-            const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0);
-            
-            // If the last segment is a page (like index.html), remove it to get directory depth
-            if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].endsWith('.html')) {
-                pathSegments.pop();
-            }
+            const exitUrl = `${getExitPath()}?url=${encodeURIComponent(absoluteUrl)}`;
+            const target = link.getAttribute('target');
 
-            // If we are in 'pulse' or any other subdirectory, we need to go up
-            // This project seems to have one level of subdirectories (e.g., /pulse/)
-            let exitPath = 'exit.html';
-            if (window.location.pathname.includes('/pulse/') || window.location.pathname.includes('/admin/')) {
-                exitPath = '../exit.html';
+            if (target === '_blank') {
+                window.open(exitUrl, '_blank', 'noopener');
+            } else {
+                window.location.href = exitUrl;
             }
-
-            window.open(`${exitPath}?url=${encodeURIComponent(absoluteUrl)}`, '_blank');
         }
     }
 

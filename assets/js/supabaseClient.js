@@ -66,20 +66,20 @@ const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
 
 export async function generateUniqueUsername(email) {
     if (!supabase) return email.split('@')[0];
-    
+
     const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     let username = base;
     let attempts = 0;
-    
+
     while (attempts < 5) {
         const { data } = await supabase
             .from('profiles')
             .select('username')
             .eq('username', username)
             .maybeSingle();
-            
+
         if (!data) return username;
-        
+
         // If exists, add a random number (user requested "in front")
         const rand = Math.floor(Math.random() * 10000);
         username = `${rand}${base}`;
@@ -90,32 +90,24 @@ export async function generateUniqueUsername(email) {
 
 export async function getEmailByUsername(username) {
     if (!supabase) return null;
-    
+
     // Check if it's already an email
     if (username.includes('@')) return username;
-    
+
     const { data, error } = await supabase
         .from('profiles')
         .select('id')
         .eq('username', username)
         .maybeSingle();
-        
+
     if (error || !data) return null;
-    
-    // Since we can't directly get email from auth.users via public client easily,
-    // we assume the user might need to be looked up or we store email in profile.
-    // However, Supabase Auth signIn only takes email.
-    // If we want to support username login, we either need a mapping table or 
-    // we need to have the email in the profiles table.
-    
-    // Let's check if 'profiles' has email. Looking at existing code, it doesn't seem to.
-    // I will add 'email' to the profiles table in the SQL setup.
+
     const { data: profile } = await supabase
         .from('profiles')
         .select('email')
         .eq('username', username)
         .maybeSingle();
-        
+
     return profile?.email || null;
 }
 
@@ -549,17 +541,24 @@ export async function deleteStory(storyId) {
     // but we can check here to provide a better UI message.
     const { data: blog, error: fetchError } = await supabase
         .from('blogs')
-        .select('author_id')
+        .select('author_id, author')
         .eq('id', storyId)
         .single();
 
     if (fetchError || !blog) return { error: 'Story not found' };
 
-    if (blog.author_id !== session.user.id) {
-        // Also check if admin
-        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
-        if (!profile?.is_admin) return { error: 'Unauthorized' };
-    }
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin, username')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+    const ownsById = blog.author_id === session.user.id;
+    const ownsByUsername = profile?.username &&
+        blog.author &&
+        blog.author.toLowerCase() === profile.username.toLowerCase();
+
+    if (!ownsById && !ownsByUsername && !profile?.is_admin) return { error: 'Unauthorized' };
 
     const { error } = await supabase
         .from('blogs')

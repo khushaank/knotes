@@ -51,6 +51,13 @@ BEGIN
   );
 END $$;
 
+-- Backfill legacy posts that were created before blogs.author_id existed.
+UPDATE public.blogs b
+SET author_id = p.id
+FROM public.profiles p
+WHERE b.author_id IS NULL
+  AND b.author = p.username;
+
 -- 2. ENFORCE DATA INTEGRITY TRIGGERS
 
 -- Prevent non-admins from changing their 'is_admin' status
@@ -207,6 +214,7 @@ DROP POLICY IF EXISTS "Users can update their own blogs" ON public.blogs;
 CREATE POLICY "Users can update their own blogs" 
 ON public.blogs FOR UPDATE USING (
   auth.uid() = author_id OR 
+  author = (SELECT username FROM public.profiles WHERE id = auth.uid()) OR
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
@@ -214,6 +222,7 @@ DROP POLICY IF EXISTS "Users can delete their own blogs" ON public.blogs;
 CREATE POLICY "Users can delete their own blogs" 
 ON public.blogs FOR DELETE USING (
   auth.uid() = author_id OR 
+  author = (SELECT username FROM public.profiles WHERE id = auth.uid()) OR
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );
 

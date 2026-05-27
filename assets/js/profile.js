@@ -28,6 +28,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
     const usernameCancelBtn = document.getElementById('btn-cancel-username');
     const usernameError = document.getElementById('username-error');
     const usernameHint = document.getElementById('username-hint');
+    const logoutBtn = document.getElementById('btn-logout-profile');
 
     function showProfileContainer() {
         if (profileLoading) profileLoading.classList.add('hidden');
@@ -90,6 +91,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
             if (privacyContainer) privacyContainer.style.display = '';
             setupAvatarEdit(profile);
             setupMediaLibrary();
+            setupLogoutButton();
             await loadSubscriptions(profile.id);
         } else if (session) {
             followBtn.classList.remove('hidden');
@@ -142,6 +144,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
     if (profile) {
         await setProfileData(profile, true);
         setupAvatarEdit(profile);
+        setupLogoutButton();
         if (privacyContainer) privacyContainer.style.display = '';
     } else {
         usernameEl.textContent = defaultUsername;
@@ -185,6 +188,24 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
             const creatorBtn = document.getElementById('btn-creator-dashboard');
             if (creatorBtn) creatorBtn.style.display = 'inline-flex';
         }
+    }
+
+    function setupLogoutButton() {
+        if (!logoutBtn) return;
+        logoutBtn.style.display = 'inline-flex';
+        if (logoutBtn.dataset.bound === 'true') return;
+        logoutBtn.dataset.bound = 'true';
+
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.style.opacity = '0.65';
+            try {
+                sessionStorage.removeItem('kn-auth-cache');
+                await supabase.auth.signOut();
+            } finally {
+                window.location.href = 'index.html';
+            }
+        });
     }
 
     function getProfileUrl(username) {
@@ -814,6 +835,10 @@ function setupUpdateButton(userId) {
     const isPublicCheckbox = document.getElementById('profile-is-public');
     if (!updateBtn || !aboutInput) return;
 
+    function setUpdateButton(label, icon = 'check') {
+        updateBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">${icon}</span>${label}`;
+    }
+
     let initialAbout = aboutInput.value;
     let initialIsPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
 
@@ -822,7 +847,7 @@ function setupUpdateButton(userId) {
     function checkForChanges() {
         const hasChanged = aboutInput.value !== initialAbout ||
             (isPublicCheckbox && isPublicCheckbox.checked !== initialIsPublic);
-        updateBtn.style.display = hasChanged ? 'inline-block' : 'none';
+        updateBtn.style.display = hasChanged ? 'inline-flex' : 'none';
     }
 
     aboutInput.addEventListener('input', checkForChanges);
@@ -832,7 +857,7 @@ function setupUpdateButton(userId) {
         const aboutText = aboutInput.value.trim();
         const isPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
         updateBtn.disabled = true;
-        updateBtn.textContent = 'updating...';
+        setUpdateButton('Updating', 'sync');
 
         const { error } = await supabase
             .from('profiles')
@@ -842,14 +867,14 @@ function setupUpdateButton(userId) {
         if (error) {
             alert('Failed to update profile.');
             updateBtn.disabled = false;
-            updateBtn.textContent = 'update';
+            setUpdateButton('Update');
         } else {
             initialAbout = aboutInput.value;
             initialIsPublic = isPublicCheckbox ? isPublicCheckbox.checked : false;
 
-            updateBtn.textContent = 'updated ✓';
+            setUpdateButton('Updated');
             setTimeout(() => {
-                updateBtn.textContent = 'update';
+                setUpdateButton('Update');
                 checkForChanges();
             }, 1500);
             updateBtn.disabled = false;
