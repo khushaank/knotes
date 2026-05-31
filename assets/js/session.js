@@ -9,8 +9,6 @@ if (currentTheme === 'dark') {
     document.documentElement.classList.remove('dark');
 }
 
-
-// ─── Auth Cache ───────────────────────────────────────────────────────────────
 const AUTH_CACHE_KEY = 'kn-auth-cache';
 
 function getCachedAuth() {

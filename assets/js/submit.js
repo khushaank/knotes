@@ -48,7 +48,7 @@ const HASH_TO_CATEGORY = {
 };
 
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
     const form = document.getElementById('submit-form');
     const authMessage = document.getElementById('auth-message');
     const loadingSkeleton = document.getElementById('submit-loading');
@@ -276,7 +276,7 @@ const HASH_TO_CATEGORY = {
                 let userMsg = error.message;
                 if (error.code === '23505') userMsg = 'A post with this title already exists.';
                 if (error.details) userMsg += ' (' + error.details + ')';
-                
+
                 showStatus('Submit Error: ' + userMsg, true);
                 if (btnSubmit) {
                     btnSubmit.disabled = false;
@@ -396,32 +396,48 @@ const HASH_TO_CATEGORY = {
                     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
                 }
 
-                let html = '';
+                const fragment = document.createDocumentFragment();
                 files.forEach(f => {
                     const isImg = isImage(f.name);
                     const icon = getFileIcon(f.name);
-                    const safeUrl = f.url.replace(/"/g, '&quot;');
-                    const safeName = f.name.replace(/"/g, '&quot;');
 
-                    html += `
-                        <div class="group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item" 
-                             data-url="${safeUrl}" 
-                             data-name="${safeName}" 
-                             data-is-img="${isImg}">
-                            ${isImg
-                            ? `<img src="${safeUrl}" class="w-full h-full object-cover" loading="lazy">`
-                            : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
-                                     <span class="material-symbols-outlined text-3xl mb-1">${icon}</span>
-                                     <span class="text-[9px] truncate w-full px-1">${sanitize(f.name.split('-')[0])}</span>
-                                   </div>`
-                        }
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                                Insert
-                            </div>
-                        </div>
-                    `;
+                    const card = document.createElement('div');
+                    card.className = 'group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item';
+                    card.setAttribute('data-url', f.url);
+                    card.setAttribute('data-name', f.name);
+                    card.setAttribute('data-is-img', isImg);
+
+                    if (isImg) {
+                        const img = document.createElement('img');
+                        img.src = f.url;
+                        img.className = 'w-full h-full object-cover';
+                        img.loading = 'lazy';
+                        card.appendChild(img);
+                    } else {
+                        const iconContainer = document.createElement('div');
+                        iconContainer.className = 'w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center';
+
+                        const spanIcon = document.createElement('span');
+                        spanIcon.className = 'material-symbols-outlined text-3xl mb-1';
+                        spanIcon.textContent = icon;
+                        iconContainer.appendChild(spanIcon);
+
+                        const spanName = document.createElement('span');
+                        spanName.className = 'text-[9px] truncate w-full px-1';
+                        spanName.textContent = f.name.split('-')[0];
+                        iconContainer.appendChild(spanName);
+
+                        card.appendChild(iconContainer);
+                    }
+
+                    const hoverDiv = document.createElement('div');
+                    hoverDiv.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold';
+                    hoverDiv.textContent = 'Insert';
+                    card.appendChild(hoverDiv);
+
+                    fragment.appendChild(card);
                 });
-                mediaGrid.innerHTML = html;
+                mediaGrid.replaceChildren(fragment);
 
                 mediaGrid.querySelectorAll('.media-item').forEach(item => {
                     item.addEventListener('click', () => {
@@ -447,7 +463,10 @@ const HASH_TO_CATEGORY = {
                     item.addEventListener('mouseleave', hidePreview);
                 });
             } catch (err) {
-                mediaGrid.innerHTML = '<div class="col-span-full text-sm text-red-500 text-center py-8">Failed to load media. Please try again.</div>';
+                const errDiv = document.createElement('div');
+                errDiv.className = 'col-span-full text-sm text-red-500 text-center py-8';
+                errDiv.textContent = 'Failed to load media. Please try again.';
+                mediaGrid.replaceChildren(errDiv);
             }
         }
 
@@ -463,14 +482,18 @@ const HASH_TO_CATEGORY = {
                 viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
             }
 
-            previewTooltip.innerHTML = `<iframe src="${viewerUrl}" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`;
+            const iframe = document.createElement('iframe');
+            iframe.src = viewerUrl;
+            iframe.className = 'preview-frame';
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+            previewTooltip.replaceChildren(iframe);
             previewTooltip.classList.add('visible');
             updatePreviewPos(e);
         }
 
         function hidePreview() {
             previewTooltip.classList.remove('visible');
-            previewTooltip.innerHTML = '';
+            previewTooltip.replaceChildren();
         }
 
         function updatePreviewPos(e) {

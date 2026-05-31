@@ -16,7 +16,7 @@ function sanitizeSearchInput(input) {
         .replace(/\(/g, '\\(')
         .replace(/\)/g, '\\)')
         .replace(/%/g, '\\%')
-        .substring(0, 200); // Limit length
+        .substring(0, 200);
 }
 
 function getHiddenStories() {
@@ -78,28 +78,28 @@ async function renderStories(searchQuery = '', filter = 'trending') {
     if (!tbody) return;
 
     try {
-    const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
-    const cached = getCache(cacheKey);
+        const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
+        const cached = getCache(cacheKey);
 
-    await loadUserStats();
+        await loadUserStats();
 
-    if (cached) {
-        await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
-        if (!cached.stale) {
-            if (tbody) tbody.style.opacity = '1';
-            return;
+        if (cached) {
+            await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
+            if (!cached.stale) {
+                if (tbody) tbody.style.opacity = '1';
+                return;
+            }
         }
-    }
 
-    if (tbody) tbody.style.opacity = '0.5';
-    if (statsSummary) statsSummary.textContent = 'Updating...';
+        if (tbody) tbody.style.opacity = '0.5';
+        if (statsSummary) statsSummary.textContent = 'Updating...';
 
-    const storiesResult = await fetchStories(searchQuery, filter, page);
+        const storiesResult = await fetchStories(searchQuery, filter, page);
 
-    const { stories, count } = storiesResult;
-    setCache(cacheKey, { stories, count });
+        const { stories, count } = storiesResult;
+        setCache(cacheKey, { stories, count });
 
-    await renderHtml(stories, count, page, filter, searchQuery);
+        await renderHtml(stories, count, page, filter, searchQuery);
     } catch (error) {
         console.error('Failed to render stories:', error);
         tbody.style.opacity = '1';
@@ -131,9 +131,10 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
     const visibleStories = stories.filter(s => !hiddenIds.includes(String(s.id)));
 
     const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-    const folderMapping = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
+    const parsedFolders = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
+    const folderMapping = new Map(Object.entries(parsedFolders));
 
-    let html = '';
+    const fragment = document.createDocumentFragment();
     const startIndex = (page - 1) * STORIES_PER_PAGE;
 
     visibleStories.forEach((story, index) => {
@@ -141,60 +142,185 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : null;
         const isBookmarked = userBookmarks.includes(story.id);
         const isUpvoted = userLikes.includes(story.id);
-        const currentFolder = folderMapping[story.id];
+        const currentFolder = folderMapping.get(String(story.id));
 
-        html += `
-            <tr class="story-row" data-id="${story.id}">
-                <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">${startIndex + index + 1}.</td>
-                <td class="align-top w-4 pt-[2px] text-center">
-                    <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''}" title="upvote" data-id="${story.id}"></div>
-                </td>
-                <td class="story-title align-top">
-                    <a href="${story.url || `pulse/index.html?s=${story.slug}`}" class="story-link" data-id="${story.id}" ${story.url ? 'target="_blank"' : ''}>${sanitize(story.title)}</a>
-                    ${domain ? `<span class="domain-text"> (<a href="${story.url}" target="_blank">${sanitize(domain)}</a>)</span>` : (story.category ? `<span class="domain-text"> (<a href="#">${sanitize(story.category)}</a>)</span>` : '')}
-                </td>
-            </tr>
-            <tr class="story-meta-row" data-id="${story.id}">
-                <td colspan="2"></td>
-                <td class="story-meta">
-                    by <a href="${profileHref(story.author)}" class="hover:underline">${sanitize(story.author) || 'anonymous'}</a> | 
-                    ${timeAgo} | 
-                    <a href="#" class="hide-link hover:underline" data-id="${story.id}">hide</a> | 
-                    <span class="bookmark-container">
-                        <span class="knotes-dropdown inline-block" data-id="${story.id}">
-                            <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? `Saved to ${currentFolder || 'list'}` : 'Add to list'}">
-                                ${isBookmarked ? 'saved' : '+'}
-                            </button>
-                            <div class="knotes-dropdown-menu hidden">
-                                <div class="dropdown-item ${currentFolder === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
-                                <div class="dropdown-item ${currentFolder === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
-                                <div class="dropdown-item ${currentFolder === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
-                                <div class="dropdown-item ${currentFolder === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
-                                ${isBookmarked ? '<div class="dropdown-divider border-t border-gray-100 my-1"></div><div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>' : ''}
-                            </div>
-                        </span>
-                    </span> | 
-                    <a href="pulse/index.html?s=${story.slug}" class="hover:underline">${story.comments_count || 0} comments</a> | 
-                    <a href="#" class="share-link hover:underline" data-title="${sanitize(story.title)}" data-url="${story.url || window.location.origin + '/pulse/index.html?s=' + story.slug}">share</a>
-                </td>
-            </tr>
-            <tr class="h-[2px] story-spacer" data-id="${story.id}"></tr>
-        `;
+        const tr1 = document.createElement('tr');
+        tr1.className = 'story-row';
+        tr1.setAttribute('data-id', story.id);
+
+        const td1_1 = document.createElement('td');
+        td1_1.className = 'text-right align-top w-5 pr-1 text-hn-grey text-[10pt]';
+        td1_1.textContent = `${startIndex + index + 1}.`;
+
+        const td1_2 = document.createElement('td');
+        td1_2.className = 'align-top w-4 pt-[2px] text-center';
+
+        const upvoteDiv = document.createElement('div');
+        upvoteDiv.className = `knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''}`;
+        upvoteDiv.title = 'upvote';
+        upvoteDiv.setAttribute('data-id', story.id);
+        td1_2.appendChild(upvoteDiv);
+
+        const td1_3 = document.createElement('td');
+        td1_3.className = 'story-title align-top';
+
+        const titleLink = document.createElement('a');
+        titleLink.href = story.url || `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+        titleLink.className = 'story-link';
+        titleLink.setAttribute('data-id', story.id);
+        if (story.url) titleLink.setAttribute('target', '_blank');
+        titleLink.textContent = story.title;
+        td1_3.appendChild(titleLink);
+
+        if (domain) {
+            const domainSpan = document.createElement('span');
+            domainSpan.className = 'domain-text';
+            domainSpan.appendChild(document.createTextNode(' ('));
+            const domainLink = document.createElement('a');
+            domainLink.href = story.url;
+            domainLink.setAttribute('target', '_blank');
+            domainLink.textContent = domain;
+            domainSpan.appendChild(domainLink);
+            domainSpan.appendChild(document.createTextNode(')'));
+            td1_3.appendChild(domainSpan);
+        } else if (story.category) {
+            const domainSpan = document.createElement('span');
+            domainSpan.className = 'domain-text';
+            domainSpan.appendChild(document.createTextNode(' ('));
+            const domainLink = document.createElement('a');
+            domainLink.href = '#';
+            domainLink.textContent = story.category;
+            domainSpan.appendChild(domainLink);
+            domainSpan.appendChild(document.createTextNode(')'));
+            td1_3.appendChild(domainSpan);
+        }
+
+        tr1.appendChild(td1_1);
+        tr1.appendChild(td1_2);
+        tr1.appendChild(td1_3);
+
+        const tr2 = document.createElement('tr');
+        tr2.className = 'story-meta-row';
+        tr2.setAttribute('data-id', story.id);
+
+        const td2_1 = document.createElement('td');
+        td2_1.colSpan = 2;
+
+        const td2_2 = document.createElement('td');
+        td2_2.className = 'story-meta';
+
+        td2_2.appendChild(document.createTextNode('by '));
+        const authorLink = document.createElement('a');
+        authorLink.href = profileHref(story.author);
+        authorLink.className = 'hover:underline';
+        authorLink.textContent = story.author || 'anonymous';
+        td2_2.appendChild(authorLink);
+
+        td2_2.appendChild(document.createTextNode(` | ${timeAgo} | `));
+
+        const hideLink = document.createElement('a');
+        hideLink.href = '#';
+        hideLink.className = 'hide-link hover:underline';
+        hideLink.setAttribute('data-id', story.id);
+        hideLink.textContent = 'hide';
+        td2_2.appendChild(hideLink);
+        td2_2.appendChild(document.createTextNode(' | '));
+
+        const bookmarkSpan = document.createElement('span');
+        bookmarkSpan.className = 'bookmark-container';
+
+        const dropdownSpan = document.createElement('span');
+        dropdownSpan.className = 'knotes-dropdown inline-block';
+        dropdownSpan.setAttribute('data-id', story.id);
+
+        const dropTrigger = document.createElement('button');
+        dropTrigger.className = `knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}`;
+        dropTrigger.title = isBookmarked ? `Saved to ${currentFolder || 'list'}` : 'Add to list';
+        dropTrigger.textContent = isBookmarked ? 'saved' : '+';
+        dropdownSpan.appendChild(dropTrigger);
+
+        const dropMenu = document.createElement('div');
+        dropMenu.className = 'knotes-dropdown-menu hidden';
+
+        const folders = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
+        folders.forEach(f => {
+            const fItem = document.createElement('div');
+            fItem.className = `dropdown-item ${currentFolder === f ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}`;
+            fItem.setAttribute('data-folder', f);
+            fItem.textContent = f;
+            dropMenu.appendChild(fItem);
+        });
+
+        if (isBookmarked) {
+            const divider = document.createElement('div');
+            divider.className = 'dropdown-divider border-t border-gray-100 my-1';
+            dropMenu.appendChild(divider);
+
+            const unsaveItem = document.createElement('div');
+            unsaveItem.className = 'dropdown-item text-red-500 font-medium';
+            unsaveItem.setAttribute('data-folder', 'unsave');
+            unsaveItem.textContent = 'Unsave';
+            dropMenu.appendChild(unsaveItem);
+        }
+
+        dropdownSpan.appendChild(dropMenu);
+        bookmarkSpan.appendChild(dropdownSpan);
+        td2_2.appendChild(bookmarkSpan);
+
+        td2_2.appendChild(document.createTextNode(' | '));
+
+        const commentsLink = document.createElement('a');
+        commentsLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+        commentsLink.className = 'hover:underline';
+        commentsLink.textContent = `${story.comments_count || 0} comments`;
+        td2_2.appendChild(commentsLink);
+
+        td2_2.appendChild(document.createTextNode(' | '));
+
+        const shareLink = document.createElement('a');
+        shareLink.href = '#';
+        shareLink.className = 'share-link hover:underline';
+        shareLink.setAttribute('data-title', story.title);
+        shareLink.setAttribute('data-url', story.url || window.location.origin + '/pulse/index.html?s=' + encodeURIComponent(story.slug || ''));
+        shareLink.textContent = 'share';
+        td2_2.appendChild(shareLink);
+
+        tr2.appendChild(td2_1);
+        tr2.appendChild(td2_2);
+
+        const tr3 = document.createElement('tr');
+        tr3.className = 'h-[2px] story-spacer';
+        tr3.setAttribute('data-id', story.id);
+
+        fragment.appendChild(tr1);
+        fragment.appendChild(tr2);
+        fragment.appendChild(tr3);
     });
 
     if (count > page * STORIES_PER_PAGE) {
         const nextUrl = `index.html?p=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}${filter !== 'trending' ? `&filter=${filter}` : ''}`;
-        html += `
-            <tr class="h-[20px]">
-                <td colspan="2"></td>
-                <td class="font-title-md text-title-md text-black pt-4">
-                    <a href="${nextUrl}" class="hover:underline text-black font-bold">More</a>
-                </td>
-            </tr>
-        `;
+        const moreTr = document.createElement('tr');
+        moreTr.className = 'h-[20px]';
+
+        const moreTd1 = document.createElement('td');
+        moreTd1.colSpan = 2;
+
+        const moreTd2 = document.createElement('td');
+        moreTd2.className = 'font-title-md text-title-md text-black pt-4';
+
+        const moreLink = document.createElement('a');
+        moreLink.href = nextUrl;
+        moreLink.className = 'hover:underline text-black font-bold';
+        moreLink.textContent = 'More';
+
+        moreTd2.appendChild(moreLink);
+        moreTr.appendChild(moreTd1);
+        moreTr.appendChild(moreTd2);
+
+        fragment.appendChild(moreTr);
     }
 
-    tbody.innerHTML = html;
+    tbody.replaceChildren(fragment);
     setupPrefetching();
 }
 
@@ -233,7 +359,7 @@ async function loadUserStats() {
     ]);
 }
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');
     const filterParam = urlParams.get('filter');
@@ -331,7 +457,17 @@ async function loadUserStats() {
         if (data && data.length > 0) {
             const container = document.getElementById('trending-searches');
             if (container) {
-                container.innerHTML = 'Trending: ' + data.map(s => `<a href="index.html?search=${s.term}" class="hover:underline">${s.term}</a>`).join(', ');
+                container.replaceChildren(document.createTextNode('Trending: '));
+                data.forEach((s, index) => {
+                    const link = document.createElement('a');
+                    link.href = `index.html?search=${encodeURIComponent(s.term)}`;
+                    link.className = 'hover:underline';
+                    link.textContent = s.term;
+                    container.appendChild(link);
+                    if (index < data.length - 1) {
+                        container.appendChild(document.createTextNode(', '));
+                    }
+                });
             }
         }
     }
@@ -472,7 +608,7 @@ async function loadUserStats() {
                 if (unsaveOpt) unsaveOpt.remove();
                 const divider = menu.querySelector('.dropdown-divider');
                 if (divider) divider.remove();
-                
+
                 menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
 
                 const idx = userBookmarks.indexOf(storyId);

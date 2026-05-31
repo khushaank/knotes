@@ -3,10 +3,9 @@ import { supabase, sanitize, toggleFollow, getFollowerCount, getCache, setCache 
 const AVATAR_COLORS = ['#fecaca', '#bfdbfe', '#bbf7d0', '#fef08a', '#e9d5ff', '#fbcfe8'];
 
 function getAvatarColor(name) {
-    return AVATAR_COLORS[(name || '?').charCodeAt(0) % AVATAR_COLORS.length];
+    return AVATAR_COLORS.at((name || '?').charCodeAt(0) % AVATAR_COLORS.length);
 }
 
-// Escape special PostgREST filter characters to prevent filter injection
 function sanitizeSearchInput(input) {
     if (typeof input !== 'string') return '';
     return input
@@ -19,23 +18,27 @@ function sanitizeSearchInput(input) {
         .substring(0, 100); // Limit length
 }
 
-function avatarHtml(user, size = 36) {
+function createAvatarElement(user, size = 36) {
     const initial = (user.username || '?').charAt(0).toUpperCase();
     const bg = getAvatarColor(user.username);
-    if (user.avatar_url) {
-        return `<div style="width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${bg}">
-            <img src="${user.avatar_url}" alt="${sanitize(user.username)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='${initial}'">
-        </div>`;
-    }
-    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:${Math.round(size * 0.44)}px;color:#555;text-transform:uppercase;flex-shrink:0">${initial}</div>`;
-}
 
-function avatarInner(user) {
-    const initial = (user.username || '?').charAt(0).toUpperCase();
+    const wrapper = document.createElement('div');
     if (user.avatar_url) {
-        return `<img src="${user.avatar_url}" alt="${sanitize(user.username)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='${initial}'">`;
+        wrapper.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${bg}`;
+        const img = document.createElement('img');
+        img.src = user.avatar_url;
+        img.alt = user.username || 'user';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+        img.onerror = function () {
+            this.parentElement.textContent = initial;
+            this.parentElement.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:${Math.round(size * 0.44)}px;color:#555;text-transform:uppercase;flex-shrink:0`;
+        };
+        wrapper.appendChild(img);
+    } else {
+        wrapper.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:${Math.round(size * 0.44)}px;color:#555;text-transform:uppercase;flex-shrink:0`;
+        wrapper.textContent = initial;
     }
-    return initial;
+    return wrapper;
 }
 
 function profileHref(username) {
@@ -71,7 +74,10 @@ function profileHref(username) {
     } catch (err) {
         if (loadingSkeleton) loadingSkeleton.style.display = 'none';
         if (mainContent) mainContent.classList.add('ready');
-        container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">Could not load leaderboard. Please try again later.</div>';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'p-6 text-center text-gray-500 text-sm';
+        errDiv.textContent = 'Could not load leaderboard. Please try again later.';
+        container.replaceChildren(errDiv);
     }
 
     setupSearch();
@@ -79,7 +85,7 @@ function profileHref(username) {
     // LEADERBOARD RENDERING
 
     function renderLeaders(leaders) {
-        let html = '';
+        const fragment = document.createDocumentFragment();
         leaders.forEach((user, index) => {
             const rank = index + 1;
             let rankClass = '';
@@ -93,30 +99,53 @@ function profileHref(username) {
             const btnText = isFollowed ? '[unfollow]' : '[follow]';
             const btnClass = isFollowed ? 'text-[#ff6600]' : 'text-gray-500';
 
-            const boostBtnHtml = isSelf ? '' : `
-                <button class="boost-karma-btn ${btnClass} hover:text-[#ff6600] focus:outline-none"
-                        data-userid="${user.id}">${btnText}</button>
-            `;
+            const row = document.createElement('div');
+            row.className = 'leader-row';
 
-            html += `
-                <div class="leader-row">
-                    <span class="leader-rank ${rankClass}">${rank}.</span>
-                    ${avatarHtml(user, 36)}
-                    <div class="leader-info">
-                        <a href="${profileHref(user.username)}" class="leader-name block">${sanitize(user.username)}</a>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="leader-karma">
-                            <span class="karma-count">${user.followers}</span>
-                            <span class="leader-karma-label">karma</span>
-                        </div>
-                        ${boostBtnHtml}
-                    </div>
-                </div>
-            `;
+            const rankSpan = document.createElement('span');
+            rankSpan.className = `leader-rank ${rankClass}`;
+            rankSpan.textContent = `${rank}.`;
+            row.appendChild(rankSpan);
+
+            row.appendChild(createAvatarElement(user, 36));
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'leader-info';
+            const nameLink = document.createElement('a');
+            nameLink.href = profileHref(user.username);
+            nameLink.className = 'leader-name block';
+            nameLink.textContent = user.username || 'anonymous';
+            infoDiv.appendChild(nameLink);
+            row.appendChild(infoDiv);
+
+            const flexDiv = document.createElement('div');
+            flexDiv.className = 'flex items-center gap-3';
+
+            const karmaDiv = document.createElement('div');
+            karmaDiv.className = 'leader-karma';
+            const countSpan = document.createElement('span');
+            countSpan.className = 'karma-count';
+            countSpan.textContent = user.followers;
+            karmaDiv.appendChild(countSpan);
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'leader-karma-label';
+            labelSpan.textContent = 'karma';
+            karmaDiv.appendChild(labelSpan);
+            flexDiv.appendChild(karmaDiv);
+
+            if (!isSelf) {
+                const btn = document.createElement('button');
+                btn.className = `boost-karma-btn ${btnClass} hover:text-[#ff6600] focus:outline-none`;
+                btn.setAttribute('data-userid', user.id);
+                btn.textContent = btnText;
+                flexDiv.appendChild(btn);
+            }
+
+            row.appendChild(flexDiv);
+            fragment.appendChild(row);
         });
 
-        container.innerHTML = html;
+        container.replaceChildren(fragment);
 
         if (loadingSkeleton) loadingSkeleton.style.display = 'none';
         if (mainContent) mainContent.classList.add('ready');
@@ -143,7 +172,10 @@ function profileHref(username) {
             if (!cached) {
                 if (loadingSkeleton) loadingSkeleton.style.display = 'none';
                 if (mainContent) mainContent.classList.add('ready');
-                container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No users found yet. Be the first to join!</div>';
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'p-6 text-center text-gray-500 text-sm';
+                emptyDiv.textContent = 'No users found yet. Be the first to join!';
+                container.replaceChildren(emptyDiv);
             }
             return;
         }
@@ -152,16 +184,17 @@ function profileHref(username) {
             .from('follows')
             .select('following_id');
 
-        const followCounts = {};
+        const followCounts = new Map();
         if (follows) {
             follows.forEach(f => {
-                followCounts[f.following_id] = (followCounts[f.following_id] || 0) + 1;
+                const currentCount = followCounts.get(String(f.following_id)) || 0;
+                followCounts.set(String(f.following_id), currentCount + 1);
             });
         }
 
         const results = profiles.map(p => ({
             ...p,
-            followers: followCounts[p.id] || 0
+            followers: followCounts.get(String(p.id)) || 0
         }));
 
         results.sort((a, b) => b.followers - a.followers);
@@ -232,7 +265,7 @@ function profileHref(username) {
             clearBtn.addEventListener('click', () => {
                 input.value = '';
                 dropdown.classList.remove('active');
-                dropdown.innerHTML = '';
+                dropdown.replaceChildren();
                 updateClearBtn();
                 input.focus();
             });
@@ -245,7 +278,7 @@ function profileHref(username) {
         });
 
         input.addEventListener('focus', () => {
-            if (input.value.trim().length >= 1 && dropdown.innerHTML) {
+            if (input.value.trim().length >= 1 && dropdown.childElementCount > 0) {
                 dropdown.classList.add('active');
             }
         });
@@ -258,15 +291,44 @@ function profileHref(username) {
 
             if (query.length === 0) {
                 dropdown.classList.remove('active');
-                dropdown.innerHTML = '';
+                dropdown.replaceChildren();
                 return;
             }
 
-            dropdown.innerHTML = '<div class="search-loading">Searching...</div>';
+            const searchLoadingDiv = document.createElement('div');
+            searchLoadingDiv.className = 'search-loading';
+            searchLoadingDiv.textContent = 'Searching...';
+            dropdown.replaceChildren(searchLoadingDiv);
             dropdown.classList.add('active');
 
             debounceTimer = setTimeout(() => searchUsers(query), 300);
         });
+
+        function applyHighlight(element, text, query) {
+            if (!text) return;
+            if (!query) {
+                element.textContent = text;
+                return;
+            }
+            const lowerText = text.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            let i = 0;
+            while (i < text.length) {
+                const index = lowerText.indexOf(lowerQuery, i);
+                if (index === -1) {
+                    element.appendChild(document.createTextNode(text.substring(i)));
+                    break;
+                }
+                if (index > i) {
+                    element.appendChild(document.createTextNode(text.substring(i, index)));
+                }
+                const mark = document.createElement('strong');
+                mark.style.color = '#ff6600';
+                mark.textContent = text.substring(index, index + query.length);
+                element.appendChild(mark);
+                i = index + query.length;
+            }
+        }
 
         async function searchUsers(query) {
             if (abortController) abortController.abort();
@@ -283,60 +345,86 @@ function profileHref(username) {
                 if (input.value.trim() !== query) return;
 
                 if (error) {
-                    dropdown.innerHTML = '<div class="search-no-results"><span class="material-symbols-outlined">error</span>Search failed. Try again.</div>';
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'search-no-results';
+                    const icon = document.createElement('span');
+                    icon.className = 'material-symbols-outlined';
+                    icon.textContent = 'error';
+                    errDiv.appendChild(icon);
+                    errDiv.appendChild(document.createTextNode(' Search failed. Try again.'));
+                    dropdown.replaceChildren(errDiv);
                     return;
                 }
 
                 if (!users || users.length === 0) {
-                    dropdown.innerHTML = `
-                        <div class="search-no-results">
-                            <span class="material-symbols-outlined">person_off</span>
-                            No people found for "${sanitize(query)}"
-                        </div>`;
+                    const noDiv = document.createElement('div');
+                    noDiv.className = 'search-no-results';
+                    const icon = document.createElement('span');
+                    icon.className = 'material-symbols-outlined';
+                    icon.textContent = 'person_off';
+                    noDiv.appendChild(icon);
+                    noDiv.appendChild(document.createTextNode(` No people found for "${query}"`));
+                    dropdown.replaceChildren(noDiv);
                     return;
                 }
 
-                let html = '<div class="sr-section-label">People</div>';
+                const fragment = document.createDocumentFragment();
+                const label = document.createElement('div');
+                label.className = 'sr-section-label';
+                label.textContent = 'People';
+                fragment.appendChild(label);
 
                 users.forEach(user => {
                     const isFollowed = myFollows.has(user.id);
                     const isSelf = myId === user.id;
 
-                    let badge = '';
+                    const a = document.createElement('a');
+                    a.href = profileHref(user.username);
+                    a.className = 'search-result-item';
+
+                    const avatar = createAvatarElement(user, 32);
+                    avatar.classList.add('sr-avatar');
+                    a.appendChild(avatar);
+
+                    const info = document.createElement('div');
+                    info.className = 'sr-info';
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'sr-name';
+                    applyHighlight(nameDiv, user.username || 'anonymous', query);
+                    info.appendChild(nameDiv);
+
+                    const bioDiv = document.createElement('div');
+                    bioDiv.className = 'sr-bio';
+                    bioDiv.textContent = user.about || 'K. Notes member';
+                    info.appendChild(bioDiv);
+
+                    a.appendChild(info);
+
                     if (isSelf) {
-                        badge = '<span style="font-size:10px;color:#aaa;flex-shrink:0">You</span>';
+                        const badge = document.createElement('span');
+                        badge.style.cssText = 'font-size:10px;color:#aaa;flex-shrink:0';
+                        badge.textContent = 'You';
+                        a.appendChild(badge);
                     } else if (isFollowed) {
-                        badge = '<span style="font-size:10px;color:#ff6600;flex-shrink:0;font-weight:600">Following</span>';
+                        const badge = document.createElement('span');
+                        badge.style.cssText = 'font-size:10px;color:#ff6600;flex-shrink:0;font-weight:600';
+                        badge.textContent = 'Following';
+                        a.appendChild(badge);
                     }
 
-                    const bio = user.about ? sanitize(user.about) : 'K. Notes member';
-
-                    const avatarBg = getAvatarColor(user.username);
-                    html += `
-                        <a href="${profileHref(user.username)}" class="search-result-item">
-                            <div class="sr-avatar" style="background:${avatarBg}">${avatarInner(user)}</div>
-                            <div class="sr-info">
-                                <div class="sr-name">${highlightMatch(sanitize(user.username), query)}</div>
-                                <div class="sr-bio">${bio}</div>
-                            </div>
-                            ${badge}
-                        </a>
-                    `;
+                    fragment.appendChild(a);
                 });
 
-                dropdown.innerHTML = html;
+                dropdown.replaceChildren(fragment);
 
             } catch (err) {
                 if (err.name !== 'AbortError') {
-                    dropdown.innerHTML = '<div class="search-no-results">Something went wrong.</div>';
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'search-no-results';
+                    errDiv.textContent = 'Something went wrong.';
+                    dropdown.replaceChildren(errDiv);
                 }
             }
-        }
-
-        function highlightMatch(text, query) {
-            if (!query) return text;
-            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return text.replace(regex, '<strong style="color:#ff6600">$1</strong>');
         }
     }
 });

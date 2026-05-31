@@ -66,58 +66,129 @@ async function fetchComments(blogId) {
 }
 
 function renderCommentList(comments) {
-    if (comments.length === 0) return '<div class="mt-4 text-secondary">No comments yet.</div>';
+    const fragment = document.createDocumentFragment();
 
-    let html = '';
+    if (comments.length === 0) {
+        const div = document.createElement('div');
+        div.className = 'mt-4 text-secondary';
+        div.textContent = 'No comments yet.';
+        fragment.appendChild(div);
+        return fragment;
+    }
+
     const visibleCount = 2;
+    let extraCommentsDiv = null;
 
     comments.forEach((comment, index) => {
         const timeAgo = calculateTimeAgo(comment.created_at);
 
         if (index === visibleCount) {
-            html += `<div id="extra-comments" class="hidden">`;
+            extraCommentsDiv = document.createElement('div');
+            extraCommentsDiv.id = 'extra-comments';
+            extraCommentsDiv.className = 'hidden';
+            fragment.appendChild(extraCommentsDiv);
         }
 
-        html += `
-            <div class="mb-2 comment-node">
-                <div class="flex items-start gap-1">
-                    <div class="cursor-default text-secondary mt-[2px]">
-                        <span class="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary"></span>
-                    </div>
-                    <div class="w-full">
-                        <div class="story-meta opacity-70">
-                            <a class="hover:underline text-black font-medium" href="${profileHref(comment.user_name)}">${sanitize(comment.user_name) || 'anonymous'}</a>
-                            <a class="hover:underline mx-0.5 comment-time-link" href="#" data-created="${comment.created_at}" data-user="${sanitize(comment.user_name) || 'anonymous'}">${timeAgo}</a>
-                            <span class="cursor-pointer hover:underline collapse-toggle text-hn-grey">[–]</span>
-                        </div>
-                        <div class="text-black mt-0.5 text-[10pt] leading-snug comment-body pr-4" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">${renderMarkdown(comment.comment_text).trim()}</div>
-                        <div class="story-meta mt-1 comment-footer opacity-60 text-[10px]">
-                            <a class="hover:underline reply-btn" href="javascript:void(0)">reply</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        const node = document.createElement('div');
+        node.className = 'mb-2 comment-node';
 
-        if (index >= visibleCount && index === comments.length - 1) {
-            html += `</div>`;
+        const flexDiv = document.createElement('div');
+        flexDiv.className = 'flex items-start gap-1';
+
+        const arrowDiv = document.createElement('div');
+        arrowDiv.className = 'cursor-default text-secondary mt-[2px]';
+        const arrowSpan = document.createElement('span');
+        arrowSpan.className = 'inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-secondary';
+        arrowDiv.appendChild(arrowSpan);
+        flexDiv.appendChild(arrowDiv);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'w-full';
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'story-meta opacity-70';
+        
+        const authorLink = document.createElement('a');
+        authorLink.className = 'hover:underline text-black font-medium';
+        authorLink.href = profileHref(comment.user_name);
+        authorLink.textContent = comment.user_name || 'anonymous';
+        metaDiv.appendChild(authorLink);
+
+        const timeLink = document.createElement('a');
+        timeLink.className = 'hover:underline mx-0.5 comment-time-link';
+        timeLink.href = '#';
+        timeLink.setAttribute('data-created', comment.created_at);
+        timeLink.setAttribute('data-user', comment.user_name || 'anonymous');
+        timeLink.textContent = timeAgo;
+        metaDiv.appendChild(timeLink);
+
+        const collapseSpan = document.createElement('span');
+        collapseSpan.className = 'cursor-pointer hover:underline collapse-toggle text-hn-grey';
+        collapseSpan.textContent = '[–]';
+        metaDiv.appendChild(collapseSpan);
+
+        contentDiv.appendChild(metaDiv);
+
+        const bodyDiv = document.createElement('div');
+        bodyDiv.className = 'text-black mt-0.5 text-[10pt] leading-snug comment-body pr-4';
+        bodyDiv.style.cssText = 'white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;';
+        bodyDiv.innerHTML = renderMarkdown(comment.comment_text).trim(); 
+        contentDiv.appendChild(bodyDiv);
+
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'story-meta mt-1 comment-footer opacity-60 text-[10px]';
+        const replyLink = document.createElement('a');
+        replyLink.className = 'hover:underline reply-btn';
+        replyLink.href = 'javascript:void(0)';
+        replyLink.textContent = 'reply';
+        footerDiv.appendChild(replyLink);
+        contentDiv.appendChild(footerDiv);
+
+        flexDiv.appendChild(contentDiv);
+        node.appendChild(flexDiv);
+
+        if (extraCommentsDiv) {
+            extraCommentsDiv.appendChild(node);
+        } else {
+            fragment.appendChild(node);
         }
     });
 
     if (comments.length > visibleCount) {
-        html += `
-            <div class="mt-8 mb-4 flex items-center gap-4">
-                <div class="flex-1 h-[1px] bg-gray-200"></div>
-                <button id="show-more-comments" class="group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-300 bg-white text-gray-500 hover:text-[#ff6600] hover:border-[#ff6600] hover:bg-[#fffbf0] text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer shadow-sm hover:shadow-md outline-none" data-more="${comments.length - visibleCount}" data-total="${comments.length}">
-                    <span class="material-symbols-outlined transition-transform duration-200" id="expand-icon" style="font-size: 18px;">expand_more</span>
-                    <span>View all ${comments.length} comments</span>
-                </button>
-                <div class="flex-1 h-[1px] bg-gray-200"></div>
-            </div>
-        `;
+        const moreDiv = document.createElement('div');
+        moreDiv.className = 'mt-8 mb-4 flex items-center gap-4';
+
+        const line1 = document.createElement('div');
+        line1.className = 'flex-1 h-[1px] bg-gray-200';
+        moreDiv.appendChild(line1);
+
+        const btn = document.createElement('button');
+        btn.id = 'show-more-comments';
+        btn.className = 'group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-300 bg-white text-gray-500 hover:text-[#ff6600] hover:border-[#ff6600] hover:bg-[#fffbf0] text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer shadow-sm hover:shadow-md outline-none';
+        btn.setAttribute('data-more', comments.length - visibleCount);
+        btn.setAttribute('data-total', comments.length);
+
+        const icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined transition-transform duration-200';
+        icon.id = 'expand-icon';
+        icon.style.fontSize = '18px';
+        icon.textContent = 'expand_more';
+        btn.appendChild(icon);
+
+        const spanText = document.createElement('span');
+        spanText.textContent = `View all ${comments.length} comments`;
+        btn.appendChild(spanText);
+
+        moreDiv.appendChild(btn);
+
+        const line2 = document.createElement('div');
+        line2.className = 'flex-1 h-[1px] bg-gray-200';
+        moreDiv.appendChild(line2);
+
+        fragment.appendChild(moreDiv);
     }
 
-    return html;
+    return fragment;
 }
 
 
@@ -141,7 +212,16 @@ async function renderPage() {
 
     const story = await fetchStory();
     if (!story) {
-        document.querySelector('main').innerHTML = '<div class="p-4">Pulse not found. <a href="../index.html" class="underline">Go home</a></div>';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'p-4';
+        errDiv.appendChild(document.createTextNode('Pulse not found. '));
+        const goHome = document.createElement('a');
+        goHome.href = '../index.html';
+        goHome.className = 'underline';
+        goHome.textContent = 'Go home';
+        errDiv.appendChild(goHome);
+        const mainEl = document.querySelector('main');
+        if (mainEl) mainEl.replaceChildren(errDiv);
         return;
     }
 
@@ -169,7 +249,6 @@ function renderStoryDetails(story) {
 
     document.title = `${cleanTitle} | K. Notes`;
 
-    // SEO updates
     document.querySelector('meta[name="description"]')?.setAttribute('content', cleanExcerpt);
     document.querySelector('meta[property="og:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="og:description"]')?.setAttribute('content', cleanExcerpt);
@@ -177,7 +256,6 @@ function renderStoryDetails(story) {
     document.querySelector('meta[property="twitter:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="twitter:description"]')?.setAttribute('content', cleanExcerpt);
 
-    // JSON-LD
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "NewsArticle",
@@ -211,58 +289,175 @@ function renderStoryDetails(story) {
     const articleEl = document.querySelector('article');
     if (!articleEl) return;
 
-    articleEl.innerHTML = `
-        <div class="flex items-start gap-1">
-            <div class="knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''} mt-[6px]" data-id="${story.id}"></div>
-            <div>
-                <h1 class="story-title text-lg font-bold leading-tight">
-                    <a class="hover:underline" href="${story.url || '#'}">${cleanTitle}</a>
-                </h1>
-                ${story.url ? `<span class="domain-text text-sm"> (<a href="${story.url}" target="_blank">${sanitize(new URL(story.url).hostname.replace('www.', ''))}</a>)</span>` : (story.category ? `<span class="domain-text text-sm"> (${sanitize(story.category)})</span>` : '')}
-                <div class="story-meta mt-1">
-                    <span class="text-xs">
-                        by <a class="hover:underline" href="${profileHref(story.author)}">${sanitize(story.author) || 'anonymous'}</a> | 
-                        ${timeAgo} | 
-                        <a class="hover:underline" href="../index.html">hide</a> | 
-                        <span class="bookmark-container inline-block">
-                            <span class="knotes-dropdown inline-block" data-id="${story.id}">
-                                <button class="knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}" title="${isBookmarked ? 'Saved to list' : 'Add to list'}">
-                                    ${isBookmarked ? 'saved' : '+'}
-                                </button>
-                                <div class="knotes-dropdown-menu hidden">
-                                    <div class="dropdown-item" data-folder="To Learn">To Learn</div>
-                                    <div class="dropdown-item" data-folder="Inspiration">Inspiration</div>
-                                    <div class="dropdown-item" data-folder="Archive">Archive</div>
-                                    <div class="dropdown-item" data-folder="Reading List">Reading List</div>
-                                    ${isBookmarked ? '<div class="dropdown-divider border-t border-gray-100 my-1"></div><div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>' : ''}
-                                </div>
-                            </span>
-                        </span> | 
-                        <a class="hover:underline share-btn" href="#" data-title="${cleanTitle}" data-url="${storyUrl}">share</a> | 
-                        <a class="hover:underline" href="index.html?s=${story.slug}">${story.comments_count || 0} comments</a> | 
-                        <a href="#comment-input" class="hover:underline add-comment-link">add</a>
-                    </span>
-                </div>
-            </div>
-        </div>
-        ${story.content ? `
-        <div class="text-gray-500 text-[10px] mt-2 ml-[17px] flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size:12px;">menu_book</span> ${Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200))} min read &middot; ${story.clicks_count || 0} views
-        </div>
-        <div class="text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content" style="white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;">${renderMarkdown(story.content).trim()}</div>` : ''}
-    `;
+    const fragment = document.createDocumentFragment();
 
+    const flexStart = document.createElement('div');
+    flexStart.className = 'flex items-start gap-1';
+
+    const upvote = document.createElement('div');
+    upvote.className = `knotes-upvote-triangle ${isUpvoted ? 'upvoted' : ''} mt-[6px]`;
+    upvote.setAttribute('data-id', story.id);
+    flexStart.appendChild(upvote);
+
+    const contentWrapper = document.createElement('div');
+    
+    const h1 = document.createElement('h1');
+    h1.className = 'story-title text-lg font-bold leading-tight';
+    const titleLink = document.createElement('a');
+    titleLink.className = 'hover:underline';
+    titleLink.href = story.url || '#';
+    titleLink.textContent = story.title;
+    h1.appendChild(titleLink);
+    contentWrapper.appendChild(h1);
+
+    if (story.url) {
+        const domainSpan = document.createElement('span');
+        domainSpan.className = 'domain-text text-sm';
+        domainSpan.appendChild(document.createTextNode(' ('));
+        const domainLink = document.createElement('a');
+        domainLink.href = story.url;
+        domainLink.target = '_blank';
+        try {
+            domainLink.textContent = new URL(story.url).hostname.replace('www.', '');
+        } catch {
+            domainLink.textContent = story.url;
+        }
+        domainSpan.appendChild(domainLink);
+        domainSpan.appendChild(document.createTextNode(')'));
+        contentWrapper.appendChild(domainSpan);
+    } else if (story.category) {
+        const catSpan = document.createElement('span');
+        catSpan.className = 'domain-text text-sm';
+        catSpan.textContent = ` (${story.category})`;
+        contentWrapper.appendChild(catSpan);
+    }
+
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'story-meta mt-1';
+    
+    const metaSpan = document.createElement('span');
+    metaSpan.className = 'text-xs';
+    
+    const pointsSpan = document.createElement('span');
+    pointsSpan.className = 'points-count';
+    pointsSpan.textContent = `${story.likes_count || 0} points`;
+    metaSpan.appendChild(pointsSpan);
+    
+    metaSpan.appendChild(document.createTextNode(' by '));
+    const authorLink = document.createElement('a');
+    authorLink.className = 'hover:underline';
+    authorLink.href = profileHref(story.author);
+    authorLink.textContent = story.author || 'anonymous';
+    metaSpan.appendChild(authorLink);
+
+    metaSpan.appendChild(document.createTextNode(` | ${timeAgo} | `));
+
+    const hideLink = document.createElement('a');
+    hideLink.className = 'hover:underline';
+    hideLink.href = '../index.html';
+    hideLink.textContent = 'hide';
+    metaSpan.appendChild(hideLink);
+    metaSpan.appendChild(document.createTextNode(' | '));
+
+    const bookmarkContainer = document.createElement('span');
+    bookmarkContainer.className = 'bookmark-container inline-block';
+    
+    const dropdownSpan = document.createElement('span');
+    dropdownSpan.className = 'knotes-dropdown inline-block';
+    dropdownSpan.setAttribute('data-id', story.id);
+    
+    const btn = document.createElement('button');
+    btn.className = `knotes-dropdown-trigger ${isBookmarked ? 'saved' : ''}`;
+    btn.title = isBookmarked ? 'Saved to list' : 'Add to list';
+    btn.textContent = isBookmarked ? 'saved' : '+';
+    dropdownSpan.appendChild(btn);
+
+    const menu = document.createElement('div');
+    menu.className = 'knotes-dropdown-menu hidden';
+    
+    ['To Learn', 'Inspiration', 'Archive', 'Reading List'].forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.setAttribute('data-folder', f);
+        item.textContent = f;
+        menu.appendChild(item);
+    });
+
+    if (isBookmarked) {
+        const divider = document.createElement('div');
+        divider.className = 'dropdown-divider border-t border-gray-100 my-1';
+        menu.appendChild(divider);
+
+        const unsave = document.createElement('div');
+        unsave.className = 'dropdown-item text-red-500 font-medium';
+        unsave.setAttribute('data-folder', 'unsave');
+        unsave.textContent = 'Unsave';
+        menu.appendChild(unsave);
+    }
+    
+    dropdownSpan.appendChild(menu);
+    bookmarkContainer.appendChild(dropdownSpan);
+    metaSpan.appendChild(bookmarkContainer);
+    metaSpan.appendChild(document.createTextNode(' | '));
+
+    const shareLink = document.createElement('a');
+    shareLink.className = 'hover:underline share-btn';
+    shareLink.href = '#';
+    shareLink.setAttribute('data-title', story.title || '');
+    shareLink.setAttribute('data-url', storyUrl);
+    shareLink.textContent = 'share';
+    metaSpan.appendChild(shareLink);
+    metaSpan.appendChild(document.createTextNode(' | '));
+
+    const commentLink = document.createElement('a');
+    commentLink.className = 'hover:underline';
+    commentLink.href = `index.html?s=${story.slug || ''}`;
+    commentLink.textContent = `${story.comments_count || 0} comments`;
+    metaSpan.appendChild(commentLink);
+    metaSpan.appendChild(document.createTextNode(' | '));
+
+    const addLink = document.createElement('a');
+    addLink.className = 'hover:underline add-comment-link';
+    addLink.href = '#comment-input';
+    addLink.textContent = 'add';
+    metaSpan.appendChild(addLink);
+
+    metaDiv.appendChild(metaSpan);
+    contentWrapper.appendChild(metaDiv);
+    flexStart.appendChild(contentWrapper);
+    fragment.appendChild(flexStart);
+
+    if (story.content) {
+        const readStats = document.createElement('div');
+        readStats.className = 'text-gray-500 text-[10px] mt-2 ml-[17px] flex items-center gap-1';
+        const bookIcon = document.createElement('span');
+        bookIcon.className = 'material-symbols-outlined';
+        bookIcon.style.fontSize = '12px';
+        bookIcon.textContent = 'menu_book';
+        readStats.appendChild(bookIcon);
+        const mins = Math.max(1, Math.ceil((story.content.split(/\s+/).length) / 200));
+        readStats.appendChild(document.createTextNode(` ${mins} min read \u00B7 ${story.clicks_count || 0} views`));
+        fragment.appendChild(readStats);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content';
+        contentDiv.style.cssText = 'white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;';
+        contentDiv.innerHTML = renderMarkdown(story.content).trim();
+        fragment.appendChild(contentDiv);
+    }
+
+    articleEl.replaceChildren(fragment);
     window.currentStoryId = story.id;
 }
 
 function renderCommentsSection(comments, blogId) {
     const commentsListEl = document.getElementById('comments-container');
     if (commentsListEl) {
-        commentsListEl.innerHTML = renderCommentList(comments);
+        commentsListEl.replaceChildren(renderCommentList(comments));
     }
 }
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     renderPage();
 
 
@@ -277,11 +472,16 @@ function renderCommentsSection(comments, blogId) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
             if (commentInputContainer) {
-                commentInputContainer.innerHTML = `
-                    <div class="w-full max-w-2xl p-4 bg-yellow-50 dark:bg-stone-900 border border-yellow-200 dark:border-stone-800 text-yellow-800 dark:text-yellow-200 rounded text-sm shadow-sm">
-                        Please <a href="../login.html" class="underline font-bold text-[#ff6600] hover:text-[#e65c00]">login</a> to add a comment.
-                    </div>
-                `;
+                const notice = document.createElement('div');
+                notice.className = 'w-full max-w-2xl p-4 bg-yellow-50 dark:bg-stone-900 border border-yellow-200 dark:border-stone-800 text-yellow-800 dark:text-yellow-200 rounded text-sm shadow-sm';
+                notice.appendChild(document.createTextNode('Please '));
+                const loginLink = document.createElement('a');
+                loginLink.href = '../login.html';
+                loginLink.className = 'underline font-bold text-[#ff6600] hover:text-[#e65c00]';
+                loginLink.textContent = 'login';
+                notice.appendChild(loginLink);
+                notice.appendChild(document.createTextNode(' to add a comment.'));
+                commentInputContainer.replaceChildren(notice);
             }
             return null;
         }
@@ -397,13 +597,12 @@ function renderCommentsSection(comments, blogId) {
             } else {
                 const metaRow = document.querySelector('.story-meta');
                 if (metaRow) {
-                    const currentText = metaRow.innerHTML;
-                    const pointsMatch = currentText.match(/(\d+)\s+points/);
-                    if (pointsMatch) {
-                        let pts = parseInt(pointsMatch[1], 10);
+                    const pointsSpan = metaRow.querySelector('.points-count');
+                    if (pointsSpan) {
+                        let pts = parseInt(pointsSpan.textContent, 10) || 0;
                         if (result.action === 'added') pts++;
                         else if (result.action === 'removed') pts = Math.max(0, pts - 1);
-                        metaRow.innerHTML = currentText.replace(/(\d+)\s+points/, `${pts} points`);
+                        pointsSpan.textContent = `${pts} points`;
                     }
                 }
 
@@ -454,7 +653,7 @@ function renderCommentsSection(comments, blogId) {
                 if (unsaveOpt) unsaveOpt.remove();
                 const divider = menu.querySelector('.dropdown-divider');
                 if (divider) divider.remove();
-                
+
                 menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
 
                 const idx = userBookmarks.indexOf(storyId);

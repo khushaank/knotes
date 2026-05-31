@@ -3,7 +3,7 @@
 
 <head>
     <script>
-        (function() {
+        (function () {
             try {
                 var theme = localStorage.getItem('kn-theme') || 'light';
                 if (theme === 'dark') {
@@ -13,7 +13,7 @@
                     document.documentElement.setAttribute('data-theme', 'light');
                     document.documentElement.classList.remove('dark');
                 }
-            } catch (e) {}
+            } catch (e) { }
         })();
     </script>
     <meta http-equiv="Content-Security-Policy"
@@ -51,7 +51,7 @@
             <div class="flex items-center gap-1 w-full text-[13px]">
                 <a href="index.html" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
                 <div class="flex flex-wrap items-center gap-1 text-black">
-                    <a class="hover:underline" href="index.html">Feed</a> |
+                    <a class="hover:underline" href="index.html">feed</a> |
                     <a class="hover:underline" href="comments.html">comments</a> |
                     <a class="hover:underline font-bold" href="ask.html">ask</a> |
                     <a class="hover:underline" href="show.html">show</a> |

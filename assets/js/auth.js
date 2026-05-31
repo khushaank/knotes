@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
     const messageContainer = document.getElementById('message-container');

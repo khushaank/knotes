@@ -121,4 +121,4 @@ function removeStoryFromFolder(userId, storyId) {
     localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
 }
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( loadReadingLists);
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(loadReadingLists);

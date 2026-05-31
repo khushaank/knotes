@@ -1,6 +1,6 @@
 import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow, isFollowing, getFollowerCount, getFollowingCount, uploadAvatar, deleteAvatar, deleteStory, listUserMedia, uploadMediaFile, getUserComments, updateComment, deleteComment, getFollowingList, getFollowersList } from './supabaseClient.js';
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
     const profileContainer = document.getElementById('profile-container');
     const profileLoading = document.getElementById('profile-loading');
     const authMessage = document.getElementById('auth-message');
@@ -330,16 +330,20 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         if (!avatarEl) return;
         const colors = ['profile-avatar-red', 'profile-avatar-blue', 'profile-avatar-green', 'profile-avatar-gold', 'profile-avatar-rose', 'profile-avatar-cyan'];
         const charCode = (username || '?').charCodeAt(0) || 0;
-        const colorClass = colors[charCode % colors.length];
+        const colorClass = colors.at(charCode % colors.length);
         avatarEl.className = `profile-avatar flex items-center justify-center text-2xl font-bold uppercase flex-shrink-0 overflow-hidden ${colorClass}`;
-        avatarEl.innerHTML = '';
         avatarEl.textContent = (username || '?').charAt(0).toUpperCase();
     }
 
     function setAvatarImage(url, username) {
         if (!avatarEl) return;
         avatarEl.className = 'profile-avatar flex-shrink-0 overflow-hidden bg-gray-200';
-        avatarEl.innerHTML = `<img src="${url}" alt="${sanitize(username)}" class="avatar-img" onerror="this.remove()">`;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = username || '';
+        img.className = 'avatar-img';
+        img.onerror = function () { this.remove(); };
+        avatarEl.replaceChildren(img);
     }
 
     function setupAvatarEdit(profile) {
@@ -477,41 +481,123 @@ function setupTabs() {
     switchTab(getHashTab());
 }
 
-function generateListHtml(blogs, showDelete = false) {
+function getSafeUrl(url, fallbackSlug) {
+    if (!url) return `pulse/index.html?s=${encodeURIComponent(fallbackSlug || '')}`;
+    try {
+        const parsed = new URL(url, window.location.origin);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return url;
+        }
+    } catch (e) { }
+    return '#';
+}
+
+function generateListElements(blogs, showDelete = false) {
+    const fragment = document.createDocumentFragment();
+
     if (blogs.length === 0) {
-        return '<div class="profile-empty">Nothing here yet.</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'profile-empty';
+        emptyDiv.textContent = 'Nothing here yet.';
+        fragment.appendChild(emptyDiv);
+        return fragment;
     }
 
-    let html = '<ul class="profile-post-list">';
-    blogs.forEach(blog => {
-        const timeAgo = calculateTimeAgo(blog.published_at);
-        const deleteBtnHtml = showDelete ? `<button type="button" class="profile-post-icon delete-post-btn" data-id="${blog.id}" title="Delete post"><span class="material-symbols-outlined" style="font-size: 14px;">delete</span></button>` : '';
-        const category = blog.category || 'link';
-        const domain = blog.url ? new URL(blog.url).hostname.replace('www.', '') : '';
+    const ul = document.createElement('ul');
+    ul.className = 'profile-post-list';
 
-        html += `
-            <li class="profile-post">
-                <div class="profile-post-main">
-                    <span class="profile-post-marker">${category.charAt(0).toUpperCase()}</span>
-                    <div class="profile-post-copy">
-                        <div class="profile-post-title-row">
-                            <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="profile-post-title">${sanitize(blog.title)}</a>
-                            ${domain ? `<span class="profile-post-domain">${sanitize(domain)}</span>` : ''}
-                            ${deleteBtnHtml}
-                        </div>
-                        <div class="profile-post-meta">
-                            <span>${timeAgo}</span>
-                            <span>${blog.likes_count || 0} karma</span>
-                            <span>${blog.comments_count || 0} comments</span>
-                            <span class="profile-post-chip">${sanitize(category)}</span>
-                        </div>
-                    </div>
-                </div>
-            </li>
-        `;
+    blogs.forEach((blog, index) => {
+        const timeAgo = calculateTimeAgo(blog.published_at);
+        const category = blog.category || 'link';
+        let domainStr = '';
+        try {
+            if (blog.url) domainStr = new URL(blog.url).hostname.replace('www.', '');
+        } catch (e) { }
+
+        const li = document.createElement('li');
+        li.className = 'profile-post transition-colors';
+
+        const mainDiv = document.createElement('div');
+        mainDiv.className = 'profile-post-main items-start sm:items-center';
+
+        const indexSpan = document.createElement('span');
+        indexSpan.className = 'text-gray-500 text-[13px] font-medium w-5 text-right flex-shrink-0 pt-1 sm:pt-0';
+        indexSpan.textContent = `${index + 1}.`;
+
+        const markerSpan = document.createElement('span');
+        markerSpan.className = 'profile-post-marker flex-shrink-0';
+        markerSpan.textContent = category.charAt(0).toUpperCase();
+
+        const copyDiv = document.createElement('div');
+        copyDiv.className = 'profile-post-copy min-w-0';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'profile-post-title-row';
+
+        const titleLink = document.createElement('a');
+        titleLink.className = 'profile-post-title break-words';
+        titleLink.href = getSafeUrl(blog.url, blog.slug);
+        titleLink.textContent = blog.title;
+
+        titleRow.appendChild(titleLink);
+
+        if (domainStr) {
+            const domainSpan = document.createElement('span');
+            domainSpan.className = 'profile-post-domain break-all sm:break-normal';
+            domainSpan.textContent = `(${domainStr})`;
+            titleRow.appendChild(domainSpan);
+        }
+
+        if (showDelete) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'profile-post-icon delete-post-btn';
+            deleteBtn.setAttribute('data-id', blog.id);
+            deleteBtn.title = 'Delete post';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'material-symbols-outlined';
+            iconSpan.style.fontSize = '14px';
+            iconSpan.textContent = 'delete';
+
+            deleteBtn.appendChild(iconSpan);
+            titleRow.appendChild(deleteBtn);
+        }
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'profile-post-meta';
+
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = timeAgo;
+
+        const karmaSpan = document.createElement('span');
+        karmaSpan.textContent = `${blog.likes_count || 0} karma`;
+
+        const commentsSpan = document.createElement('span');
+        commentsSpan.textContent = `${blog.comments_count || 0} comments`;
+
+        const chipSpan = document.createElement('span');
+        chipSpan.className = 'profile-post-chip';
+        chipSpan.textContent = category;
+
+        metaDiv.appendChild(timeSpan);
+        metaDiv.appendChild(karmaSpan);
+        metaDiv.appendChild(commentsSpan);
+        metaDiv.appendChild(chipSpan);
+
+        copyDiv.appendChild(titleRow);
+        copyDiv.appendChild(metaDiv);
+
+        mainDiv.appendChild(indexSpan);
+        mainDiv.appendChild(markerSpan);
+        mainDiv.appendChild(copyDiv);
+
+        li.appendChild(mainDiv);
+        ul.appendChild(li);
     });
-    html += '</ul>';
-    return html;
+
+    fragment.appendChild(ul);
+    return fragment;
 }
 
 async function loadSubmissions(username, isOwnProfile = false) {
@@ -530,10 +616,10 @@ async function loadSubmissions(username, isOwnProfile = false) {
     const showEl = document.getElementById('profile-submissions-show');
     const askEl = document.getElementById('profile-submissions-ask');
 
-    if (allEl) allEl.innerHTML = generateListHtml(blogs, isOwnProfile);
-    if (newsEl) newsEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'news'), isOwnProfile);
-    if (showEl) showEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'show'), isOwnProfile);
-    if (askEl) askEl.innerHTML = generateListHtml(blogs.filter(b => b.category === 'ask'), isOwnProfile);
+    if (allEl) allEl.replaceChildren(generateListElements(blogs, isOwnProfile));
+    if (newsEl) newsEl.replaceChildren(generateListElements(blogs.filter(b => b.category === 'news'), isOwnProfile));
+    if (showEl) showEl.replaceChildren(generateListElements(blogs.filter(b => b.category === 'show'), isOwnProfile));
+    if (askEl) askEl.replaceChildren(generateListElements(blogs.filter(b => b.category === 'ask'), isOwnProfile));
 }
 
 const DEFAULT_FOLDERS = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
@@ -541,20 +627,25 @@ const DEFAULT_FOLDERS = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
 function getFolderMapping(userId) {
     try {
         const key = `kn-folders-${userId}`;
-        return JSON.parse(localStorage.getItem(key) || '{}');
-    } catch { return {}; }
+        const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+        const map = new Map();
+        for (const [k, v] of Object.entries(parsed)) {
+            map.set(String(k), v);
+        }
+        return map;
+    } catch { return new Map(); }
 }
 
 function moveStoryToFolder(userId, storyId, folderName) {
     const mapping = getFolderMapping(userId);
-    mapping[storyId] = folderName;
-    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
+    mapping.set(String(storyId), folderName);
+    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(Object.fromEntries(mapping)));
 }
 
 function removeStoryFromFolder(userId, storyId) {
     const mapping = getFolderMapping(userId);
-    delete mapping[storyId];
-    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(mapping));
+    mapping.delete(String(storyId));
+    localStorage.setItem(`kn-folders-${userId}`, JSON.stringify(Object.fromEntries(mapping)));
 }
 
 function profileHref(username) {
@@ -565,13 +656,20 @@ async function loadBookmarks(userId = null) {
     const listEl = document.getElementById('bookmarks-list');
     if (!listEl) return;
 
-    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading your library...</div>';
+    listEl.replaceChildren();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'py-4 text-gray-500 italic';
+    loadingDiv.textContent = 'Loading your library...';
+    listEl.appendChild(loadingDiv);
 
     const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const currentUserId = userId || (session ? session.user.id : null);
 
     if (!currentUserId) {
-        listEl.innerHTML = '<p class="text-gray-500 italic">Please login to view bookmarks.</p>';
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 italic';
+        msg.textContent = 'Please login to view bookmarks.';
+        listEl.replaceChildren(msg);
         return;
     }
 
@@ -579,74 +677,152 @@ async function loadBookmarks(userId = null) {
     const folderMapping = getFolderMapping(currentUserId);
 
     if (posts.length === 0) {
-        listEl.innerHTML = `
-            <div class="py-12 text-center bg-gray-50 rounded border border-dashed border-gray-200">
-                <span class="material-symbols-outlined text-gray-300" style="font-size:48px">bookmark_border</span>
-                <p class="text-gray-500 text-sm mt-2">Your reading list is empty.</p>
-                <a href="index.html" class="text-[#ff6600] text-xs hover:underline mt-1 inline-block">Browse stories to save</a>
-            </div>
-        `;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'py-12 text-center bg-gray-50 rounded border border-dashed border-gray-200';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'material-symbols-outlined text-gray-300';
+        iconSpan.style.fontSize = '48px';
+        iconSpan.textContent = 'bookmark_border';
+
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 text-sm mt-2';
+        msg.textContent = 'Your reading list is empty.';
+
+        const browseLink = document.createElement('a');
+        browseLink.href = 'index.html';
+        browseLink.className = 'text-[#ff6600] text-xs hover:underline mt-1 inline-block';
+        browseLink.textContent = 'Browse stories to save';
+
+        emptyDiv.appendChild(iconSpan);
+        emptyDiv.appendChild(msg);
+        emptyDiv.appendChild(browseLink);
+        listEl.replaceChildren(emptyDiv);
         return;
     }
 
-    const organized = {};
-    DEFAULT_FOLDERS.forEach(f => organized[f] = []);
-    organized['Uncategorized'] = [];
+    const organized = new Map();
+    DEFAULT_FOLDERS.forEach(f => organized.set(f, []));
+    organized.set('Uncategorized', []);
 
     posts.forEach(post => {
-        const folder = folderMapping[post.id] || 'Uncategorized';
-        if (!organized[folder]) organized[folder] = [];
-        organized[folder].push(post);
+        const folder = folderMapping.get(String(post.id)) || 'Uncategorized';
+        if (!organized.has(folder)) organized.set(folder, []);
+        organized.get(folder).push(post);
     });
 
-    const activeFolders = Object.keys(organized).filter(f => organized[f].length > 0 || DEFAULT_FOLDERS.includes(f));
+    const activeFolders = Array.from(organized.keys()).filter(f => organized.get(f).length > 0 || DEFAULT_FOLDERS.includes(f));
 
-    function renderFolderContent(folderName) {
-        const folderPosts = organized[folderName] || [];
+    function renderFolderContentElements(folderName) {
+        const folderPosts = organized.get(folderName) || [];
         if (folderPosts.length === 0) {
-            return `<div class="py-4 text-center text-gray-400 italic text-[11px]">No stories in this category yet.</div>`;
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'py-4 text-center text-gray-400 italic text-[11px]';
+            emptyDiv.textContent = 'No stories in this category yet.';
+            return emptyDiv;
         }
 
-        return `
-            <div class="space-y-4">
-                ${folderPosts.map(post => {
+        const container = document.createElement('div');
+        container.className = 'space-y-4';
+
+        folderPosts.forEach(post => {
             const timeAgo = calculateTimeAgo(post.published_at);
             const domain = post.url ? new URL(post.url).hostname.replace('www.', '') : null;
             const favicon = domain ? `https://www.google.com/s2/favicons?sz=32&domain=${domain}` : null;
 
-            return `
-                        <div class="flex flex-col group py-1.5">
-                            <div class="flex items-baseline gap-1.5">
-                                ${favicon ? `<img src="${favicon}" class="w-3 h-3 translate-y-[1px] opacity-90" alt="">` : '<span class="text-gray-400 text-[12px] select-none">›</span>'}
-                                <a href="${post.url || `pulse/index.html?s=${post.slug}`}" class="text-[14px] text-black hover:underline leading-tight font-medium">${sanitize(post.title)}</a>
-                                ${domain ? `<span class="text-[11px] text-gray-400">(${domain})</span>` : ''}
-                            </div>
-                            <div class="story-meta flex items-center gap-1 ml-4.5">
-                                <span class="text-[11px]">
-                                    by ${post.author} ${timeAgo} | 
-                                    <span class="bookmark-container inline-block">
-                                        <span class="knotes-dropdown inline-block" data-id="${post.id}">
-                                            <button class="knotes-dropdown-trigger saved" title="Move to folder">
-                                                saved
-                                            </button>
-                                            <div class="knotes-dropdown-menu hidden">
-                                                <div class="dropdown-item ${folderName === 'To Learn' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="To Learn">To Learn</div>
-                                                <div class="dropdown-item ${folderName === 'Inspiration' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Inspiration">Inspiration</div>
-                                                <div class="dropdown-item ${folderName === 'Archive' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Archive">Archive</div>
-                                                <div class="dropdown-item ${folderName === 'Reading List' ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}" data-folder="Reading List">Reading List</div>
-                                                <div class="dropdown-divider border-t border-gray-100 my-1"></div>
-                                                <div class="dropdown-item text-red-500 font-medium" data-folder="unsave">Unsave</div>
-                                            </div>
-                                        </span>
-                                        <a href="#" class="remove-bookmark hover:underline text-red-400 ml-0.5" data-id="${post.id}">remove</a>
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                    `;
-        }).join('')}
-            </div>
-        `;
+            const postDiv = document.createElement('div');
+            postDiv.className = 'flex flex-col group py-1.5';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'flex items-baseline gap-1.5';
+
+            if (favicon) {
+                const img = document.createElement('img');
+                img.src = favicon;
+                img.className = 'w-3 h-3 translate-y-[1px] opacity-90';
+                img.alt = '';
+                titleRow.appendChild(img);
+            } else {
+                const span = document.createElement('span');
+                span.className = 'text-gray-400 text-[12px] select-none';
+                span.textContent = '›';
+                titleRow.appendChild(span);
+            }
+
+            const titleLink = document.createElement('a');
+            titleLink.href = getSafeUrl(post.url, post.slug);
+            titleLink.className = 'text-[14px] text-black hover:underline leading-tight font-medium';
+            titleLink.textContent = post.title;
+            titleRow.appendChild(titleLink);
+
+            if (domain) {
+                const domainSpan = document.createElement('span');
+                domainSpan.className = 'text-[11px] text-gray-400';
+                domainSpan.textContent = `(${domain})`;
+                titleRow.appendChild(domainSpan);
+            }
+
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'story-meta flex items-center gap-1 ml-4.5';
+
+            const metaSpan = document.createElement('span');
+            metaSpan.className = 'text-[11px]';
+            metaSpan.textContent = `by ${post.author || 'anonymous'} ${timeAgo} | `;
+
+            const bookmarkContainer = document.createElement('span');
+            bookmarkContainer.className = 'bookmark-container inline-block';
+
+            const dropdownSpan = document.createElement('span');
+            dropdownSpan.className = 'knotes-dropdown inline-block';
+            dropdownSpan.setAttribute('data-id', post.id);
+
+            const triggerBtn = document.createElement('button');
+            triggerBtn.className = 'knotes-dropdown-trigger saved';
+            triggerBtn.title = 'Move to folder';
+            triggerBtn.textContent = 'saved';
+
+            const menuDiv = document.createElement('div');
+            menuDiv.className = 'knotes-dropdown-menu hidden';
+
+            ['To Learn', 'Inspiration', 'Archive', 'Reading List'].forEach(f => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `dropdown-item ${folderName === f ? 'bg-orange-50 text-[#ff6600] font-bold' : ''}`;
+                itemDiv.setAttribute('data-folder', f);
+                itemDiv.textContent = f;
+                menuDiv.appendChild(itemDiv);
+            });
+
+            const divider = document.createElement('div');
+            divider.className = 'dropdown-divider border-t border-gray-100 my-1';
+            menuDiv.appendChild(divider);
+
+            const unsaveDiv = document.createElement('div');
+            unsaveDiv.className = 'dropdown-item text-red-500 font-medium';
+            unsaveDiv.setAttribute('data-folder', 'unsave');
+            unsaveDiv.textContent = 'Unsave';
+            menuDiv.appendChild(unsaveDiv);
+
+            dropdownSpan.appendChild(triggerBtn);
+            dropdownSpan.appendChild(menuDiv);
+
+            const removeBtn = document.createElement('a');
+            removeBtn.href = '#';
+            removeBtn.className = 'remove-bookmark hover:underline text-red-400 ml-0.5';
+            removeBtn.setAttribute('data-id', post.id);
+            removeBtn.textContent = 'remove';
+
+            bookmarkContainer.appendChild(dropdownSpan);
+            bookmarkContainer.appendChild(removeBtn);
+
+            metaSpan.appendChild(bookmarkContainer);
+            metaDiv.appendChild(metaSpan);
+
+            postDiv.appendChild(titleRow);
+            postDiv.appendChild(metaDiv);
+            container.appendChild(postDiv);
+        });
+
+        return container;
     }
 
     let currentFolder = 'To Learn';
@@ -657,25 +833,38 @@ async function loadBookmarks(userId = null) {
         if (matchedFolder) currentFolder = matchedFolder;
     }
 
-    let html = `
-        <div class="folder-dashboard">
-            <div class="flex flex-wrap gap-4 mb-4 pb-1 border-b border-gray-100">
-                ${activeFolders.map(f => `
-                    <a href="#saved/${f.replace(/\s+/g, '-')}" class="folder-chip py-1 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer focus:outline-none ${f === currentFolder ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-folder="${f}">
-                        ${f} <span class="opacity-50 ml-0.5 font-normal">(${organized[f].length})</span>
-                    </a>
-                `).join('')}
-            </div>
-            <div id="folder-active-content" class="min-h-[120px] mt-2">
-                ${renderFolderContent(currentFolder)}
-            </div>
-        </div>
-    `;
+    const dashboard = document.createElement('div');
+    dashboard.className = 'folder-dashboard';
 
-    listEl.innerHTML = html;
+    const tabsDiv = document.createElement('div');
+    tabsDiv.className = 'flex flex-wrap gap-4 mb-4 pb-1 border-b border-gray-100';
+
+    activeFolders.forEach(f => {
+        const a = document.createElement('a');
+        a.href = `#saved/${f.replace(/\s+/g, '-')}`;
+        a.className = `folder-chip py-1 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer focus:outline-none ${f === currentFolder ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}`;
+        a.setAttribute('data-folder', f);
+        a.textContent = `${f} `;
+
+        const countSpan = document.createElement('span');
+        countSpan.className = 'opacity-50 ml-0.5 font-normal';
+        countSpan.textContent = `(${organized.get(f).length})`;
+
+        a.appendChild(countSpan);
+        tabsDiv.appendChild(a);
+    });
+
+    const activeContent = document.createElement('div');
+    activeContent.id = 'folder-active-content';
+    activeContent.className = 'min-h-[120px] mt-2';
+    activeContent.replaceChildren(renderFolderContentElements(currentFolder));
+
+    dashboard.appendChild(tabsDiv);
+    dashboard.appendChild(activeContent);
+
+    listEl.replaceChildren(dashboard);
 
     const chips = listEl.querySelectorAll('.folder-chip');
-    const activeContent = document.getElementById('folder-active-content');
 
     function updateFolderView() {
         let targetFolder = 'To Learn';
@@ -696,7 +885,7 @@ async function loadBookmarks(userId = null) {
             }
         });
 
-        activeContent.innerHTML = renderFolderContent(targetFolder);
+        activeContent.replaceChildren(renderFolderContentElements(targetFolder));
         attachBookmarkListeners(activeContent);
     }
 
@@ -769,12 +958,18 @@ async function loadHiddenStories() {
     } catch { hiddenIds = []; }
 
     if (hiddenIds.length === 0) {
-        listEl.innerHTML = '<p class="text-gray-500 italic py-2">No hidden stories.</p>';
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 italic py-2';
+        msg.textContent = 'No hidden stories.';
+        listEl.replaceChildren(msg);
         return;
     }
 
     if (!supabase) {
-        listEl.innerHTML = '<p class="text-gray-500 italic py-2">Cannot load hidden stories.</p>';
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 italic py-2';
+        msg.textContent = 'Cannot load hidden stories.';
+        listEl.replaceChildren(msg);
         return;
     }
 
@@ -786,25 +981,48 @@ async function loadHiddenStories() {
         .in('id', numericIds);
 
     if (error || !posts || posts.length === 0) {
-        listEl.innerHTML = `<p class="text-gray-500 italic py-2">${hiddenIds.length} hidden stories (data unavailable).</p>`;
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 italic py-2';
+        msg.textContent = `${hiddenIds.length} hidden stories (data unavailable).`;
+        listEl.replaceChildren(msg);
         return;
     }
 
-    let html = '<ul class="space-y-2">';
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-2';
+
     posts.forEach(blog => {
         const timeAgo = calculateTimeAgo(blog.published_at);
-        html += `
-            <li class="py-1 border-b border-gray-100 last:border-0 flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <a href="${blog.url || `pulse/index.html?s=${blog.slug}`}" class="hover:underline text-black font-medium">${sanitize(blog.title)}</a>
-                    <div class="text-xs text-gray-500 mt-0.5">${timeAgo} · ${blog.likes_count || 0} points · by ${sanitize(blog.author || 'anonymous')}</div>
-                </div>
-                <button class="unhide-btn text-xs text-[#ff6600] hover:underline flex-shrink-0 mt-0.5 cursor-pointer" data-id="${blog.id}">unhide</button>
-            </li>
-        `;
+
+        const li = document.createElement('li');
+        li.className = 'py-1 border-b border-gray-100 last:border-0 flex items-start justify-between gap-2';
+
+        const minWDiv = document.createElement('div');
+        minWDiv.className = 'min-w-0';
+
+        const titleLink = document.createElement('a');
+        titleLink.href = getSafeUrl(blog.url, blog.slug);
+        titleLink.className = 'hover:underline text-black font-medium';
+        titleLink.textContent = blog.title;
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'text-xs text-gray-500 mt-0.5';
+        metaDiv.textContent = `${timeAgo} · ${blog.likes_count || 0} points · by ${blog.author || 'anonymous'}`;
+
+        minWDiv.appendChild(titleLink);
+        minWDiv.appendChild(metaDiv);
+
+        const unhideBtn = document.createElement('button');
+        unhideBtn.className = 'unhide-btn text-xs text-[#ff6600] hover:underline flex-shrink-0 mt-0.5 cursor-pointer';
+        unhideBtn.setAttribute('data-id', blog.id);
+        unhideBtn.textContent = 'unhide';
+
+        li.appendChild(minWDiv);
+        li.appendChild(unhideBtn);
+        ul.appendChild(li);
     });
-    html += '</ul>';
-    listEl.innerHTML = html;
+
+    listEl.replaceChildren(ul);
 
     listEl.querySelectorAll('.unhide-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -821,7 +1039,10 @@ async function loadHiddenStories() {
                 setTimeout(() => {
                     li.remove();
                     if (listEl.querySelectorAll('li').length === 0) {
-                        listEl.innerHTML = '<p class="text-gray-500 italic py-2">No hidden stories.</p>';
+                        const msg = document.createElement('p');
+                        msg.className = 'text-gray-500 italic py-2';
+                        msg.textContent = 'No hidden stories.';
+                        listEl.replaceChildren(msg);
                     }
                 }, 200);
             }
@@ -836,7 +1057,13 @@ function setupUpdateButton(userId) {
     if (!updateBtn || !aboutInput) return;
 
     function setUpdateButton(label, icon = 'check') {
-        updateBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">${icon}</span>${label}`;
+        updateBtn.replaceChildren();
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'material-symbols-outlined';
+        iconSpan.style.fontSize = '14px';
+        iconSpan.textContent = icon;
+        updateBtn.appendChild(iconSpan);
+        updateBtn.appendChild(document.createTextNode(label));
     }
 
     let initialAbout = aboutInput.value;
@@ -908,22 +1135,39 @@ function setupMediaLibrary() {
     });
 
     async function loadMediaFiles() {
-        grid.innerHTML = `
-            <div class="col-span-full text-center py-12">
-                <div class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4"></div>
-                <p class="text-gray-500 text-sm italic">Fetching your media gallery...</p>
-            </div>
-        `;
+        grid.replaceChildren();
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'col-span-full text-center py-12';
+
+        const spinner = document.createElement('div');
+        spinner.className = 'animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4';
+
+        const loadingText = document.createElement('p');
+        loadingText.className = 'text-gray-500 text-sm italic';
+        loadingText.textContent = 'Fetching your media gallery...';
+
+        loadingDiv.appendChild(spinner);
+        loadingDiv.appendChild(loadingText);
+        grid.appendChild(loadingDiv);
 
         const files = await listUserMedia();
 
         if (files.length === 0) {
-            grid.innerHTML = `
-                <div class="col-span-full text-center py-12 bg-white rounded border border-dashed border-gray-300">
-                    <span class="material-symbols-outlined text-gray-300" style="font-size:48px">photo_library</span>
-                    <p class="text-gray-500 text-sm mt-2">No photos found in your library.</p>
-                </div>
-            `;
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'col-span-full text-center py-12 bg-white rounded border border-dashed border-gray-300';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'material-symbols-outlined text-gray-300';
+            iconSpan.style.fontSize = '48px';
+            iconSpan.textContent = 'photo_library';
+
+            const emptyText = document.createElement('p');
+            emptyText.className = 'text-gray-500 text-sm mt-2';
+            emptyText.textContent = 'No photos found in your library.';
+
+            emptyDiv.appendChild(iconSpan);
+            emptyDiv.appendChild(emptyText);
+            grid.replaceChildren(emptyDiv);
             return;
         }
 
@@ -948,33 +1192,63 @@ function setupMediaLibrary() {
             return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
         }
 
-        let html = '';
+        const fragment = document.createDocumentFragment();
         files.forEach(f => {
             const isImg = isImage(f.name);
             const icon = getFileIcon(f.name);
 
-            html += `
-                <div class="group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item" 
-                     data-url="${f.url}" 
-                     data-is-img="${isImg}"
-                     onclick="window.open('${f.url}', '_blank')">
-                    ${isImg
-                    ? `<img src="${f.url}" class="w-full h-full object-cover" loading="lazy">`
-                    : `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center">
-                             <span class="material-symbols-outlined text-3xl mb-1">${icon}</span>
-                             <span class="text-[9px] truncate w-full px-1">${sanitize(f.name.split('-')[0])}</span>
-                           </div>`
-                }
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
-                        <span class="text-white text-[10px] font-bold truncate w-full">${sanitize(f.name)}</span>
-                        <button class="mt-2 bg-white text-black text-[9px] px-2 py-1 rounded font-bold hover:bg-[#ff6600] hover:text-white transition-colors" onclick="event.stopPropagation(); navigator.clipboard.writeText('${f.url}'); alert('URL copied to clipboard!')">
-                            Copy Link
-                        </button>
-                    </div>
-                </div>
-            `;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item';
+            itemDiv.setAttribute('data-url', f.url);
+            itemDiv.setAttribute('data-is-img', isImg);
+            itemDiv.addEventListener('click', () => window.open(f.url, '_blank'));
+
+            if (isImg) {
+                const img = document.createElement('img');
+                img.src = f.url;
+                img.className = 'w-full h-full object-cover';
+                img.loading = 'lazy';
+                itemDiv.appendChild(img);
+            } else {
+                const fileTypeDiv = document.createElement('div');
+                fileTypeDiv.className = 'w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center';
+
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'material-symbols-outlined text-3xl mb-1';
+                iconSpan.textContent = icon;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'text-[9px] truncate w-full px-1';
+                nameSpan.textContent = f.name.split('-')[0];
+
+                fileTypeDiv.appendChild(iconSpan);
+                fileTypeDiv.appendChild(nameSpan);
+                itemDiv.appendChild(fileTypeDiv);
+            }
+
+            const hoverDiv = document.createElement('div');
+            hoverDiv.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center';
+
+            const hoverNameSpan = document.createElement('span');
+            hoverNameSpan.className = 'text-white text-[10px] font-bold truncate w-full';
+            hoverNameSpan.textContent = f.name;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'mt-2 bg-white text-black text-[9px] px-2 py-1 rounded font-bold hover:bg-[#ff6600] hover:text-white transition-colors';
+            copyBtn.textContent = 'Copy Link';
+            copyBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                navigator.clipboard.writeText(f.url);
+                alert('URL copied to clipboard!');
+            });
+
+            hoverDiv.appendChild(hoverNameSpan);
+            hoverDiv.appendChild(copyBtn);
+            itemDiv.appendChild(hoverDiv);
+
+            fragment.appendChild(itemDiv);
         });
-        grid.innerHTML = html;
+        grid.replaceChildren(fragment);
 
         grid.querySelectorAll('.media-item').forEach(item => {
             item.addEventListener('mouseenter', (e) => {
@@ -998,14 +1272,20 @@ function setupMediaLibrary() {
             viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
         }
 
-        previewTooltip.innerHTML = `<iframe src="${viewerUrl}" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`;
+        previewTooltip.replaceChildren();
+        const iframe = document.createElement('iframe');
+        iframe.src = viewerUrl;
+        iframe.className = 'preview-frame';
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+
+        previewTooltip.appendChild(iframe);
         previewTooltip.classList.add('visible');
         updatePreviewPos(e);
     }
 
     function hidePreview() {
         previewTooltip.classList.remove('visible');
-        previewTooltip.innerHTML = '';
+        previewTooltip.replaceChildren();
     }
 
     function updatePreviewPos(e) {
@@ -1037,12 +1317,24 @@ function setupMediaLibrary() {
         }
 
         uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<span class="animate-spin material-symbols-outlined" style="font-size:14px">sync</span> Uploading...';
+        uploadBtn.replaceChildren();
+        const spinIcon = document.createElement('span');
+        spinIcon.className = 'animate-spin material-symbols-outlined';
+        spinIcon.style.fontSize = '14px';
+        spinIcon.textContent = 'sync';
+        uploadBtn.appendChild(spinIcon);
+        uploadBtn.appendChild(document.createTextNode(' Uploading...'));
 
         const result = await uploadMediaFile(file);
 
         uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">upload_file</span> Upload New';
+        uploadBtn.replaceChildren();
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'material-symbols-outlined';
+        iconSpan.style.fontSize = '14px';
+        iconSpan.textContent = 'upload_file';
+        uploadBtn.appendChild(iconSpan);
+        uploadBtn.appendChild(document.createTextNode(' Upload New'));
 
         if (result.error) {
             alert('Upload failed: ' + result.error);
@@ -1086,12 +1378,19 @@ async function loadComments(userId) {
     const listEl = document.getElementById('comments-list');
     if (!listEl) return;
 
-    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading your comments...</div>';
+    listEl.replaceChildren();
+    const loadMsg = document.createElement('div');
+    loadMsg.className = 'py-4 text-gray-500 italic';
+    loadMsg.textContent = 'Loading your comments...';
+    listEl.appendChild(loadMsg);
 
     const comments = await getUserComments(userId);
 
     if (comments.length === 0) {
-        listEl.innerHTML = '<p class="text-gray-500 italic py-4">You haven\'t posted any comments yet.</p>';
+        const msg = document.createElement('p');
+        msg.className = 'text-gray-500 italic py-4';
+        msg.textContent = 'You haven\'t posted any comments yet.';
+        listEl.replaceChildren(msg);
         return;
     }
 
@@ -1101,48 +1400,127 @@ async function loadComments(userId) {
         return commentSortOrder === 'newest' ? dateB - dateA : dateA - dateB;
     });
 
-    let html = `
-        <div class="flex items-center gap-4 mb-4 pb-1 border-b border-gray-100">
-            <button class="sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'newest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-sort="newest">Newest First</button>
-            <button class="sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'oldest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}" data-sort="oldest">Oldest First</button>
-        </div>
-        <div class="space-y-6">
-    `;
+    listEl.replaceChildren();
+
+    const sortDiv = document.createElement('div');
+    sortDiv.className = 'flex items-center gap-4 mb-4 pb-1 border-b border-gray-100';
+
+    const newestBtn = document.createElement('button');
+    newestBtn.className = `sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'newest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}`;
+    newestBtn.setAttribute('data-sort', 'newest');
+    newestBtn.textContent = 'Newest First';
+
+    const oldestBtn = document.createElement('button');
+    oldestBtn.className = `sort-comments text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all ${commentSortOrder === 'oldest' ? 'text-[#ff6600] border-b-2 border-[#ff6600]' : 'text-gray-400 hover:text-black'}`;
+    oldestBtn.setAttribute('data-sort', 'oldest');
+    oldestBtn.textContent = 'Oldest First';
+
+    sortDiv.appendChild(newestBtn);
+    sortDiv.appendChild(oldestBtn);
+    listEl.appendChild(sortDiv);
+
+    const spaceDiv = document.createElement('div');
+    spaceDiv.className = 'space-y-6';
 
     sortedComments.forEach(comment => {
         const timeAgo = calculateTimeAgo(comment.created_at);
         const story = comment.blogs || { title: 'Unknown Story', slug: '#' };
 
-        html += `
-            <div class="comment-item pb-4 border-b border-gray-100 last:border-0" data-id="${comment.id}" data-blog-id="${comment.blog_id}">
-                <div class="text-[11px] text-gray-500 mb-1 flex items-center justify-between">
-                    <span>
-                        <span class="text-gray-400 text-[12px] select-none mr-1">›</span>
-                        on <a href="pulse/index.html?s=${story.slug}" class="text-black font-medium hover:underline">${sanitize(story.title)}</a>
-                        · ${timeAgo}
-                    </span>
-                    <div class="flex items-center gap-3">
-                        <button class="edit-comment-btn text-gray-400 hover:text-[#ff6600] cursor-pointer transition-colors" data-id="${comment.id}" title="Edit comment">
-                            <span class="material-symbols-outlined" style="font-size:16px">edit</span>
-                        </button>
-                        <button class="delete-comment-btn text-gray-400 hover:text-red-600 cursor-pointer transition-colors" data-id="${comment.id}" title="Delete comment">
-                            <span class="material-symbols-outlined" style="font-size:16px">delete</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="comment-body text-sm text-gray-800 leading-relaxed whitespace-pre-wrap ml-4">${sanitize(comment.comment_text)}</div>
-                <div class="edit-mode hidden mt-2 ml-4">
-                    <textarea class="w-full border border-gray-300 p-2 text-sm focus:outline-none focus:border-[#ff6600] rounded-sm resize-y h-24 mb-2">${sanitize(comment.comment_text)}</textarea>
-                    <div class="flex items-center gap-2">
-                        <button class="save-comment-btn bg-[#ff6600] text-white px-3 py-1 text-xs rounded hover:bg-[#e65c00] transition-colors cursor-pointer">save</button>
-                        <button class="cancel-edit-btn text-gray-500 text-xs hover:underline cursor-pointer">cancel</button>
-                    </div>
-                </div>
-            </div>
-        `;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'comment-item pb-4 border-b border-gray-100 last:border-0';
+        itemDiv.setAttribute('data-id', comment.id);
+        itemDiv.setAttribute('data-blog-id', comment.blog_id);
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'text-[11px] text-gray-500 mb-1 flex items-center justify-between';
+
+        const spanLeft = document.createElement('span');
+
+        const arrowSpan = document.createElement('span');
+        arrowSpan.className = 'text-gray-400 text-[12px] select-none mr-1';
+        arrowSpan.textContent = '›';
+
+        const onText = document.createTextNode('on ');
+
+        const storyLink = document.createElement('a');
+        storyLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug)}`;
+        storyLink.className = 'text-black font-medium hover:underline';
+        storyLink.textContent = story.title;
+
+        const timeText = document.createTextNode(` · ${timeAgo}`);
+
+        spanLeft.appendChild(arrowSpan);
+        spanLeft.appendChild(onText);
+        spanLeft.appendChild(storyLink);
+        spanLeft.appendChild(timeText);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'flex items-center gap-3';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-comment-btn text-gray-400 hover:text-[#ff6600] cursor-pointer transition-colors';
+        editBtn.setAttribute('data-id', comment.id);
+        editBtn.title = 'Edit comment';
+
+        const editIcon = document.createElement('span');
+        editIcon.className = 'material-symbols-outlined';
+        editIcon.style.fontSize = '16px';
+        editIcon.textContent = 'edit';
+        editBtn.appendChild(editIcon);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-comment-btn text-gray-400 hover:text-red-600 cursor-pointer transition-colors';
+        delBtn.setAttribute('data-id', comment.id);
+        delBtn.title = 'Delete comment';
+
+        const delIcon = document.createElement('span');
+        delIcon.className = 'material-symbols-outlined';
+        delIcon.style.fontSize = '16px';
+        delIcon.textContent = 'delete';
+        delBtn.appendChild(delIcon);
+
+        actionsDiv.appendChild(editBtn);
+        actionsDiv.appendChild(delBtn);
+
+        headerDiv.appendChild(spanLeft);
+        headerDiv.appendChild(actionsDiv);
+
+        const bodyDiv = document.createElement('div');
+        bodyDiv.className = 'comment-body text-sm text-gray-800 leading-relaxed whitespace-pre-wrap ml-4';
+        bodyDiv.textContent = comment.comment_text;
+
+        const editModeDiv = document.createElement('div');
+        editModeDiv.className = 'edit-mode hidden mt-2 ml-4';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'w-full border border-gray-300 p-2 text-sm focus:outline-none focus:border-[#ff6600] rounded-sm resize-y h-24 mb-2';
+        textarea.value = comment.comment_text;
+
+        const editActionsDiv = document.createElement('div');
+        editActionsDiv.className = 'flex items-center gap-2';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'save-comment-btn bg-[#ff6600] text-white px-3 py-1 text-xs rounded hover:bg-[#e65c00] transition-colors cursor-pointer';
+        saveBtn.textContent = 'save';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cancel-edit-btn text-gray-500 text-xs hover:underline cursor-pointer';
+        cancelBtn.textContent = 'cancel';
+
+        editActionsDiv.appendChild(saveBtn);
+        editActionsDiv.appendChild(cancelBtn);
+
+        editModeDiv.appendChild(textarea);
+        editModeDiv.appendChild(editActionsDiv);
+
+        itemDiv.appendChild(headerDiv);
+        itemDiv.appendChild(bodyDiv);
+        itemDiv.appendChild(editModeDiv);
+
+        spaceDiv.appendChild(itemDiv);
     });
-    html += '</div>';
-    listEl.innerHTML = html;
+
+    listEl.appendChild(spaceDiv);
 
     listEl.querySelectorAll('.sort-comments').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1174,7 +1552,10 @@ async function loadComments(userId) {
                 } else {
                     item.remove();
                     if (listEl.querySelectorAll('.comment-item').length === 0) {
-                        listEl.innerHTML = '<p class="text-gray-500 italic py-4">You haven\'t posted any comments yet.</p>';
+                        const msg = document.createElement('p');
+                        msg.className = 'text-gray-500 italic py-4';
+                        msg.textContent = 'You haven\'t posted any comments yet.';
+                        listEl.replaceChildren(msg);
                     }
                 }
             }
@@ -1232,7 +1613,11 @@ async function loadSubscriptions(userId) {
     const listEl = document.getElementById('subscriptions-list');
     if (!listEl) return;
 
-    listEl.innerHTML = '<div class="py-4 text-gray-500 italic">Loading subscriptions...</div>';
+    listEl.replaceChildren();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'py-4 text-gray-500 italic';
+    loadingDiv.textContent = 'Loading subscriptions...';
+    listEl.appendChild(loadingDiv);
 
     const following = await getFollowingList(userId);
     const followers = await getFollowersList(userId);
@@ -1252,54 +1637,120 @@ async function loadSubscriptions(userId) {
         const colorClass = type === 'following' ? 'text-[#ff6600]' : 'text-blue-500';
         const bgClass = type === 'following' ? 'bg-orange-50' : 'bg-blue-50';
 
-        return `
-            <div class="flex items-center gap-3 p-2 bg-white rounded border border-gray-100 hover:border-[#ff6600] transition-colors">
-                <div class="w-8 h-8 ${bgClass} rounded-full flex items-center justify-center text-xs font-bold ${colorClass} uppercase overflow-hidden">
-                    ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full object-cover">` : (p.username ? p.username.charAt(0) : '?')}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <a href="${profileHref(p.username)}" class="text-sm font-medium text-black hover:underline block truncate">${sanitize(p.username)}</a>
-                    <p class="text-[10px] text-gray-400 truncate">${sanitize(p.about || '')}</p>
-                </div>
-                ${currentUserId && !isMe ? `
-                    <button class="sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${isFollowed ? 'bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200' : 'bg-white border-[#ff6600] text-[#ff6600] hover:bg-[#ff6600] hover:text-white'}" 
-                            data-id="${p.id}" 
-                            data-followed="${isFollowed}">
-                        ${isFollowed ? 'Following' : 'Follow'}
-                    </button>
-                ` : ''}
-            </div>
-        `;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex items-center gap-3 p-2 bg-white rounded border border-gray-100 hover:border-[#ff6600] transition-colors';
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = `w-8 h-8 ${bgClass} rounded-full flex items-center justify-center text-xs font-bold ${colorClass} uppercase overflow-hidden`;
+
+        if (p.avatar_url) {
+            const img = document.createElement('img');
+            img.src = p.avatar_url;
+            img.className = 'w-full h-full object-cover';
+            avatarDiv.appendChild(img);
+        } else {
+            avatarDiv.textContent = p.username ? p.username.charAt(0) : '?';
+        }
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'flex-1 min-w-0';
+
+        const nameLink = document.createElement('a');
+        nameLink.href = profileHref(p.username);
+        nameLink.className = 'text-sm font-medium text-black hover:underline block truncate';
+        nameLink.textContent = p.username;
+
+        const aboutP = document.createElement('p');
+        aboutP.className = 'text-[10px] text-gray-400 truncate';
+        aboutP.textContent = p.about || '';
+
+        infoDiv.appendChild(nameLink);
+        infoDiv.appendChild(aboutP);
+
+        itemDiv.appendChild(avatarDiv);
+        itemDiv.appendChild(infoDiv);
+
+        if (currentUserId && !isMe) {
+            const followBtn = document.createElement('button');
+            followBtn.setAttribute('data-id', p.id);
+            followBtn.setAttribute('data-followed', isFollowed);
+            followBtn.className = `sub-follow-btn text-[10px] font-bold px-2 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${isFollowed ? 'bg-white border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200' : 'bg-white border-[#ff6600] text-[#ff6600] hover:bg-[#ff6600] hover:text-white'}`;
+            followBtn.textContent = isFollowed ? 'Following' : 'Follow';
+            itemDiv.appendChild(followBtn);
+        }
+
+        return itemDiv;
     }
 
-    let html = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2">
-                    <span class="material-symbols-outlined" style="font-size:14px">person_add</span>
-                    Following (${following.length})
-                </h3>
-                ${following.length === 0 ? '<p class="text-gray-400 italic text-xs">Not following anyone yet.</p>' : `
-                    <div class="space-y-3">
-                        ${following.map(p => renderUserItem(p, 'following')).join('')}
-                    </div>
-                `}
-            </div>
-            <div>
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2">
-                    <span class="material-symbols-outlined" style="font-size:14px">group</span>
-                    Followers (${followers.length})
-                </h3>
-                ${followers.length === 0 ? '<p class="text-gray-400 italic text-xs">No followers yet.</p>' : `
-                    <div class="space-y-3">
-                        ${followers.map(p => renderUserItem(p, 'followers')).join('')}
-                    </div>
-                `}
-            </div>
-        </div>
-    `;
+    listEl.replaceChildren();
 
-    listEl.innerHTML = html;
+    const gridDiv = document.createElement('div');
+    gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-8';
+
+    // Following Column
+    const followingCol = document.createElement('div');
+
+    const followingH3 = document.createElement('h3');
+    followingH3.className = 'text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2';
+
+    const followingIcon = document.createElement('span');
+    followingIcon.className = 'material-symbols-outlined';
+    followingIcon.style.fontSize = '14px';
+    followingIcon.textContent = 'person_add';
+
+    followingH3.appendChild(followingIcon);
+    followingH3.appendChild(document.createTextNode(` Following (${following.length})`));
+
+    followingCol.appendChild(followingH3);
+
+    if (following.length === 0) {
+        const noFollowingMsg = document.createElement('p');
+        noFollowingMsg.className = 'text-gray-400 italic text-xs';
+        noFollowingMsg.textContent = 'Not following anyone yet.';
+        followingCol.appendChild(noFollowingMsg);
+    } else {
+        const followingListDiv = document.createElement('div');
+        followingListDiv.className = 'space-y-3';
+        following.forEach(p => {
+            followingListDiv.appendChild(renderUserItem(p, 'following'));
+        });
+        followingCol.appendChild(followingListDiv);
+    }
+
+    // Followers Column
+    const followersCol = document.createElement('div');
+
+    const followersH3 = document.createElement('h3');
+    followersH3.className = 'text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 pb-1 flex items-center gap-2';
+
+    const followersIcon = document.createElement('span');
+    followersIcon.className = 'material-symbols-outlined';
+    followersIcon.style.fontSize = '14px';
+    followersIcon.textContent = 'group';
+
+    followersH3.appendChild(followersIcon);
+    followersH3.appendChild(document.createTextNode(` Followers (${followers.length})`));
+
+    followersCol.appendChild(followersH3);
+
+    if (followers.length === 0) {
+        const noFollowersMsg = document.createElement('p');
+        noFollowersMsg.className = 'text-gray-400 italic text-xs';
+        noFollowersMsg.textContent = 'No followers yet.';
+        followersCol.appendChild(noFollowersMsg);
+    } else {
+        const followersListDiv = document.createElement('div');
+        followersListDiv.className = 'space-y-3';
+        followers.forEach(p => {
+            followersListDiv.appendChild(renderUserItem(p, 'followers'));
+        });
+        followersCol.appendChild(followersListDiv);
+    }
+
+    gridDiv.appendChild(followingCol);
+    gridDiv.appendChild(followersCol);
+
+    listEl.appendChild(gridDiv);
 
     listEl.querySelectorAll('.sub-follow-btn').forEach(btn => {
         btn.addEventListener('click', async () => {

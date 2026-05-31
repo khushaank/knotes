@@ -4,7 +4,7 @@ function profileHref(username) {
     return `profile.html?user=${encodeURIComponent(username || '')}`;
 }
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( async () => {
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
     const loadingEl = document.getElementById('subs-loading');
     const contentEl = document.getElementById('subs-main-content');
     const containerEl = document.getElementById('subs-container');
@@ -57,7 +57,7 @@ function profileHref(username) {
             if (!cached.stale) return;
         } else {
             loadingEl.style.display = 'block';
-            containerEl.innerHTML = '';
+            containerEl.replaceChildren();
         }
 
         const [following, followers] = await Promise.all([
@@ -82,52 +82,102 @@ function profileHref(username) {
         const data = currentTab === 'following' ? window.followingData : window.followersData;
 
         if (!data || data.length === 0) {
-            containerEl.innerHTML = `
-                <div class="subs-empty">
-                    <span class="material-symbols-outlined" style="font-size:48px;color:#ddd">${currentTab === 'following' ? 'person_add' : 'group'}</span>
-                    <p class="text-gray-500 mt-4">${currentTab === 'following' ? "You aren't following anyone yet." : "You don't have any followers yet."}</p>
-                    ${currentTab === 'following' ? '<a href="leaderboard.html" class="text-[#ff6600] font-bold hover:underline">Find people to follow →</a>' : ''}
-                </div>
-            `;
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'subs-empty';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'material-symbols-outlined';
+            iconSpan.style.cssText = 'font-size:48px;color:#ddd';
+            iconSpan.textContent = currentTab === 'following' ? 'person_add' : 'group';
+            emptyDiv.appendChild(iconSpan);
+
+            const pMsg = document.createElement('p');
+            pMsg.className = 'text-gray-500 mt-4';
+            pMsg.textContent = currentTab === 'following' ? "You aren't following anyone yet." : "You don't have any followers yet.";
+            emptyDiv.appendChild(pMsg);
+
+            if (currentTab === 'following') {
+                const link = document.createElement('a');
+                link.href = 'leaderboard.html';
+                link.className = 'text-[#ff6600] font-bold hover:underline';
+                link.textContent = 'Find people to follow →';
+                emptyDiv.appendChild(link);
+            }
+
+            containerEl.replaceChildren(emptyDiv);
             return;
         }
 
         const colors = ['bg-red-50', 'bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-purple-50', 'bg-pink-50'];
         const textColors = ['text-red-600', 'text-blue-600', 'text-green-600', 'text-yellow-600', 'text-purple-600', 'text-pink-600'];
 
-        containerEl.innerHTML = data.map(person => {
-            if (!person) return '';
+        const fragment = document.createDocumentFragment();
+
+        data.forEach(person => {
+            if (!person) return;
 
             const charCode = (person.username || '?').charCodeAt(0);
             const colorIdx = charCode % colors.length;
             const bgClass = colors[colorIdx];
             const textClass = textColors[colorIdx];
 
-            const avatarHtml = person.avatar_url
-                ? `<img src="${person.avatar_url}" alt="${sanitize(person.username)}" class="w-full h-full object-cover">`
-                : `<span class="${textClass}">${(person.username || '?').charAt(0).toUpperCase()}</span>`;
+            const card = document.createElement('div');
+            card.className = 'sub-card hover:bg-gray-50 transition-colors';
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = `sub-avatar ${person.avatar_url ? 'bg-gray-200' : bgClass}`;
+
+            if (person.avatar_url) {
+                const img = document.createElement('img');
+                img.src = person.avatar_url;
+                img.alt = person.username || 'user';
+                img.className = 'w-full h-full object-cover';
+                avatarDiv.appendChild(img);
+            } else {
+                const span = document.createElement('span');
+                span.className = textClass;
+                span.textContent = (person.username || '?').charAt(0).toUpperCase();
+                avatarDiv.appendChild(span);
+            }
+            card.appendChild(avatarDiv);
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'sub-info';
+
+            const nameLink = document.createElement('a');
+            nameLink.href = profileHref(person.username);
+            nameLink.className = 'sub-name hover:text-[#ff6600] transition-colors';
+            nameLink.textContent = person.username || 'anonymous';
+            infoDiv.appendChild(nameLink);
+
+            const bioDiv = document.createElement('div');
+            bioDiv.className = 'sub-bio';
+            bioDiv.title = person.about || '';
+            bioDiv.textContent = person.about || '';
+            infoDiv.appendChild(bioDiv);
+
+            card.appendChild(infoDiv);
 
             const isFollowingUser = currentTab === 'following' || (window.followingData && window.followingData.some(f => f.id === person.id));
 
-            return `
-                <div class="sub-card hover:bg-gray-50 transition-colors">
-                    <div class="sub-avatar ${person.avatar_url ? 'bg-gray-200' : bgClass}">
-                        ${avatarHtml}
-                    </div>
-                    <div class="sub-info">
-                        <a href="${profileHref(person.username)}" class="sub-name hover:text-[#ff6600] transition-colors">${sanitize(person.username)}</a>
-                        <div class="sub-bio" title="${sanitize(person.about || '')}">${sanitize(person.about || '')}</div>
-                    </div>
-                    ${currentTab === 'following' ? `
-                        <button class="sub-unfollow-btn" data-id="${person.id}">Unfollow</button>
-                    ` : `
-                        <button class="sub-unfollow-btn ${isFollowingUser ? '' : 'follow-mode'}" data-id="${person.id}" style="${isFollowingUser ? '' : 'background:#ff6600;color:white;border-color:#ff6600'}">
-                            ${isFollowingUser ? 'Following' : 'Follow'}
-                        </button>
-                    `}
-                </div>
-            `;
-        }).join('');
+            const btn = document.createElement('button');
+            btn.className = `sub-unfollow-btn ${currentTab === 'following' || isFollowingUser ? '' : 'follow-mode'}`;
+            btn.setAttribute('data-id', person.id);
+            if (currentTab !== 'following' && !isFollowingUser) {
+                btn.style.cssText = 'background:#ff6600;color:white;border-color:#ff6600';
+                btn.textContent = 'Follow';
+            } else if (currentTab !== 'following') {
+                btn.textContent = 'Following';
+            } else {
+                btn.textContent = 'Unfollow';
+            }
+
+            card.appendChild(btn);
+            fragment.appendChild(card);
+        });
+
+        containerEl.replaceChildren(fragment);
+
         containerEl.querySelectorAll('.sub-unfollow-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const targetId = btn.getAttribute('data-id');
