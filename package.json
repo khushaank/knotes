@@ -4,7 +4,7 @@
   "description": "Premium personal brand website for Lakshya Gupta.",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 3000",
-    "build": "vite build",
+    "build": "vite build && node scripts/postbuild-routes.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 3000",
     "audit": "npm audit"
   },
