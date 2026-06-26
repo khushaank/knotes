@@ -1,11 +1,10 @@
 {
-  "name": "lakshya-gupta-personal-site",
+  "name": "kg-news",
   "version": "1.0.0",
-  "description": "Premium personal brand website for Lakshya Gupta.",
+  "description": "",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 3000",
-    "build": "vite build && node scripts/postbuild-routes.mjs",
-    "preview": "vite preview --host 127.0.0.1 --port 3000",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tailwindcss -i assets/css/input.css -o assets/css/styles.css --minify",
     "audit": "npm audit"
   },
   "repository": {
@@ -15,7 +14,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/khushaank/knotes/issues"
   },
@@ -27,12 +26,5 @@
     "autoprefixer": "10.5.0",
     "postcss": "8.5.10",
     "tailwindcss": "4.3.0"
-  },
-  "dependencies": {
-    "@vitejs/plugin-react": "6.0.3",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "react-router-dom": "7.18.0",
-    "vite": "8.1.0"
   }
 }
