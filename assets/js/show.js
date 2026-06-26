@@ -6,7 +6,7 @@ let userBookmarks = [];
 let userLikes = [];
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function fetchShowStories(page = 1) {
@@ -45,7 +45,7 @@ async function renderStories() {
         ]);
 
         if (!stories || stories.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No show stories found. <a href="submit.html" class="underline">Show your work</a> to the community!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No show stories found. <a href="submit" class="underline">Show your work</a> to the community!</td></tr>';
             return;
         }
 
@@ -83,10 +83,13 @@ async function renderStories() {
             const tdTitle = document.createElement('td');
             tdTitle.className = 'story-title align-top';
             const link = document.createElement('a');
-            link.href = story.url || `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+            link.href = story.url || `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
             link.className = 'story-link';
             link.setAttribute('data-id', story.id);
-            if (story.url) link.setAttribute('target', '_blank');
+            if (story.url) {
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
+            }
             link.textContent = story.title;
             tdTitle.appendChild(link);
 
@@ -97,6 +100,7 @@ async function renderStories() {
                 const domainLink = document.createElement('a');
                 domainLink.href = story.url;
                 domainLink.setAttribute('target', '_blank');
+                domainLink.setAttribute('rel', 'noopener noreferrer');
                 try {
                     domainLink.textContent = new URL(story.url).hostname.replace('www.', '');
                 } catch {
@@ -182,7 +186,7 @@ async function renderStories() {
             tdMeta.appendChild(document.createTextNode(' | '));
 
             const commentLink = document.createElement('a');
-            commentLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+            commentLink.href = `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
             commentLink.className = 'hover:underline';
             commentLink.textContent = `${story.comments_count || 0} comments`;
             tdMeta.appendChild(commentLink);
@@ -193,7 +197,7 @@ async function renderStories() {
             shareLink.href = '#';
             shareLink.className = 'share-link hover:underline';
             shareLink.setAttribute('data-title', story.title || '');
-            shareLink.setAttribute('data-url', story.url || (window.location.origin + '/pulse/index.html?s=' + (story.slug || '')));
+            shareLink.setAttribute('data-url', story.url || (window.location.origin + '/pulse/home?s=' + (story.slug || '')));
             shareLink.textContent = 'share';
             tdMeta.appendChild(shareLink);
 
@@ -218,7 +222,7 @@ async function renderStories() {
             const tdMore = document.createElement('td');
             tdMore.className = 'font-title-md text-title-md text-black pt-4';
             const aMore = document.createElement('a');
-            aMore.href = `show.html?p=${page + 1}`;
+            aMore.href = `show?p=${page + 1}`;
             aMore.className = 'hover:underline text-black font-bold';
             aMore.textContent = 'More';
             tdMore.appendChild(aMore);
@@ -253,7 +257,7 @@ async function loadUserStats() {
             if (searchInput) {
                 const term = searchInput.value.trim();
                 if (term) {
-                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                    window.location.href = `search?search=${encodeURIComponent(term)}`;
                 }
             }
         });

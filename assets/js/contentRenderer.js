@@ -1,4 +1,42 @@
-import { sanitize } from './supabaseClient.js';
+const ALLOWED_FRAME_ORIGINS = new Set([
+    'https://www.youtube-nocookie.com',
+    'https://www.youtube.com',
+    'https://docs.google.com',
+    'https://view.officeapps.live.com'
+]);
+
+function isAllowedFrameUrl(src) {
+    try {
+        const url = new URL(src, window.location.origin);
+        if (!ALLOWED_FRAME_ORIGINS.has(url.origin)) return false;
+        if (url.origin.includes('youtube') && !url.pathname.startsWith('/embed/')) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function hardenRenderedHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+
+    template.content.querySelectorAll('iframe').forEach(iframe => {
+        const src = iframe.getAttribute('src') || '';
+        if (!isAllowedFrameUrl(src)) {
+            iframe.remove();
+            return;
+        }
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+    });
+
+    template.content.querySelectorAll('a[target="_blank"]').forEach(anchor => {
+        anchor.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    return template.innerHTML;
+}
 
 export function renderMarkdown(text) {
     if (!text) return '';
@@ -7,7 +45,7 @@ export function renderMarkdown(text) {
     const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     processedText = processedText.replace(ytRegex, (match, videoId) => {
         if (match.includes('iframe') || match.includes('youtube.com/embed')) return match;
-        return `\n<iframe class="w-full max-w-2xl rounded shadow-md mt-2 mb-4" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
+        return `\n<iframe class="w-full max-w-2xl rounded shadow-md mt-2 mb-4" height="315" src="https://www.youtube-nocookie.com/embed/${videoId}" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
     });
 
     const imgRegex = /(?<!\!\[.*?\]\()(?<!src=["'])(https?:\/\/[^\s<]+?\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<]*)?)/gi;
@@ -21,10 +59,11 @@ export function renderMarkdown(text) {
     }
 
     if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(parsed, {
+        const cleanHtml = DOMPurify.sanitize(parsed, {
             ADD_TAGS: ['iframe'],
-            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
+            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'height', 'loading', 'referrerpolicy', 'sandbox', 'scrolling', 'src']
         });
+        return hardenRenderedHtml(cleanHtml);
     }
 
     return parsed
@@ -53,7 +92,9 @@ export function setupLinkPreviews() {
         iframe.style.width = '100%';
         iframe.style.height = 'calc(100% - 24px)';
         iframe.style.border = 'none';
-        iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        iframe.loading = 'lazy';
+        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
 
         tooltip.appendChild(header);
         tooltip.appendChild(iframe);
@@ -78,13 +119,15 @@ export function setupLinkPreviews() {
             header.textContent = target.textContent.trim() || target.href;
             const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
             const pdfExts = /\.pdf$/i;
-            let finalUrl = target.href;
+            let finalUrl = '';
 
             if (target.href.match(officeExts)) {
                 finalUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(target.href)}`;
             } else if (target.href.match(pdfExts) || target.href.includes('supabase.co/storage/v1/object/public/media')) {
                 finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(target.href)}&embedded=true`;
             }
+
+            if (!finalUrl || !isAllowedFrameUrl(finalUrl)) return;
 
             if (iframe.src !== finalUrl) {
                 iframe.src = finalUrl;

@@ -3,6 +3,8 @@ node_modules/
 dist/
 build/
 .env
+.env.*
+!.env.example
 *.log
 # supabaseConfig.js (Tracked in Git to ensure successful deployment and prevent 404 errors)
 # supabaseConfig.js
@@ -11,3 +13,4 @@ build/
 # XtraSecurity config
 .xtrarc
 env.json
+runtime-config.json

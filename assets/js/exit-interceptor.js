@@ -157,7 +157,7 @@
     ];
 
     const currentPage = window.location.pathname.split('/').pop();
-    if (currentPage === 'exit.html') {
+    if (currentPage === 'exit') {
         return;
     }
 
@@ -184,7 +184,7 @@
     function getExitPath() {
         const scriptSrc = document.currentScript?.getAttribute('src') || '';
         const parentSegments = scriptSrc.match(/(?:^|\/)\.\.\//g);
-        return `${'../'.repeat(parentSegments ? parentSegments.length : 0)}exit.html`;
+        return `${'../'.repeat(parentSegments ? parentSegments.length : 0)}exit`;
     }
 
     function handleLinkClick(e) {

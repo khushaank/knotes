@@ -13,7 +13,7 @@ let userBookmarks = [];
 let userLikes = [];
 
 function profileHref(username) {
-    return `../profile.html?user=${encodeURIComponent(username || '')}`;
+    return `../profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function fetchStory() {
@@ -216,7 +216,7 @@ async function renderPage() {
         errDiv.className = 'p-4';
         errDiv.appendChild(document.createTextNode('Pulse not found. '));
         const goHome = document.createElement('a');
-        goHome.href = '../index.html';
+        goHome.href = '../home';
         goHome.className = 'underline';
         goHome.textContent = 'Go home';
         errDiv.appendChild(goHome);
@@ -317,6 +317,7 @@ function renderStoryDetails(story) {
         const domainLink = document.createElement('a');
         domainLink.href = story.url;
         domainLink.target = '_blank';
+        domainLink.rel = 'noopener noreferrer';
         try {
             domainLink.textContent = new URL(story.url).hostname.replace('www.', '');
         } catch {
@@ -354,7 +355,7 @@ function renderStoryDetails(story) {
 
     const hideLink = document.createElement('a');
     hideLink.className = 'hover:underline';
-    hideLink.href = '../index.html';
+    hideLink.href = '../home';
     hideLink.textContent = 'hide';
     metaSpan.appendChild(hideLink);
     metaSpan.appendChild(document.createTextNode(' | '));
@@ -411,7 +412,7 @@ function renderStoryDetails(story) {
 
     const commentLink = document.createElement('a');
     commentLink.className = 'hover:underline';
-    commentLink.href = `index.html?s=${story.slug || ''}`;
+    commentLink.href = `home?s=${story.slug || ''}`;
     commentLink.textContent = `${story.comments_count || 0} comments`;
     metaSpan.appendChild(commentLink);
     metaSpan.appendChild(document.createTextNode(' | '));
@@ -476,7 +477,7 @@ function renderCommentsSection(comments, blogId) {
                 notice.className = 'w-full max-w-2xl p-4 bg-yellow-50 dark:bg-stone-900 border border-yellow-200 dark:border-stone-800 text-yellow-800 dark:text-yellow-200 rounded text-sm shadow-sm';
                 notice.appendChild(document.createTextNode('Please '));
                 const loginLink = document.createElement('a');
-                loginLink.href = '../login.html';
+                loginLink.href = '../login';
                 loginLink.className = 'underline font-bold text-[#ff6600] hover:text-[#e65c00]';
                 loginLink.textContent = 'login';
                 notice.appendChild(loginLink);
@@ -773,7 +774,7 @@ function renderCommentsSection(comments, blogId) {
             btn.disabled = true;
             btn.style.opacity = '0.5';
 
-            const { data: profile } = await supabase.from('profiles').select('id').eq('username', author).maybeSingle();
+            const { data: profile } = await supabase.from('public_profiles').select('id').eq('username', author).maybeSingle();
             if (!profile) {
                 alert('User not found.');
                 btn.disabled = false;

@@ -1,7 +1,7 @@
 import { supabase, sanitize, getFollowingList, getFollowersList, toggleFollow, getCache, setCache } from './supabaseClient.js';
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
@@ -98,7 +98,7 @@ function profileHref(username) {
 
             if (currentTab === 'following') {
                 const link = document.createElement('a');
-                link.href = 'leaderboard.html';
+                link.href = 'leaderboard';
                 link.className = 'text-[#ff6600] font-bold hover:underline';
                 link.textContent = 'Find people to follow →';
                 emptyDiv.appendChild(link);

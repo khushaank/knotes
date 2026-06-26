@@ -1,7 +1,7 @@
 import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function fetchAllComments() {
@@ -75,7 +75,7 @@ function renderAllComments(comments, container) {
 
         const postLink = document.createElement('a');
         postLink.className = 'hover:underline italic';
-        postLink.href = `pulse/index.html?s=${encodeURIComponent(blogSlug)}`;
+        postLink.href = `pulse/home?s=${encodeURIComponent(blogSlug)}`;
         postLink.textContent = blogTitle;
         metaDiv1.appendChild(postLink);
 
@@ -88,7 +88,7 @@ function renderAllComments(comments, container) {
 
         const contextLink = document.createElement('a');
         contextLink.className = 'hover:underline';
-        contextLink.href = `pulse/index.html?s=${encodeURIComponent(blogSlug)}`;
+        contextLink.href = `pulse/home?s=${encodeURIComponent(blogSlug)}`;
         contextLink.textContent = 'context';
         metaDiv2.appendChild(contextLink);
 
@@ -99,7 +99,7 @@ function renderAllComments(comments, container) {
 
         const parentLink = document.createElement('a');
         parentLink.className = 'hover:underline';
-        parentLink.href = `pulse/index.html?s=${encodeURIComponent(blogSlug)}`;
+        parentLink.href = `pulse/home?s=${encodeURIComponent(blogSlug)}`;
         parentLink.textContent = 'parent';
         metaDiv2.appendChild(parentLink);
 
@@ -139,7 +139,7 @@ async function init() {
             if (searchInput) {
                 const term = searchInput.value.trim();
                 if (term) {
-                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                    window.location.href = `search?search=${encodeURIComponent(term)}`;
                 }
             }
         });

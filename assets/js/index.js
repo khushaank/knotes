@@ -6,16 +6,11 @@ const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 let userLikes = [];
 
-// Escape special PostgREST filter characters to prevent filter injection
-function sanitizeSearchInput(input) {
+function normalizeSearchInput(input) {
     if (typeof input !== 'string') return '';
     return input
-        .replace(/\\/g, '\\\\')
-        .replace(/,/g, '\\,')
-        .replace(/\./g, '\\.')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)')
-        .replace(/%/g, '\\%')
+        .trim()
+        .replace(/[%_]/g, '')
         .substring(0, 200);
 }
 
@@ -37,6 +32,10 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
         return { stories: [], count: 0 };
     }
 
+    if (searchQuery) {
+        return fetchSearchStories(searchQuery, filter, page);
+    }
+
     let query = supabase
         .from('blogs')
         .select('*', { count: 'exact' })
@@ -46,11 +45,6 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
         query = query.order('published_at', { ascending: false });
     } else {
         query = query.order('likes_count', { ascending: false });
-    }
-
-    if (searchQuery) {
-        const safeQuery = sanitizeSearchInput(searchQuery);
-        query = query.or(`title.ilike.%${safeQuery}%,author.ilike.%${safeQuery}%,category.ilike.%${safeQuery}%`);
     }
 
     const start = (page - 1) * STORIES_PER_PAGE;
@@ -67,6 +61,39 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const finalResult = { stories: result, count: count || 0 };
 
     return finalResult;
+}
+
+async function fetchSearchStories(searchQuery, filter, page) {
+    const safeQuery = normalizeSearchInput(searchQuery);
+    if (!safeQuery) {
+        return fetchStories('', filter, page);
+    }
+
+    const pattern = `%${safeQuery}%`;
+    const searchColumns = ['title', 'author', 'category'];
+    const results = await Promise.all(searchColumns.map(column => (
+        supabase
+            .from('blogs')
+            .select('*')
+            .eq('status', 'published')
+            .ilike(column, pattern)
+            .limit(100)
+    )));
+
+    if (results.some(result => result.error)) {
+        return { stories: [], count: 0 };
+    }
+
+    const uniqueStories = new Map();
+    results.flatMap(result => result.data || []).forEach(story => {
+        uniqueStories.set(String(story.id), story);
+    });
+
+    const sorted = sortStories(Array.from(uniqueStories.values()), filter);
+    const start = (page - 1) * STORIES_PER_PAGE;
+    const stories = sorted.slice(start, start + STORIES_PER_PAGE);
+
+    return { stories, count: sorted.length };
 }
 
 async function renderStories(searchQuery = '', filter = 'trending') {
@@ -109,7 +136,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
 }
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function renderHtml(stories, count, page, filter, searchQuery) {
@@ -165,10 +192,13 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         td1_3.className = 'story-title align-top';
 
         const titleLink = document.createElement('a');
-        titleLink.href = story.url || `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+        titleLink.href = story.url || `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
         titleLink.className = 'story-link';
         titleLink.setAttribute('data-id', story.id);
-        if (story.url) titleLink.setAttribute('target', '_blank');
+        if (story.url) {
+            titleLink.setAttribute('target', '_blank');
+            titleLink.setAttribute('rel', 'noopener noreferrer');
+        }
         titleLink.textContent = story.title;
         td1_3.appendChild(titleLink);
 
@@ -179,6 +209,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
             const domainLink = document.createElement('a');
             domainLink.href = story.url;
             domainLink.setAttribute('target', '_blank');
+            domainLink.setAttribute('rel', 'noopener noreferrer');
             domainLink.textContent = domain;
             domainSpan.appendChild(domainLink);
             domainSpan.appendChild(document.createTextNode(')'));
@@ -270,7 +301,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         td2_2.appendChild(document.createTextNode(' | '));
 
         const commentsLink = document.createElement('a');
-        commentsLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+        commentsLink.href = `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
         commentsLink.className = 'hover:underline';
         commentsLink.textContent = `${story.comments_count || 0} comments`;
         td2_2.appendChild(commentsLink);
@@ -281,7 +312,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         shareLink.href = '#';
         shareLink.className = 'share-link hover:underline';
         shareLink.setAttribute('data-title', story.title);
-        shareLink.setAttribute('data-url', story.url || window.location.origin + '/pulse/index.html?s=' + encodeURIComponent(story.slug || ''));
+        shareLink.setAttribute('data-url', story.url || window.location.origin + '/pulse/home?s=' + encodeURIComponent(story.slug || ''));
         shareLink.textContent = 'share';
         td2_2.appendChild(shareLink);
 
@@ -298,7 +329,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
     });
 
     if (count > page * STORIES_PER_PAGE) {
-        const nextUrl = `index.html?p=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}${filter !== 'trending' ? `&filter=${filter}` : ''}`;
+        const nextUrl = `home?p=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}${filter !== 'trending' ? `&filter=${filter}` : ''}`;
         const moreTr = document.createElement('tr');
         moreTr.className = 'h-[20px]';
 
@@ -330,7 +361,7 @@ function setupPrefetching() {
         link.addEventListener('mouseenter', () => {
             const id = link.getAttribute('data-id');
             const href = link.getAttribute('href');
-            if (href && href.includes('pulse/index.html')) {
+            if (href && href.includes('pulse/home')) {
                 const slug = new URLSearchParams(href.split('?')[1]).get('s');
                 if (slug) prefetchPulseData(slug);
             }
@@ -417,7 +448,7 @@ async function loadUserStats() {
                 const term = searchInput.value.trim();
                 if (term) {
                     logSearchTerm(term);
-                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                    window.location.href = `search?search=${encodeURIComponent(term)}`;
                 }
             }
         });
@@ -460,7 +491,7 @@ async function loadUserStats() {
                 container.replaceChildren(document.createTextNode('Trending: '));
                 data.forEach((s, index) => {
                     const link = document.createElement('a');
-                    link.href = `index.html?search=${encodeURIComponent(s.term)}`;
+                    link.href = `home?search=${encodeURIComponent(s.term)}`;
                     link.className = 'hover:underline';
                     link.textContent = s.term;
                     container.appendChild(link);
@@ -714,7 +745,7 @@ async function loadUserStats() {
             btn.disabled = true;
             btn.style.opacity = '0.5';
 
-            const { data: profile } = await supabase.from('profiles').select('id').eq('username', author).maybeSingle();
+            const { data: profile } = await supabase.from('public_profiles').select('id').eq('username', author).maybeSingle();
             if (!profile) {
                 alert('User not found.');
                 btn.disabled = false;

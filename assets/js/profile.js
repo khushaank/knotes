@@ -41,7 +41,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
     }
 
     function goToNotFound() {
-        window.location.replace('404.html');
+        window.location.replace('404');
     }
 
     function isValidUsername(username) {
@@ -71,11 +71,24 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         if (aboutInput) aboutInput.disabled = true;
         if (updateBtn) updateBtn.style.display = 'none';
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('username', viewingUser)
-            .maybeSingle();
+        let profile = null;
+        if (session) {
+            const { data: fullProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', viewingUser)
+                .maybeSingle();
+            profile = fullProfile;
+        }
+
+        if (!profile) {
+            const { data: publicProfile } = await supabase
+                .from('public_profiles')
+                .select('*')
+                .eq('username', viewingUser)
+                .maybeSingle();
+            profile = publicProfile;
+        }
 
         if (!profile) {
             goToNotFound();
@@ -99,7 +112,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         }
 
         await setProfileData(profile, isOwnProfile);
-        await loadSubmissions(profile.username, isOwnProfile);
+        await loadSubmissions(profile.username, isOwnProfile, profile.id);
 
         if (isOwnProfile) {
             setupUpdateButton(session.user.id);
@@ -151,7 +164,7 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
         setAvatarLetter(defaultUsername);
     }
 
-    await loadSubmissions(profile?.username || defaultUsername, true);
+    await loadSubmissions(profile?.username || defaultUsername, true, profile?.id || userId);
     await loadBookmarks();
     await loadComments(userId);
     await loadSubscriptions(userId);
@@ -203,13 +216,13 @@ import { supabase, calculateTimeAgo, sanitize, getBookmarkedPosts, toggleFollow,
                 sessionStorage.removeItem('kn-auth-cache');
                 await supabase.auth.signOut();
             } finally {
-                window.location.href = 'index.html';
+                window.location.href = 'home';
             }
         });
     }
 
     function getProfileUrl(username) {
-        const url = new URL('profile.html', window.location.href);
+        const url = new URL('profile', window.location.href);
         url.searchParams.set('user', username);
         return url.href;
     }
@@ -482,7 +495,7 @@ function setupTabs() {
 }
 
 function getSafeUrl(url, fallbackSlug) {
-    if (!url) return `pulse/index.html?s=${encodeURIComponent(fallbackSlug || '')}`;
+    if (!url) return `pulse/home?s=${encodeURIComponent(fallbackSlug || '')}`;
     try {
         const parsed = new URL(url, window.location.origin);
         if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
@@ -600,12 +613,15 @@ function generateListElements(blogs, showDelete = false) {
     return fragment;
 }
 
-async function loadSubmissions(username, isOwnProfile = false) {
-    const { data: blogs, error: blogsError } = await supabase
+async function loadSubmissions(username, isOwnProfile = false, profileId = null) {
+    let query = supabase
         .from('blogs')
         .select('likes_count, id, title, published_at, url, slug, comments_count, category, content')
-        .eq('author', username)
         .order('published_at', { ascending: false });
+
+    query = profileId ? query.eq('author_id', profileId) : query.eq('author', username);
+
+    const { data: blogs, error: blogsError } = await query;
 
     if (blogsError) return;
     const postsCountEl = document.getElementById('profile-posts-count');
@@ -649,7 +665,7 @@ function removeStoryFromFolder(userId, storyId) {
 }
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function loadBookmarks(userId = null) {
@@ -690,7 +706,7 @@ async function loadBookmarks(userId = null) {
         msg.textContent = 'Your reading list is empty.';
 
         const browseLink = document.createElement('a');
-        browseLink.href = 'index.html';
+        browseLink.href = 'home';
         browseLink.className = 'text-[#ff6600] text-xs hover:underline mt-1 inline-block';
         browseLink.textContent = 'Browse stories to save';
 
@@ -1189,7 +1205,7 @@ function setupMediaLibrary() {
 
         function isImage(filename) {
             const ext = filename.split('.').pop().toLowerCase();
-            return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+            return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
         }
 
         const fragment = document.createDocumentFragment();
@@ -1443,7 +1459,7 @@ async function loadComments(userId) {
         const onText = document.createTextNode('on ');
 
         const storyLink = document.createElement('a');
-        storyLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug)}`;
+        storyLink.href = `pulse/home?s=${encodeURIComponent(story.slug)}`;
         storyLink.className = 'text-black font-medium hover:underline';
         storyLink.textContent = story.title;
 

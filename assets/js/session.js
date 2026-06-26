@@ -279,13 +279,13 @@ function applyAuthUI(authLinks, username) {
     authLinks.forEach(link => {
         const parent = link.parentNode;
         if (!parent) return;
-        const prefix = link.getAttribute('href') === '../login.html' ? '../' : '';
+        const prefix = link.getAttribute('href') === '../login' ? '../' : '';
 
         const userContainer = document.createElement('div');
         userContainer.className = 'flex items-center gap-2';
 
         const userSpan = document.createElement('a');
-        userSpan.href = prefix + 'profile.html?user=' + encodeURIComponent(username);
+        userSpan.href = prefix + 'profile?user=' + encodeURIComponent(username);
         userSpan.className = 'hover:underline text-black';
         userSpan.textContent = username;
 
@@ -338,7 +338,7 @@ function addThemeToggle() {
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
     : (cb) => cb()
 )(async () => {
-    const authLinks = document.querySelectorAll('a[href="login.html"], a[href="../login.html"]');
+    const authLinks = document.querySelectorAll('a[href="login"], a[href="../login"]');
 
     if (!supabase) {
         document.body.style.visibility = 'visible';
@@ -369,8 +369,8 @@ function addThemeToggle() {
             (maintResult.data.value === 'true' || maintResult.data.value === true));
         const session = sessionResult.data?.session;
         const path = window.location.pathname;
-        const isMaintPage = path.includes('maintenance.html');
-        const isLoginPage = path.includes('login.html');
+        const isMaintPage = path.includes('maintenance');
+        const isLoginPage = path.includes('login');
         const isAdminPage = path.includes('/admin/');
 
         if (session && session.user) {
@@ -418,11 +418,11 @@ function addThemeToggle() {
                 document.body.style.visibility = 'visible';
             } else if (!isLoginPage && !isAdminPage) {
                 const isSubdir = path.includes('/pulse/') || path.includes('/admin/');
-                window.location.replace(isSubdir ? '../maintenance.html' : 'maintenance.html');
+                window.location.replace(isSubdir ? '../maintenance' : 'maintenance');
                 return;
             }
         } else if (!isMaintenance && isMaintPage) {
-            window.location.replace('index.html');
+            window.location.replace('home');
             return;
         }
 

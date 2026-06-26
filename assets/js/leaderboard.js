@@ -42,7 +42,7 @@ function createAvatarElement(user, size = 36) {
 }
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(async () => {
@@ -164,9 +164,8 @@ function profileHref(username) {
         }
 
         const { data: profiles, error } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url, created_at')
-            .eq('is_public', true);
+            .from('public_profiles')
+            .select('id, username, avatar_url, created_at');
 
         if (error || !profiles || profiles.length === 0) {
             if (!cached) {
@@ -208,7 +207,7 @@ function profileHref(username) {
         const btn = e.currentTarget;
         if (!myId) {
             alert('Please login to follow users.');
-            window.location.href = 'login.html';
+            window.location.href = 'login';
             return;
         }
 
@@ -337,7 +336,7 @@ function profileHref(username) {
             try {
                 const safeQuery = sanitizeSearchInput(query);
                 const { data: users, error } = await supabase
-                    .from('profiles')
+                    .from('public_profiles')
                     .select('id, username, avatar_url, about')
                     .ilike('username', `%${safeQuery}%`)
                     .limit(10);

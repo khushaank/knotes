@@ -287,11 +287,11 @@ const HASH_TO_CATEGORY = {
                 showStatus('Submitted! Redirecting...');
                 setTimeout(() => {
                     if (finalCategory === 'show') {
-                        window.location.href = 'show.html';
+                        window.location.href = 'show';
                     } else if (finalCategory === 'ask') {
-                        window.location.href = 'ask.html';
+                        window.location.href = 'ask';
                     } else {
-                        window.location.href = 'index.html';
+                        window.location.href = 'home';
                     }
                 }, 400);
             }
@@ -334,7 +334,7 @@ const HASH_TO_CATEGORY = {
                     alert('Upload failed: ' + result.error);
                 } else {
                     const ext = result.name.split('.').pop().toLowerCase();
-                    const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+                    const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
                     if (isImg) {
                         let altText = prompt('Enter a short description (alt text) for this image:', 'Image');
@@ -393,7 +393,7 @@ const HASH_TO_CATEGORY = {
 
                 function isImage(filename) {
                     const ext = filename.split('.').pop().toLowerCase();
-                    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+                    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
                 }
 
                 const fragment = document.createDocumentFragment();

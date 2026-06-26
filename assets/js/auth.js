@@ -1,5 +1,40 @@
 import { supabase } from './supabaseClient.js';
 
+const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function getLoginAttempts() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(LOGIN_ATTEMPT_KEY) || '{}');
+        if (!parsed.firstAttemptAt || Date.now() - parsed.firstAttemptAt > LOGIN_WINDOW_MS) {
+            return { count: 0, firstAttemptAt: Date.now() };
+        }
+        return parsed;
+    } catch {
+        return { count: 0, firstAttemptAt: Date.now() };
+    }
+}
+
+function isLoginRateLimited() {
+    const attempts = getLoginAttempts();
+    if (attempts.count < LOGIN_MAX_ATTEMPTS) return { limited: false };
+    const retryIn = Math.ceil((LOGIN_WINDOW_MS - (Date.now() - attempts.firstAttemptAt)) / 60000);
+    return { limited: true, retryIn: Math.max(1, retryIn) };
+}
+
+function recordFailedLogin() {
+    const attempts = getLoginAttempts();
+    localStorage.setItem(LOGIN_ATTEMPT_KEY, JSON.stringify({
+        count: attempts.count + 1,
+        firstAttemptAt: attempts.firstAttemptAt
+    }));
+}
+
+function clearFailedLogins() {
+    localStorage.removeItem(LOGIN_ATTEMPT_KEY);
+}
+
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
@@ -25,11 +60,17 @@ import { supabase } from './supabaseClient.js';
                 return;
             }
 
-            const identifier = document.getElementById('login-email').value; // identifier can be username or email
+            const rateLimit = isLoginRateLimited();
+            if (rateLimit.limited) {
+                showMessage(`Too many login attempts. Try again in ${rateLimit.retryIn} minute(s).`, true);
+                return;
+            }
+
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
 
-            if (!identifier || !password) {
-                showMessage('Please enter both username/email and password.', true);
+            if (!email || !password) {
+                showMessage('Please enter both email and password.', true);
                 return;
             }
 
@@ -37,33 +78,21 @@ import { supabase } from './supabaseClient.js';
             loginBtn.disabled = true;
             loginBtn.textContent = 'logging in...';
 
-            // Resolve username to email if necessary
-            let email = identifier;
-            if (!identifier.includes('@')) {
-                const { getEmailByUsername } = await import('./supabaseClient.js');
-                const resolvedEmail = await getEmailByUsername(identifier);
-                if (!resolvedEmail) {
-                    showMessage('Username not found.', true);
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'login';
-                    return;
-                }
-                email = resolvedEmail;
-            }
-
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
 
             if (error) {
+                recordFailedLogin();
                 showMessage(error.message, true);
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'login';
             } else {
+                clearFailedLogins();
                 showMessage('Logged in successfully! Redirecting...', false);
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'home';
                 }, 1000);
             }
         });
@@ -139,7 +168,7 @@ import { supabase } from './supabaseClient.js';
 
             const email = document.getElementById('login-email')?.value?.trim();
             if (!email) {
-                showMessage('Please enter your email in the username field first, then click "Forgot password".', true);
+                showMessage('Please enter your email first, then click "Forgot password".', true);
                 document.getElementById('login-email')?.focus();
                 return;
             }
@@ -148,7 +177,7 @@ import { supabase } from './supabaseClient.js';
             forgotLink.style.pointerEvents = 'none';
 
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + '/login.html'
+                redirectTo: window.location.origin + '/login'
             });
 
             forgotLink.textContent = 'Forgot your password?';
@@ -255,7 +284,7 @@ function showResetPasswordForm() {
             messageContainer.classList.remove('hidden');
             messageContainer.classList.add('text-green-600');
             messageContainer.classList.remove('text-red-600');
-            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+            setTimeout(() => { window.location.href = 'login'; }, 2000);
         }
     });
 }

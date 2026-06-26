@@ -15,18 +15,19 @@ let localEnv = {};
 
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '::1';
 
-if (isLocal) {
-    try {
-        // Dynamically fetch the synced env.json file from the web server root in development
-        const response = await fetch(getProjectRoot() + 'env.json');
+try {
+    const configFiles = isLocal ? ['runtime-config.json', 'env.json'] : ['runtime-config.json'];
+    for (const configFile of configFiles) {
+        const response = await fetch(getProjectRoot() + configFile, { cache: 'no-store' });
         if (response.ok) {
             localEnv = await response.json();
+            break;
         }
-    } catch (e) {
-        // Fallback if env.json is missing or fetch fails (e.g. in production)
     }
+} catch (e) {
 }
 
-export const SUPABASE_URL = localEnv.SUPABASE_URL || window.process?.env?.SUPABASE_URL || 'https://tixugcvwvvtbgcaryjvu.supabase.co';
-export const SUPABASE_ANON_KEY = localEnv.SUPABASE_ANON_KEY || window.process?.env?.SUPABASE_ANON_KEY || 'sb_publishable_sjLe6KrX5DMWypUwUkfWsw_ftkZE03H';
-export const DEFAULT_ADMIN_PASSWORD = localEnv.DEFAULT_ADMIN_PASSWORD || window.process?.env?.DEFAULT_ADMIN_PASSWORD || '';
+const runtimeConfig = window.KNOTES_CONFIG || {};
+
+export const SUPABASE_URL = localEnv.SUPABASE_URL || runtimeConfig.SUPABASE_URL || window.process?.env?.SUPABASE_URL || '';
+export const SUPABASE_ANON_KEY = localEnv.SUPABASE_ANON_KEY || runtimeConfig.SUPABASE_ANON_KEY || window.process?.env?.SUPABASE_ANON_KEY || '';

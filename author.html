@@ -2,10 +2,11 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src *;" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Author - Khushaank Gupta | K. Notes</title>
     <meta name="description"
         content="Meet Khushaank Gupta, the creator of K. Notes. Explore his background in finance and AI, and his mission to build a high-signal tech community." />
@@ -15,7 +16,7 @@
     <meta property="og:description"
         content="Meet Khushaank Gupta, the creator of K. Notes. Explore his background in finance and AI, and his mission to build a high-signal tech community." />
     <meta property="og:image" content="assets/img/logo.png" />
-    <meta property="og:url" content="author.html" />
+    <meta property="og:url" content="author" />
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="Author - Khushaank Gupta | K. Notes" />
     <meta property="twitter:description"
@@ -28,7 +29,7 @@
 
 <body>
     <div class="about-wrap">
-        <a href="index.html" class="back-link">&larr; Back to K. Notes</a>
+        <a href="home" class="back-link">&larr; Back to K. Notes</a>
         <div class="name-block">
             <h1>Khushaank Gupta</h1>
             <div class="tagline">Finance · AI · Builder · Observer</div>
@@ -262,7 +263,7 @@
         </div>
     </div>
     </div>
-    <script src="assets/js/exit-interceptor.js"></script>
+    <script defer src="assets/js/exit-interceptor.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>
 

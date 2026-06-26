@@ -6,7 +6,7 @@ let userBookmarks = [];
 let userLikes = [];
 
 function profileHref(username) {
-    return `profile.html?user=${encodeURIComponent(username || '')}`;
+    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function fetchAskStories(page = 1) {
@@ -58,7 +58,7 @@ async function renderStories() {
 
             const txt1 = document.createTextNode('No questions found. Be the first to ');
             const a = document.createElement('a');
-            a.href = 'submit.html';
+            a.href = 'submit';
             a.className = 'underline';
             a.textContent = 'ask';
             const txt2 = document.createTextNode('!');
@@ -105,7 +105,7 @@ async function renderStories() {
             td1_3.className = 'story-title align-top';
 
             const titleLink = document.createElement('a');
-            titleLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+            titleLink.href = `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
             titleLink.className = 'story-link';
             titleLink.setAttribute('data-id', story.id);
             titleLink.textContent = story.title;
@@ -186,7 +186,7 @@ async function renderStories() {
             td2_2.appendChild(document.createTextNode(' | '));
 
             const commentsLink = document.createElement('a');
-            commentsLink.href = `pulse/index.html?s=${encodeURIComponent(story.slug || '')}`;
+            commentsLink.href = `pulse/home?s=${encodeURIComponent(story.slug || '')}`;
             commentsLink.className = 'hover:underline';
             commentsLink.textContent = `${story.comments_count || 0} comments`;
             td2_2.appendChild(commentsLink);
@@ -197,7 +197,7 @@ async function renderStories() {
             shareLink.href = '#';
             shareLink.className = 'share-link hover:underline';
             shareLink.setAttribute('data-title', story.title);
-            shareLink.setAttribute('data-url', story.url || window.location.origin + '/pulse/index.html?s=' + encodeURIComponent(story.slug || ''));
+            shareLink.setAttribute('data-url', story.url || window.location.origin + '/pulse/home?s=' + encodeURIComponent(story.slug || ''));
             shareLink.textContent = 'share';
             td2_2.appendChild(shareLink);
 
@@ -214,7 +214,7 @@ async function renderStories() {
         });
 
         if (count > page * STORIES_PER_PAGE) {
-            const nextUrl = `ask.html?p=${page + 1}`;
+            const nextUrl = `ask?p=${page + 1}`;
             const moreTr = document.createElement('tr');
             moreTr.className = 'h-[20px]';
 
@@ -268,7 +268,7 @@ async function loadUserStats() {
             if (searchInput) {
                 const term = searchInput.value.trim();
                 if (term) {
-                    window.location.href = `search.html?search=${encodeURIComponent(term)}`;
+                    window.location.href = `search?search=${encodeURIComponent(term)}`;
                 }
             }
         });

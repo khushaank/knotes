@@ -46,7 +46,42 @@ const supabase = (createClient && SUPABASE_URL)
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { fetch: createTimeoutFetch() } })
     : null;
 
-(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())( () => {
+const ADMIN_LOGIN_ATTEMPT_KEY = 'kn-admin-login-attempts';
+const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function getAdminLoginAttempts() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_LOGIN_ATTEMPT_KEY) || '{}');
+        if (!parsed.firstAttemptAt || Date.now() - parsed.firstAttemptAt > ADMIN_LOGIN_WINDOW_MS) {
+            return { count: 0, firstAttemptAt: Date.now() };
+        }
+        return parsed;
+    } catch {
+        return { count: 0, firstAttemptAt: Date.now() };
+    }
+}
+
+function isAdminLoginRateLimited() {
+    const attempts = getAdminLoginAttempts();
+    if (attempts.count < ADMIN_LOGIN_MAX_ATTEMPTS) return { limited: false };
+    const retryIn = Math.ceil((ADMIN_LOGIN_WINDOW_MS - (Date.now() - attempts.firstAttemptAt)) / 60000);
+    return { limited: true, retryIn: Math.max(1, retryIn) };
+}
+
+function recordFailedAdminLogin() {
+    const attempts = getAdminLoginAttempts();
+    localStorage.setItem(ADMIN_LOGIN_ATTEMPT_KEY, JSON.stringify({
+        count: attempts.count + 1,
+        firstAttemptAt: attempts.firstAttemptAt
+    }));
+}
+
+function clearFailedAdminLogins() {
+    localStorage.removeItem(ADMIN_LOGIN_ATTEMPT_KEY);
+}
+
+(document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const loginBtn = document.getElementById('login-btn');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
@@ -63,6 +98,13 @@ const supabase = (createClient && SUPABASE_URL)
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
 
+        const rateLimit = isAdminLoginRateLimited();
+        if (rateLimit.limited) {
+            errorMsg.textContent = `Too many admin login attempts. Try again in ${rateLimit.retryIn} minute(s).`;
+            errorMsg.style.display = 'block';
+            return;
+        }
+
         if (!email || !password) {
             errorMsg.textContent = 'Please enter both email and password.';
             errorMsg.style.display = 'block';
@@ -78,6 +120,7 @@ const supabase = (createClient && SUPABASE_URL)
         });
 
         if (error) {
+            recordFailedAdminLogin();
             errorMsg.textContent = error.message;
             errorMsg.style.display = 'block';
             loginBtn.textContent = 'Log In';
@@ -93,6 +136,7 @@ const supabase = (createClient && SUPABASE_URL)
             .single();
 
         if (profileError || !profile || !profile.is_admin) {
+            recordFailedAdminLogin();
             errorMsg.textContent = 'Access denied. Admin privileges required.';
             errorMsg.style.display = 'block';
             await supabase.auth.signOut();
@@ -102,7 +146,8 @@ const supabase = (createClient && SUPABASE_URL)
         }
 
         // Success, redirect to dashboard
-        window.location.href = 'index.html';
+        clearFailedAdminLogins();
+        window.location.href = 'home';
     }
 
     loginBtn.addEventListener('click', handleLogin);

@@ -2,6 +2,27 @@ let SUPABASE_URL = '';
 let SUPABASE_ANON_KEY = '';
 let createClient = null;
 const SUPABASE_TIMEOUT_MS = 8000;
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const MEDIA_MAX_BYTES = 10 * 1024 * 1024;
+const AVATAR_TYPES = new Map([
+    ['jpg', ['image/jpeg']],
+    ['jpeg', ['image/jpeg']],
+    ['png', ['image/png']],
+    ['webp', ['image/webp']],
+    ['gif', ['image/gif']]
+]);
+const MEDIA_TYPES = new Map([
+    ...AVATAR_TYPES,
+    ['pdf', ['application/pdf']],
+    ['txt', ['text/plain']],
+    ['csv', ['text/csv', 'application/csv', 'application/vnd.ms-excel']],
+    ['doc', ['application/msword', 'application/octet-stream']],
+    ['docx', ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']],
+    ['xls', ['application/vnd.ms-excel', 'application/octet-stream']],
+    ['xlsx', ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']],
+    ['ppt', ['application/vnd.ms-powerpoint', 'application/octet-stream']],
+    ['pptx', ['application/vnd.openxmlformats-officedocument.presentationml.presentation']]
+]);
 
 function withTimeout(promise, timeoutMs, label) {
     let timeoutId;
@@ -58,6 +79,45 @@ export const supabase = (createClient && SUPABASE_URL && SUPABASE_URL !== 'YOUR_
     })
     : null;
 
+let currentSessionPromise = null;
+
+export async function getCurrentSession() {
+    if (!supabase) return null;
+    if (!currentSessionPromise) {
+        currentSessionPromise = supabase.auth
+            .getSession()
+            .then(({ data }) => data?.session || null)
+            .catch(() => null);
+    }
+    return currentSessionPromise;
+}
+
+if (supabase) {
+    supabase.auth.onAuthStateChange(() => {
+        currentSessionPromise = null;
+    });
+}
+
+function getFileExtension(file) {
+    return (file?.name || '').split('.').pop()?.toLowerCase() || '';
+}
+
+function validateUploadFile(file, allowedTypes, maxBytes) {
+    if (!file) return 'No file selected';
+    if (file.size > maxBytes) return `File must be under ${Math.floor(maxBytes / (1024 * 1024))}MB`;
+
+    const ext = getFileExtension(file);
+    const expectedTypes = allowedTypes.get(ext);
+    if (!expectedTypes) return 'This file type is not allowed';
+
+    if (file.type && !expectedTypes.includes(file.type)) {
+        if (file.type === 'application/octet-stream' && allowedTypes === MEDIA_TYPES) return null;
+        return 'File type does not match the selected file';
+    }
+
+    return null;
+}
+
 // =============================================
 // CACHING UTILITIES
 // =============================================
@@ -73,7 +133,7 @@ export async function generateUniqueUsername(email) {
 
     while (attempts < 5) {
         const { data } = await supabase
-            .from('profiles')
+            .from('public_profiles')
             .select('username')
             .eq('username', username)
             .maybeSingle();
@@ -89,26 +149,8 @@ export async function generateUniqueUsername(email) {
 }
 
 export async function getEmailByUsername(username) {
-    if (!supabase) return null;
-
-    // Check if it's already an email
-    if (username.includes('@')) return username;
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username)
-        .maybeSingle();
-
-    if (error || !data) return null;
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('username', username)
-        .maybeSingle();
-
-    return profile?.email || null;
+    if (typeof username === 'string' && username.includes('@')) return username;
+    return null;
 }
 
 export function setCache(key, data, ttl = DEFAULT_TTL) {
@@ -253,7 +295,7 @@ export async function toggleBookmark(storyId) {
 export async function getUserBookmarks() {
     if (!supabase) return [];
 
-    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    const session = await getCurrentSession();
     if (!session) return [];
 
     const { data, error } = await supabase
@@ -268,7 +310,7 @@ export async function getUserBookmarks() {
 export async function getUserLikes() {
     if (!supabase) return [];
 
-    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    const session = await getCurrentSession();
     if (!session) return [];
 
     const { data, error } = await supabase
@@ -285,7 +327,7 @@ export async function getBookmarkedPosts(userId = null) {
 
     let targetId = userId;
     if (!targetId) {
-        const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        const session = await getCurrentSession();
         if (!session) return [];
         targetId = session.user.id;
     }
@@ -409,28 +451,40 @@ export async function getFollowingList(userId) {
     if (!supabase) return [];
     const { data, error } = await supabase
         .from('follows')
-        .select(`
-            following_id,
-            profiles!following_id (id, username, avatar_url, about)
-        `)
+        .select('following_id')
         .eq('follower_id', userId);
 
     if (error) return [];
-    return data.map(d => d.profiles);
+    const ids = data.map(d => d.following_id).filter(Boolean);
+    if (ids.length === 0) return [];
+
+    const { data: profiles, error: profileError } = await supabase
+        .from('public_profiles')
+        .select('id, username, avatar_url, about')
+        .in('id', ids);
+
+    if (profileError || !profiles) return [];
+    return profiles;
 }
 
 export async function getFollowersList(userId) {
     if (!supabase) return [];
     const { data, error } = await supabase
         .from('follows')
-        .select(`
-            follower_id,
-            profiles!follower_id (id, username, avatar_url, about)
-        `)
+        .select('follower_id')
         .eq('following_id', userId);
 
     if (error) return [];
-    return data.map(d => d.profiles);
+    const ids = data.map(d => d.follower_id).filter(Boolean);
+    if (ids.length === 0) return [];
+
+    const { data: profiles, error: profileError } = await supabase
+        .from('public_profiles')
+        .select('id, username, avatar_url, about')
+        .in('id', ids);
+
+    if (profileError || !profiles) return [];
+    return profiles;
 }
 
 export async function getProfileViews(username) {
@@ -457,19 +511,19 @@ export async function getLeaderboard(limit = 20) {
     if (!supabase) return [];
 
     const { data: profiles, error: pErr } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, created_at')
-        .eq('is_public', true);
+        .from('public_profiles')
+        .select('id, username, avatar_url, created_at');
 
     if (pErr || !profiles) return [];
 
-    const results = [];
-    for (const p of profiles) {
-        const count = await getFollowerCount(p.id);
-        const views = await getProfileViews(p.username);
-        const saved = await getUserSavedCount(p.id);
-        results.push({ ...p, followers: count, views, saved });
-    }
+    const results = await Promise.all(profiles.map(async p => {
+        const [count, views, saved] = await Promise.all([
+            getFollowerCount(p.id),
+            getProfileViews(p.username),
+            getUserSavedCount(p.id)
+        ]);
+        return { ...p, followers: count, views, saved };
+    }));
 
     results.sort((a, b) => b.followers - a.followers);
     return results.slice(0, limit);
@@ -478,11 +532,14 @@ export async function getLeaderboard(limit = 20) {
 export async function uploadAvatar(file) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
+    const validationError = validateUploadFile(file, AVATAR_TYPES, AVATAR_MAX_BYTES);
+    if (validationError) return { error: validationError };
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'Please login' };
 
     const userId = session.user.id;
-    const ext = file.name.split('.').pop();
+    const ext = getFileExtension(file);
     const filePath = `${userId}/avatar.${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -572,11 +629,16 @@ export async function deleteStory(storyId) {
 export async function uploadMediaFile(file) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
+    const validationError = validateUploadFile(file, MEDIA_TYPES, MEDIA_MAX_BYTES);
+    if (validationError) return { error: validationError };
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'Please login' };
 
     const userId = session.user.id;
-    const safeName = file.name.replace(/\s+/g, '_').replace(/[^\w\.-]/g, '');
+    const ext = getFileExtension(file);
+    const baseName = file.name.replace(/\.[^/.]+$/, '').replace(/\s+/g, '_').replace(/[^\w.-]/g, '').substring(0, 80) || 'upload';
+    const safeName = `${baseName}.${ext}`;
     const filePath = `${userId}/${Date.now()}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage

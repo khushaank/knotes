@@ -16,10 +16,11 @@
             } catch (e) {}
         })();
     </script>
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src *; form-action 'self';" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Login - K. Notes</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -35,8 +36,8 @@
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">username:</td>
-                        <td class="py-1"><input type="text" id="login-email"
+                        <td class="py-1 pr-2">email:</td>
+                        <td class="py-1"><input type="email" id="login-email"
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                         </td>
                     </tr>
@@ -72,8 +73,8 @@
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">username:</td>
-                        <td class="py-1"><input type="text" id="signup-email"
+                        <td class="py-1 pr-2">email:</td>
+                        <td class="py-1"><input type="email" id="signup-email"
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                         </td>
                     </tr>
@@ -122,14 +123,14 @@
             if (!supabase) return;
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                window.location.href = 'index.html';
+                window.location.href = 'home';
             }
         }
         checkSession();
     </script>
     <script type="module" src="assets/js/auth.js"></script>
     <script type="module" src="assets/js/session.js"></script>
-    <script src="assets/js/exit-interceptor.js"></script>
+    <script defer src="assets/js/exit-interceptor.js"></script>
 </body>
 
 </html>

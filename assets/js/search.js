@@ -18,7 +18,7 @@ async function performSearch(query) {
     container.replaceChildren(loadingDiv);
     status.textContent = `Searching for "${query}"...`;
 
-    supabase.rpc('increment_search_stat', { search_term: query.toLowerCase().trim() }).catch(() => { });
+    supabase.rpc('increment_search_count', { search_term: query.toLowerCase().trim() }).catch(() => { });
 
     const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', {
         search_query: query,
@@ -126,9 +126,12 @@ function renderResults(results, query, totalCount, page) {
         h2.className = 'text-base font-bold';
 
         const titleLink = document.createElement('a');
-        titleLink.href = item.url || `pulse/index.html?s=${encodeURIComponent(item.slug || '')}`;
+        titleLink.href = item.url || `pulse/home?s=${encodeURIComponent(item.slug || '')}`;
         titleLink.className = 'text-black hover:underline';
-        if (item.url) titleLink.setAttribute('target', '_blank');
+        if (item.url) {
+            titleLink.setAttribute('target', '_blank');
+            titleLink.setAttribute('rel', 'noopener noreferrer');
+        }
         applyHighlight(titleLink, item.title, query);
         h2.appendChild(titleLink);
 
@@ -197,7 +200,7 @@ function renderResults(results, query, totalCount, page) {
         const linkDiv = document.createElement('div');
         linkDiv.className = 'mt-3';
         const discLink = document.createElement('a');
-        discLink.href = `pulse/index.html?s=${encodeURIComponent(item.slug || '')}`;
+        discLink.href = `pulse/home?s=${encodeURIComponent(item.slug || '')}`;
         discLink.className = 'text-xs text-[#ff6600] font-bold hover:underline';
         discLink.textContent = 'View Discussion →';
         linkDiv.appendChild(discLink);
@@ -207,7 +210,7 @@ function renderResults(results, query, totalCount, page) {
     });
 
     if (totalCount > page * RESULTS_PER_PAGE) {
-        const nextUrl = `search.html?search=${encodeURIComponent(query)}&p=${page + 1}`;
+        const nextUrl = `search?search=${encodeURIComponent(query)}&p=${page + 1}`;
         const moreDiv = document.createElement('div');
         moreDiv.className = 'flex justify-center p-6';
 
@@ -237,7 +240,7 @@ function renderResults(results, query, totalCount, page) {
     const triggerSearch = () => {
         const query = mainSearchInput.value.trim();
         if (query) {
-            window.location.href = `search.html?search=${encodeURIComponent(query)}`;
+            window.location.href = `search?search=${encodeURIComponent(query)}`;
         }
     };
 
