@@ -8,11 +8,11 @@
         content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>404 - K. Notes</title>
-    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="/assets/css/styles.css" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+    <link rel="icon" type="image/png" href="/assets/img/logo.png" />
 
     <script>
         (function () {
@@ -28,8 +28,7 @@
             if (lastSegment) {
                 if (lastSegment.startsWith('@')) {
                     var username = lastSegment.substring(1);
-                    var basePath = segments.join('/') + '/';
-                    window.location.href = basePath + 'profile?user=' + username;
+                    window.location.href = '/profile?user=' + username;
                 }
             }
         })();
@@ -43,17 +42,17 @@
             class="bg-[#ff6600] text-black  text-sm  rounded-none w-full flat no shadows flex items-center justify-between px-2 py-0.5 max-w-[85%] mx-auto"
             style="max-width: 100%;">
             <div class="flex items-center gap-1 w-full">
-                <a href="home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
+                <a href="/home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
                 <div class="flex flex-wrap items-center gap-1 text-black text-[13px]">
-                    <a class="hover:underline" href="home">feed</a> |
-                    <a class="hover:underline" href="comments">comments</a> |
-                    <a class="hover:underline" href="ask">ask</a> |
-                    <a class="hover:underline" href="show">show</a> |
-                    <a class="hover:underline" href="submit">submit</a> |
-                    <a class="hover:underline" href="leaderboard">leaders</a>
+                    <a class="hover:underline" href="/home">feed</a> |
+                    <a class="hover:underline" href="/comments">comments</a> |
+                    <a class="hover:underline" href="/ask">ask</a> |
+                    <a class="hover:underline" href="/show">show</a> |
+                    <a class="hover:underline" href="/submit">submit</a> |
+                    <a class="hover:underline" href="/leaderboard">leaders</a>
                 </div>
                 <div class="ml-auto text-black text-[13px] flex items-center gap-4"> <a
-                        class="hover:underline text-black" href="login">login</a> </div>
+                        class="hover:underline text-black" href="/login">login</a> </div>
             </div>
         </header>
 
@@ -61,7 +60,7 @@
             <h1 class="text-4xl font-bold text-[#ff6600] mb-4">404</h1>
             <h2 class="text-xl text-black mb-4">Page Not Found</h2>
             <p class="text-secondary mb-6">The page you are looking for doesn't exist or has been moved.</p>
-            <a href="home" class="text-black underline hover:text-[#ff6600]">Go back to homepage</a>
+            <a href="/home" class="text-black underline hover:text-[#ff6600]">Go back to homepage</a>
         </main>
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
@@ -70,17 +69,17 @@
                 <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
             </div>
             <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
-                <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
-                <a class="hover:underline text-gray-600" href="faq">FAQ</a> |
-                <a class="hover:underline text-gray-600" href="lists">Lists</a> |
-                <a class="hover:underline text-gray-600" href="api">API</a> |
-                <a class="hover:underline text-gray-600" href="security">Security</a> |
-                <a class="hover:underline text-gray-600" href="legal">Legal</a> |
-                <a class="hover:underline text-gray-600" href="about">About</a> |
-                <a class="hover:underline text-gray-600" href="contact">Feedback</a>
+                <a class="hover:underline text-gray-600" href="/guidelines">Guidelines</a> |
+                <a class="hover:underline text-gray-600" href="/faq">FAQ</a> |
+                <a class="hover:underline text-gray-600" href="/lists">Lists</a> |
+                <a class="hover:underline text-gray-600" href="/api">API</a> |
+                <a class="hover:underline text-gray-600" href="/security">Security</a> |
+                <a class="hover:underline text-gray-600" href="/legal">Legal</a> |
+                <a class="hover:underline text-gray-600" href="/about">About</a> |
+                <a class="hover:underline text-gray-600" href="/contact">Feedback</a>
             </div>
             <form id="footer-search-form" class="flex flex-col items-center gap-2"
-                onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
+                onsubmit="event.preventDefault(); window.location.href='/search?search='+document.getElementById('footer-search-input').value;">
                 <div class="flex items-center gap-2"><span class="text-gray-500 text-xs">Search:</span><input
                         type="text" id="footer-search-input"
                         class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
@@ -89,8 +88,8 @@
             </form>
         </footer>
     </div>
-    <script type="module" src="assets/js/session.js"></script>
-    <script defer src="assets/js/exit-interceptor.js"></script>
+    <script type="module" src="/assets/js/session.js"></script>
+    <script defer src="/assets/js/exit-interceptor.js"></script>
 </body>
 
 </html>
