@@ -300,6 +300,7 @@ function addThemeToggle() {
     if (!headerRight || headerRight.querySelector('.kn-theme-toggle')) return;
 
     const sep = document.createElement('span');
+    sep.className = 'kn-theme-separator';
     sep.textContent = ' | ';
 
     const btn = document.createElement('a');
@@ -309,9 +310,8 @@ function addThemeToggle() {
     btn.title = 'Toggle Theme';
 
     const icon = document.createElement('span');
-    icon.className = 'material-symbols-outlined';
     icon.style.fontSize = '18px';
-    icon.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light_mode' : 'dark_mode';
+    icon.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '◐';
     btn.appendChild(icon);
 
     btn.addEventListener('click', (e) => {
@@ -320,12 +320,12 @@ function addThemeToggle() {
             document.documentElement.setAttribute('data-theme', 'light');
             document.documentElement.classList.remove('dark');
             localStorage.setItem('kn-theme', 'light');
-            icon.textContent = 'dark_mode';
+            icon.textContent = '◐';
         } else {
             document.documentElement.setAttribute('data-theme', 'dark');
             document.documentElement.classList.add('dark');
             localStorage.setItem('kn-theme', 'dark');
-            icon.textContent = 'light_mode';
+            icon.textContent = '☀';
         }
     });
 
