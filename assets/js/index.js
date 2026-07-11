@@ -405,7 +405,18 @@ async function loadUserStats() {
         });
     }
 
-    renderStories(searchParam || '', currentFilter);
+    const hasPrerenderedFeed = !searchParam && !filterParam && !urlParams.has('p') &&
+        document.querySelector('main tbody[data-prerendered="true"]');
+
+    if (hasPrerenderedFeed) {
+        const statsSummary = document.getElementById('stats-summary');
+        if (statsSummary) statsSummary.textContent = 'Showing 7 trending stories (Page 1)';
+        setupPrefetching();
+        // ponytail: refresh the deployment snapshot after first paint; move rendering server-side when the host supports SSR.
+        setTimeout(() => renderStories('', currentFilter), 10000);
+    } else {
+        renderStories(searchParam || '', currentFilter);
+    }
 
     if (searchParam) {
         const searchInput = document.getElementById('footer-search-input');

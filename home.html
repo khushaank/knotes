@@ -24,12 +24,13 @@
   <link rel="canonical" href="https://knotes.dpdns.org/" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://tixugcvwvvtbgcaryjvu.supabase.co" crossorigin />
-  <link rel="modulepreload" href="assets/js/index.js" />
-  <link rel="modulepreload" href="assets/js/session.js" />
-  <link rel="modulepreload" href="assets/js/supabaseClient.js" />
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm" crossorigin />
-  <link href="assets/css/styles.css" rel="stylesheet" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 fill=%22%23ff6600%22/><text x=%2216%22 y=%2223%22 text-anchor=%22middle%22 font-size=%2221%22>K</text></svg>" />
++  <style>
+    *,::before,::after{box-sizing:border-box}body{margin:0;background:#f6f6ef;color:#261812;font:12px/16px Verdana,Geneva,sans-serif}a{color:inherit;text-decoration:none}button,input{border:0;background:transparent;color:inherit;font:inherit}.hidden{display:none!important}.flex{display:flex}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.ml-auto{margin-left:auto}.w-full{width:100%}.gap-1{gap:4px}.gap-2{gap:8px}.text-right{text-align:right}.text-center{text-align:center}.align-top{vertical-align:top}.w-4{width:16px}.w-5{width:20px}.pr-1{padding-right:4px}.pt-\[2px\]{padding-top:2px}.h-\[2px\]{height:2px}body>div:first-of-type{max-width:85%;margin:8px auto 0;background:#f6f6ef;padding-bottom:32px}header{display:flex;align-items:center;width:100%;padding:2px 8px;background:#f60;color:#000;font-size:14px}header>div{display:flex;align-items:center;width:100%;gap:4px}header a:first-child{font-weight:700}#feed-controls{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #d1d5db;background:#f6f6ef;color:#4b5563;font-size:12px}main{min-height:100vh;padding:8px 8px 16px;background:#f6f6ef}main table{border-collapse:collapse}.story-title{color:#000;font-size:10pt;line-height:1.2}.story-meta{padding-top:1px;color:#5f5f5f;font-size:7pt}.story-meta a,.domain-text,.domain-text a,.text-hn-grey{color:#5f5f5f}.domain-text{font-size:8pt}.knotes-upvote-triangle{display:inline-block;width:0;height:0;border-right:4px solid transparent;border-bottom:7px solid #828282;border-left:4px solid transparent;vertical-align:middle}footer{background:#f6f6ef}
+    @media(max-width:639px){body>div:first-of-type{max-width:100%;margin:4px 0 0}header{position:relative;min-height:54px}header>div{flex-wrap:wrap;gap:4px 2px;padding:6px 8px}header .flex.flex-wrap.items-center.gap-1{gap:2px;font-size:11px}header .ml-auto{margin-left:0;font-size:11px}#feed-controls{flex-wrap:wrap;justify-content:center;gap:8px;padding:8px}main{padding-right:6px;padding-left:6px}main table{width:100%}.story-title{line-height:1.35}.story-meta{line-height:1.5}}
+  </style>
+  <link rel="preload" href="assets/css/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="assets/css/styles.css" rel="stylesheet" /></noscript>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -48,7 +49,7 @@
     </header>
     <div id="broadcast-banner"
       class="hidden bg-[#fff9c4] border-b border-yellow-200 px-4 py-2 text-xs text-yellow-900 text-center"></div>
-    <div
+    <div id="feed-controls"
       class="bg-[#f6f6ef] px-2 py-1 border-b border-gray-300 flex items-center justify-between text-xs text-gray-600 max-w-[100%]">
       <div class="flex gap-2"> <a href="#" class="filter-link font-bold text-black" data-filter="trending">trending</a>
         | <a href="#" class="filter-link" data-filter="relevant">relevant</a> | <a href="#" class="filter-link"
@@ -60,10 +61,56 @@
     </div>
     <main class="bg-[#f6f6ef] pt-2 pb-4" style="min-height:100vh">
       <table class="border-spacing-0 border-collapse">
-        <tbody>
-          <tr>
-            <td colspan="3" class="p-4 text-center">Loading stories...</td>
+        <tbody data-prerendered="true">
+          <tr class="story-row" data-id="24">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">1.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="24"></div></td>
+            <td class="story-title align-top"><a href="pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life" class="story-link" data-id="24">A Theory I Can't Stop Thinking About - Theory of Life</a><span class="domain-text"> (<a href="#">news</a>)</span></td>
           </tr>
+          <tr class="story-meta-row" data-id="24"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 2 months ago | <a href="#" class="hide-link hover:underline" data-id="24">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="24">+</button></span> | <a href="pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life" class="hover:underline">7 comments</a> | <a href="#" class="share-link hover:underline" data-title="A Theory I Can't Stop Thinking About - Theory of Life" data-url="/pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="24"></tr>
+          <tr class="story-row" data-id="38">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">2.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="38"></div></td>
+            <td class="story-title align-top"><a href="pulse/home?s=show-kn-curiosity-mpnko9at" class="story-link" data-id="38">Show KN: Curiosity</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="38"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="38">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="38">+</button></span> | <a href="pulse/home?s=show-kn-curiosity-mpnko9at" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: Curiosity" data-url="/pulse/home?s=show-kn-curiosity-mpnko9at">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="38"></tr>
+          <tr class="story-row" data-id="37">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">3.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="37"></div></td>
+            <td class="story-title align-top"><a href="pulse/home?s=show-kn-the-crazy-belief-mpnkn86d" class="story-link" data-id="37">Show KN: The Crazy belief !</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="37"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="37">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="37">+</button></span> | <a href="pulse/home?s=show-kn-the-crazy-belief-mpnkn86d" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: The Crazy belief !" data-url="/pulse/home?s=show-kn-the-crazy-belief-mpnkn86d">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="37"></tr>
+          <tr class="story-row" data-id="41">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">4.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="41"></div></td>
+            <td class="story-title align-top"><a href="pulse/home?s=in-this-ask-mptj91rl" class="story-link" data-id="41">in this ask</a><span class="domain-text"> (<a href="#">ask</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="41"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="41">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="41">+</button></span> | <a href="pulse/home?s=in-this-ask-mptj91rl" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="in this ask" data-url="/pulse/home?s=in-this-ask-mptj91rl">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="41"></tr>
+          <tr class="story-row" data-id="40">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">5.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="40"></div></td>
+            <td class="story-title align-top"><a href="https://BILL.COM" target="_blank" rel="noopener noreferrer" class="story-link" data-id="40">OHH</a><span class="domain-text"> (<a href="https://BILL.COM" target="_blank" rel="noopener noreferrer">bill.com</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="40"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="40">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="40">+</button></span> | <a href="pulse/home?s=ohh-mptj1fm5" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="OHH" data-url="https://BILL.COM">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="40"></tr>
+          <tr class="story-row" data-id="39">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">6.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="39"></div></td>
+            <td class="story-title align-top"><a href="pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x" class="story-link" data-id="39">Show KN: A Theory I Can't Stop Thinking About - Theory of Life</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="39"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="39">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="39">+</button></span> | <a href="pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: A Theory I Can't Stop Thinking About - Theory of Life" data-url="/pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="39"></tr>
+          <tr class="story-row" data-id="35">
+            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">7.</td>
+            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="35"></div></td>
+            <td class="story-title align-top"><a href="https://b2bindustrial.in" target="_blank" rel="noopener noreferrer" class="story-link" data-id="35">B2B</a><span class="domain-text"> (<a href="https://b2bindustrial.in" target="_blank" rel="noopener noreferrer">b2bindustrial.in</a>)</span></td>
+          </tr>
+          <tr class="story-meta-row" data-id="35"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=uniquevara.ai" class="hover:underline">uniquevara.ai</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="35">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="35">+</button></span> | <a href="pulse/home?s=b2b-mp5elrry" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="B2B" data-url="https://b2bindustrial.in">share</a></td></tr>
+          <tr class="h-[2px] story-spacer" data-id="35"></tr>
         </tbody>
       </table>
     </main>
