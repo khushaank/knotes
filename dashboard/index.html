@@ -29,25 +29,18 @@
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="sidebar-collapsed">
+<body>
 
     <div id="loading-overlay"
-        style="position:fixed; inset:0; z-index:9999; background:var(--bg-body); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;">
-        <div class="login-logo" style="animation: pulse 2s infinite;">
-            <img src="../assets/img/logo.png" alt="K. Notes" style="height: 64px;">
-        </div>
-        <div style="color:var(--text-secondary); font-size:14px; letter-spacing:1px; text-transform:uppercase;">Loading
-            Dashboard...</div>
+        style="position:fixed; inset:0; z-index:1000; background:var(--bg-body); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;">
+        <div style="color:var(--text-secondary); font-size:14px;">Loading dashboard…</div>
     </div>
 
     <div id="admin-dashboard" class="dashboard-shell hidden">
 
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand" id="sidebar-brand-toggle" title="Toggle Sidebar">
-                <span class="brand-icon">
-                    <img src="../assets/img/logo.png" alt="K." style="height: 28px; vertical-align: middle;">
-                </span>
-                <span class="brand-text">Creator Panel</span>
+                <span class="brand-text">K. Notes</span>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-target="overview-section">
@@ -101,13 +94,7 @@
 
         <div class="main-wrap">
             <header class="topbar">
-                <button class="hamburger" id="sidebar-toggle">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                </button>
+                <strong class="topbar-title">Creator dashboard</strong>
                 <div class="topbar-right" style="display: flex; align-items: center; gap: 14px;">
                     <button id="theme-toggle-btn" class="btn btn-secondary btn-sm" style="padding: 6px 10px;"
                         title="Toggle Light/Dark Mode">
@@ -334,7 +321,6 @@
 
     <div id="toast-container"></div>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script type="module" src="js/dashboard.js"></script>
     <script>
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
@@ -368,6 +354,7 @@
                 themeIconSun.style.display = 'block';
                 themeIconMoon.style.display = 'none';
             }
+            window.dispatchEvent(new Event('kn-theme-change'));
         });
     </script>
     <script defer src="../assets/js/exit-interceptor.js"></script>

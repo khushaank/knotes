@@ -10,6 +10,8 @@ if (currentTheme === 'dark') {
 }
 
 const AUTH_CACHE_KEY = 'kn-auth-cache';
+const INSTALL_PROMPT_KEY = 'kn-install-prompt-seen';
+const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
 
 function getCachedAuth() {
     try {
@@ -26,6 +28,95 @@ function clearCachedAuth() {
     try { sessionStorage.removeItem(AUTH_CACHE_KEY); } catch (e) { }
 }
 
+function setupInstallPrompt() {
+    if (localStorage.getItem(INSTALL_PROMPT_KEY) || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+
+    let installEvent;
+    let banner;
+
+    const dismiss = () => {
+        localStorage.setItem(INSTALL_PROMPT_KEY, '1');
+        banner?.remove();
+    };
+
+    const showBanner = (message, buttonText, action) => {
+        if (banner) return;
+        banner = document.createElement('aside');
+        banner.className = 'kn-install-prompt';
+        banner.setAttribute('aria-label', 'Install K. Notes');
+
+        const text = document.createElement('span');
+        text.textContent = message;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = buttonText;
+        button.addEventListener('click', action);
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'kn-install-close';
+        close.setAttribute('aria-label', 'Dismiss install prompt');
+        close.textContent = '×';
+        close.addEventListener('click', dismiss);
+
+        banner.append(text, button, close);
+        document.body.appendChild(banner);
+    };
+
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        installEvent = event;
+        showBanner('Install K. Notes for quick access and offline reading.', 'Install', async () => {
+            localStorage.setItem(INSTALL_PROMPT_KEY, '1');
+            await installEvent.prompt();
+            installEvent = null;
+            banner?.remove();
+        });
+    });
+
+    window.addEventListener('appinstalled', dismiss);
+
+    const manifest = document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = APP_ROOT + 'manifest.webmanifest';
+    document.head.appendChild(manifest);
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register(APP_ROOT + 'service-worker.js').catch(() => { }));
+    }
+
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos && !navigator.standalone) {
+        showBanner('Install K. Notes: tap Share, then Add to Home Screen.', 'Got it', dismiss);
+    }
+}
+
+function renderSharedHeader() {
+    let header = document.querySelector('header');
+    if (!header) {
+        header = document.createElement('header');
+        document.body.prepend(header);
+    }
+    header.className = 'kn-site-header';
+
+    let inner = header.querySelector(':scope > div');
+    if (!inner) {
+        inner = document.createElement('div');
+        header.appendChild(inner);
+    }
+
+    const prefix = APP_ROOT;
+    inner.className = 'kn-header-inner';
+    inner.innerHTML = `
+        <a href="${prefix}home" class="kn-header-brand" title="K. Notes">K. Notes</a>
+        <nav class="kn-header-nav" aria-label="Main navigation">
+            <a href="${prefix}home">feed</a><span aria-hidden="true">|</span>
+            <a href="${prefix}ask">ask</a><span aria-hidden="true">|</span>
+            <a href="${prefix}show">show</a><span aria-hidden="true">|</span>
+            <a href="${prefix}submit">submit</a>
+        </nav>
+        <div class="kn-header-auth"><a href="${prefix}login">login</a></div>`;
+}
+
 function injectMobileHeaderStyles() {
     if (document.getElementById('kn-mobile-header-styles')) return;
 
@@ -35,6 +126,11 @@ function injectMobileHeaderStyles() {
         header.kn-site-header {
             background: #ff6600 !important;
             color: #000000 !important;
+            width: 100%;
+            min-height: 32px;
+            padding: 0px 8px;
+            border: 0;
+            border-radius: 0;
         }
 
         header.kn-site-header a,
@@ -42,15 +138,20 @@ function injectMobileHeaderStyles() {
             color: #000000 !important;
         }
 
-        .kn-header-inner {
-            position: relative;
+        .kn-header-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
         }
 
-        .kn-header-panel {
+        .kn-header-inner {
             display: flex;
             align-items: center;
-            flex: 1 1 auto;
+            gap: 7px;
+            width: 100%;
             min-width: 0;
+            font-size: 12px;
         }
 
         .kn-header-nav {
@@ -62,10 +163,74 @@ function injectMobileHeaderStyles() {
 
         .kn-header-auth {
             margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            white-space: nowrap;
         }
 
-        .kn-mobile-menu-toggle {
-            display: none;
+        .kn-header-auth > a {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .kn-site-header a:hover,
+        .kn-site-header button:hover {
+            text-decoration: underline;
+        }
+
+        .kn-theme-toggle {
+            position: static !important;
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #000;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .kn-install-prompt {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            z-index: 120;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 360px;
+            padding: 10px 12px;
+            border: 1px solid #b34700;
+            border-radius: 6px;
+            background: #fff;
+            color: #261812;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .kn-install-prompt button {
+            flex: 0 0 auto;
+            padding: 5px 9px;
+            border: 1px solid #b34700;
+            border-radius: 4px;
+            background: #ff6600;
+            color: #000;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+        }
+
+        .kn-install-prompt .kn-install-close {
+            padding: 2px 5px;
+            border: 0;
+            background: transparent;
+            font-size: 18px;
+            font-weight: normal;
         }
 
         @media (max-width: 639px) {
@@ -73,15 +238,9 @@ function injectMobileHeaderStyles() {
                 position: sticky;
                 top: 0;
                 z-index: 80;
-                min-height: 42px;
+                min-height: 36px;
+                padding: 4px 6px;
                 border-bottom: 1px solid rgba(0, 0, 0, 0.22);
-            }
-
-            header.kn-site-header .kn-header-inner {
-                flex-wrap: nowrap !important;
-                align-items: center !important;
-                gap: 8px !important;
-                padding: 6px 8px !important;
             }
 
             header.kn-site-header a[title="K.Notes"],
@@ -90,229 +249,86 @@ function injectMobileHeaderStyles() {
                 font-size: 13px;
             }
 
-            .kn-header-panel {
-                position: absolute;
-                top: calc(100% + 1px);
-                left: 0;
-                right: 0;
-                display: none;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 6px;
-                padding: 8px;
-                background: #ff6600;
-                border-bottom: 1px solid rgba(0, 0, 0, 0.18);
-                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+            .kn-install-prompt {
+                right: 8px;
+                bottom: 8px;
+                left: 8px;
+                max-width: none;
             }
 
-            header.kn-mobile-menu-open .kn-header-panel {
-                display: flex;
+            header.kn-site-header .kn-header-inner {
+                flex-wrap: wrap !important;
+                gap: 3px 6px !important;
             }
 
             .kn-header-nav {
-                display: flex !important;
-                flex-direction: column;
-                align-items: stretch !important;
-                gap: 3px !important;
-                font-size: 13px !important;
-            }
-
-            .kn-header-separator {
-                display: none;
-            }
-
-            .kn-header-nav a,
-            .kn-header-auth a,
-            .kn-header-auth .kn-theme-toggle {
-                display: flex !important;
-                align-items: center;
-                min-height: 34px;
-                padding: 7px 9px;
-                border: 1px solid rgba(0, 0, 0, 0.16);
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.24);
-                color: #000000 !important;
-                text-decoration: none !important;
+                order: 3;
+                width: 100%;
+                flex-wrap: wrap;
+                padding-top: 2px;
+                font-size: 12px;
             }
 
             .kn-header-auth {
-                width: 100%;
-                margin-left: 0 !important;
-                padding-top: 6px;
-                border-top: 1px solid rgba(0, 0, 0, 0.16);
-                font-size: 13px !important;
+                max-width: 55%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 12px;
             }
+        }
 
-            .kn-header-auth > div {
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
+        html.dark body,
+        html.dark main,
+        html.dark footer,
+        html.dark .bg-surface-bright {
+            background: #1c1917 !important;
+            color: #f5f5f4 !important;
+        }
 
-            .kn-header-auth > span {
-                display: none;
-            }
+        html.dark .text-gray-500,
+        html.dark .text-gray-600,
+        html.dark .text-gray-700,
+        html.dark .text-hn-grey {
+            color: #b8b3ad !important;
+        }
 
-            .kn-mobile-menu-toggle {
-                display: inline-flex;
-                width: 34px;
-                height: 30px;
-                margin-left: auto;
-                flex: 0 0 auto;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 4px;
-                border: 1px solid rgba(0, 0, 0, 0.24);
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.28);
-                cursor: pointer;
-            }
-
-            .kn-mobile-menu-toggle span {
-                width: 17px;
-                height: 2px;
-                border-radius: 999px;
-                background: #000000;
-                transition: transform 0.16s ease, opacity 0.16s ease;
-            }
-
-            header.kn-mobile-menu-open .kn-mobile-menu-toggle span:nth-child(1) {
-                transform: translateY(6px) rotate(45deg);
-            }
-
-            header.kn-mobile-menu-open .kn-mobile-menu-toggle span:nth-child(2) {
-                opacity: 0;
-            }
-
-            header.kn-mobile-menu-open .kn-mobile-menu-toggle span:nth-child(3) {
-                transform: translateY(-6px) rotate(-45deg);
-            }
+        html.dark footer,
+        html.dark .border-gray-200,
+        html.dark .border-gray-300,
+        html.dark .border-gray-400 {
+            border-color: #57534e !important;
         }
     `;
     document.head.appendChild(style);
 }
 
-function wrapHeaderSeparators(nav) {
-    Array.from(nav.childNodes).forEach(node => {
-        if (node.nodeType !== Node.TEXT_NODE || !node.textContent.includes('|')) return;
-        const fragment = document.createDocumentFragment();
-        node.textContent.split('|').forEach((part, index, parts) => {
-            if (part) fragment.appendChild(document.createTextNode(part));
-            if (index < parts.length - 1) {
-                const sep = document.createElement('span');
-                sep.className = 'kn-header-separator';
-                sep.textContent = '|';
-                fragment.appendChild(sep);
-            }
-        });
-        node.replaceWith(fragment);
-    });
-}
-
-function setupMobileHeader() {
-    injectMobileHeaderStyles();
-
-    const header = document.querySelector('header');
-    if (!header || header.classList.contains('kn-site-header-ready')) return;
-
-    const inner = header.querySelector('.flex.items-center.gap-1.w-full');
-    if (!inner) return;
-
-    const brand = inner.querySelector('a[title="K.Notes"], a.font-bold');
-    const nav = Array.from(inner.children).find(el =>
-        el !== brand &&
-        el.classList?.contains('flex') &&
-        el.classList?.contains('flex-wrap') &&
-        !el.classList?.contains('ml-auto')
-    );
-    const auth = inner.querySelector('.ml-auto');
-    if (!brand || !nav || !auth) return;
-
-    header.classList.add('kn-site-header', 'kn-site-header-ready');
-    inner.classList.add('kn-header-inner');
-    nav.classList.add('kn-header-nav');
-    auth.classList.add('kn-header-auth');
-    wrapHeaderSeparators(nav);
-
-    const panel = document.createElement('div');
-    panel.className = 'kn-header-panel';
-    inner.insertBefore(panel, nav);
-    panel.appendChild(nav);
-    panel.appendChild(auth);
-
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'kn-mobile-menu-toggle';
-    toggle.setAttribute('aria-label', 'Open menu');
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.innerHTML = '<span></span><span></span><span></span>';
-    inner.appendChild(toggle);
-
-    function setOpen(open) {
-        header.classList.toggle('kn-mobile-menu-open', open);
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-    }
-
-    toggle.addEventListener('click', (event) => {
-        event.stopPropagation();
-        setOpen(!header.classList.contains('kn-mobile-menu-open'));
-    });
-
-    panel.addEventListener('click', (event) => {
-        if (event.target.closest('a')) setOpen(false);
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!header.contains(event.target)) setOpen(false);
-    });
-
-    window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') setOpen(false);
-    });
-}
-
 // ─── Auth UI ──────────────────────────────────────────────────────────────────
-function applyAuthUI(authLinks, username) {
-    authLinks.forEach(link => {
-        const parent = link.parentNode;
-        if (!parent) return;
-        const prefix = link.getAttribute('href') === '../login' ? '../' : '';
-
-        const userContainer = document.createElement('div');
-        userContainer.className = 'flex items-center gap-2';
-
-        const userSpan = document.createElement('a');
-        userSpan.href = prefix + 'profile?user=' + encodeURIComponent(username);
-        userSpan.className = 'hover:underline text-black';
-        userSpan.textContent = username;
-
-        userContainer.appendChild(userSpan);
-        parent.replaceChild(userContainer, link);
-    });
+function applyAuthUI(username) {
+    const auth = document.querySelector('.kn-header-auth');
+    if (!auth) return;
+    const prefix = APP_ROOT;
+    const profile = document.createElement('a');
+    profile.href = prefix + 'profile';
+    profile.className = 'hover:underline text-black';
+    profile.textContent = username;
+    auth.replaceChildren(profile);
+    addThemeToggle();
 }
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
 function addThemeToggle() {
-    const headerRight = document.querySelector('header .ml-auto');
+    const headerRight = document.querySelector('.kn-header-auth');
     if (!headerRight || headerRight.querySelector('.kn-theme-toggle')) return;
 
     const sep = document.createElement('span');
     sep.className = 'kn-theme-separator';
     sep.textContent = ' | ';
 
-    const btn = document.createElement('a');
-    btn.href = '#';
-    btn.className = 'kn-theme-toggle hover:text-gray-800 text-black flex items-center justify-center';
-    btn.style.cursor = 'pointer';
-    btn.title = 'Toggle Theme';
-
-    const icon = document.createElement('span');
-    icon.style.fontSize = '18px';
-    icon.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '◐';
-    btn.appendChild(icon);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'kn-theme-toggle';
+    btn.title = 'Change color theme';
+    btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
 
     btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -320,12 +336,12 @@ function addThemeToggle() {
             document.documentElement.setAttribute('data-theme', 'light');
             document.documentElement.classList.remove('dark');
             localStorage.setItem('kn-theme', 'light');
-            icon.textContent = '◐';
+            btn.textContent = 'dark';
         } else {
             document.documentElement.setAttribute('data-theme', 'dark');
             document.documentElement.classList.add('dark');
             localStorage.setItem('kn-theme', 'dark');
-            icon.textContent = '☀';
+            btn.textContent = 'light';
         }
     });
 
@@ -338,8 +354,10 @@ function addThemeToggle() {
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
     : (cb) => cb()
 )(async () => {
-    const authLinks = document.querySelectorAll('a[href="login"], a[href="../login"]');
-
+    setupInstallPrompt();
+    renderSharedHeader();
+    injectMobileHeaderStyles();
+    document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
         document.body.style.visibility = 'visible';
         addThemeToggle();
@@ -349,7 +367,7 @@ function addThemeToggle() {
     // STEP 1 — Instant render from cache (zero network)
     const cached = getCachedAuth();
     if (cached && cached.username) {
-        applyAuthUI(authLinks, cached.username);
+        applyAuthUI(cached.username);
     }
     addThemeToggle();
 
@@ -385,7 +403,7 @@ function addThemeToggle() {
                 if (profile) {
                     const username = profile.username || session.user.email.split('@')[0];
                     setCachedAuth({ username, isAdmin: !!profile.is_admin });
-                    applyAuthUI(authLinks, username);
+                    applyAuthUI(username);
                 }
             } else {
                 // Cache hit — silently refresh cache in background, no UI change

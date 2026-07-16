@@ -133,22 +133,9 @@ function clearFailedLogins() {
                 signupBtn.disabled = false;
                 signupBtn.textContent = 'create account';
             } else {
-                const { generateUniqueUsername } = await import('./supabaseClient.js');
-                const uniqueUsername = await generateUniqueUsername(email);
-
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([{
-                        id: data.user.id,
-                        username: uniqueUsername,
-                        email: email
-                    }]);
-
-                if (profileError) {
-                    console.error('Profile creation error:', profileError);
-                }
-
-                showMessage('Account created successfully! You can now login.', false);
+                showMessage(data.session
+                    ? 'Account created successfully.'
+                    : 'Account created. Check your email to confirm it, then login.', false);
                 signupBtn.disabled = false;
                 signupBtn.textContent = 'create account';
                 document.getElementById('login-email')?.focus();

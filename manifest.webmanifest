@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "K. Notes",
+  "short_name": "K. Notes",
+  "description": "Private, high-signal articles and discussions.",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f6ef",
+  "theme_color": "#ff6600",
+  "icons": [
+    {
+      "src": "/assets/img/logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

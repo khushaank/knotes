@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, toggleFollow, getCache, setCache } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getCache, setCache } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
@@ -69,31 +69,21 @@ async function fetchSearchStories(searchQuery, filter, page) {
         return fetchStories('', filter, page);
     }
 
-    const pattern = `%${safeQuery}%`;
-    const searchColumns = ['title', 'author', 'category'];
-    const results = await Promise.all(searchColumns.map(column => (
-        supabase
-            .from('blogs')
-            .select('*')
-            .eq('status', 'published')
-            .ilike(column, pattern)
-            .limit(100)
-    )));
+    const { data, error } = await supabase.rpc('search_all_content', {
+        search_query: safeQuery,
+        page_limit: 100,
+        page_offset: 0
+    });
 
-    if (results.some(result => result.error)) {
+    if (error) {
         return { stories: [], count: 0 };
     }
 
-    const uniqueStories = new Map();
-    results.flatMap(result => result.data || []).forEach(story => {
-        uniqueStories.set(String(story.id), story);
-    });
-
-    const sorted = sortStories(Array.from(uniqueStories.values()), filter);
+    const sorted = sortStories(data || [], filter);
     const start = (page - 1) * STORIES_PER_PAGE;
     const stories = sorted.slice(start, start + STORIES_PER_PAGE);
 
-    return { stories, count: sorted.length };
+    return { stories, count: Number(data?.[0]?.total_count || sorted.length) };
 }
 
 async function renderStories(searchQuery = '', filter = 'trending') {
@@ -133,10 +123,6 @@ async function renderStories(searchQuery = '', filter = 'trending') {
         tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">Could not load stories right now. Please refresh in a moment.</td></tr>';
         if (statsSummary) statsSummary.textContent = 'Unavailable';
     }
-}
-
-function profileHref(username) {
-    return `profile?user=${encodeURIComponent(username || '')}`;
 }
 
 async function renderHtml(stories, count, page, filter, searchQuery) {
@@ -241,11 +227,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         td2_2.className = 'story-meta';
 
         td2_2.appendChild(document.createTextNode('by '));
-        const authorLink = document.createElement('a');
-        authorLink.href = profileHref(story.author);
-        authorLink.className = 'hover:underline';
-        authorLink.textContent = story.author || 'anonymous';
-        td2_2.appendChild(authorLink);
+        td2_2.appendChild(document.createTextNode(story.author || 'anonymous'));
 
         td2_2.appendChild(document.createTextNode(` | ${timeAgo} | `));
 
@@ -405,18 +387,7 @@ async function loadUserStats() {
         });
     }
 
-    const hasPrerenderedFeed = !searchParam && !filterParam && !urlParams.has('p') &&
-        document.querySelector('main tbody[data-prerendered="true"]');
-
-    if (hasPrerenderedFeed) {
-        const statsSummary = document.getElementById('stats-summary');
-        if (statsSummary) statsSummary.textContent = 'Showing 7 trending stories (Page 1)';
-        setupPrefetching();
-        // ponytail: refresh the deployment snapshot after first paint; move rendering server-side when the host supports SSR.
-        setTimeout(() => renderStories('', currentFilter), 10000);
-    } else {
-        renderStories(searchParam || '', currentFilter);
-    }
+    renderStories(searchParam || '', currentFilter);
 
     if (searchParam) {
         const searchInput = document.getElementById('footer-search-input');
@@ -487,34 +458,6 @@ async function loadUserStats() {
             }
         }
     }
-
-    async function fetchTrendingSearches() {
-        if (!supabase) return;
-        const { data, error } = await supabase
-            .from('search_stats')
-            .select('term')
-            .order('count', { ascending: false })
-            .limit(5);
-
-        if (data && data.length > 0) {
-            const container = document.getElementById('trending-searches');
-            if (container) {
-                container.replaceChildren(document.createTextNode('Trending: '));
-                data.forEach((s, index) => {
-                    const link = document.createElement('a');
-                    link.href = `home?search=${encodeURIComponent(s.term)}`;
-                    link.className = 'hover:underline';
-                    link.textContent = s.term;
-                    container.appendChild(link);
-                    if (index < data.length - 1) {
-                        container.appendChild(document.createTextNode(', '));
-                    }
-                });
-            }
-        }
-    }
-
-    fetchTrendingSearches();
 
     let focusedStoryIndex = -1;
 
@@ -747,42 +690,6 @@ async function loadUserStats() {
             }
         }
 
-        if (e.target.classList.contains('boost-karma-index-btn')) {
-            e.preventDefault();
-            const btn = e.target;
-            const author = btn.getAttribute('data-author');
-            if (!author) return;
-
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-
-            const { data: profile } = await supabase.from('public_profiles').select('id').eq('username', author).maybeSingle();
-            if (!profile) {
-                alert('User not found.');
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                return;
-            }
-
-            const result = await toggleFollow(profile.id);
-            if (result.error) {
-                showInlineMsg(btn, result.error);
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            } else {
-                if (result.action === 'followed') {
-                    btn.classList.add('text-[#ff6600]');
-                    btn.classList.remove('text-gray-500');
-                    btn.textContent = "[decrease karma]";
-                } else {
-                    btn.classList.add('text-gray-500');
-                    btn.classList.remove('text-[#ff6600]');
-                    btn.textContent = "[increase karma]";
-                }
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            }
-        }
     });
 
     function showInlineMsg(anchor, msg) {

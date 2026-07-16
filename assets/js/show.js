@@ -5,10 +5,6 @@ const STORIES_PER_PAGE = 10;
 let userBookmarks = [];
 let userLikes = [];
 
-function profileHref(username) {
-    return `profile?user=${encodeURIComponent(username || '')}`;
-}
-
 async function fetchShowStories(page = 1) {
     if (!supabase) return { stories: [], count: 0 };
 
@@ -129,11 +125,7 @@ async function renderStories() {
             tdMeta.appendChild(pointsSpan);
 
             tdMeta.appendChild(document.createTextNode(' by '));
-            const authorLink = document.createElement('a');
-            authorLink.href = profileHref(story.author);
-            authorLink.className = 'hover:underline';
-            authorLink.textContent = story.author || 'anonymous';
-            tdMeta.appendChild(authorLink);
+            tdMeta.appendChild(document.createTextNode(story.author || 'anonymous'));
 
             tdMeta.appendChild(document.createTextNode(` | ${timeAgo} | `));
 

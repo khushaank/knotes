@@ -125,27 +125,8 @@ const CACHE_PREFIX = 'kn-cache-';
 const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
 
 export async function generateUniqueUsername(email) {
-    if (!supabase) return email.split('@')[0];
-
-    const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    let username = base;
-    let attempts = 0;
-
-    while (attempts < 5) {
-        const { data } = await supabase
-            .from('public_profiles')
-            .select('username')
-            .eq('username', username)
-            .maybeSingle();
-
-        if (!data) return username;
-
-        // If exists, add a random number (user requested "in front")
-        const rand = Math.floor(Math.random() * 10000);
-        username = `${rand}${base}`;
-        attempts++;
-    }
-    return `${Math.floor(Math.random() * 100000)}${base}`;
+    const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 27) || 'member';
+    return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export async function getEmailByUsername(username) {
@@ -233,9 +214,6 @@ export async function upvoteStory(storyId) {
 
         if (deleteError) return { error: deleteError.message };
 
-        // Use RPC to safely decrement
-        await supabase.rpc('decrement_blog_likes', { blog_id: storyId });
-
         return { success: true, action: 'removed' };
     }
 
@@ -249,9 +227,6 @@ export async function upvoteStory(storyId) {
         }
         return { error: likeError.message };
     }
-
-    // Use RPC to safely increment
-    await supabase.rpc('increment_blog_likes', { blog_id: storyId });
 
     return { success: true, action: 'added' };
 }
@@ -350,11 +325,6 @@ export async function getBookmarkedPosts(userId = null) {
     return posts;
 }
 
-export async function incrementCommentCount(blogId) {
-    if (!supabase) return;
-    await supabase.rpc('increment_blog_comments', { blog_id: blogId });
-}
-
 export async function sharePost(title, url) {
     if (navigator.share) {
         try {
@@ -371,162 +341,6 @@ export async function sharePost(title, url) {
             return { error: 'Could not copy link' };
         }
     }
-}
-
-export async function toggleFollow(targetUserId) {
-    if (!supabase) return { error: 'Supabase not initialized' };
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { error: 'Please login to follow users' };
-
-    const myId = session.user.id;
-
-    const { data: existing, error: checkErr } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', myId)
-        .eq('following_id', targetUserId)
-        .maybeSingle();
-
-    if (checkErr) return { error: checkErr.message };
-
-    if (existing) {
-        const { error } = await supabase.from('follows').delete().eq('id', existing.id);
-        if (error) return { error: error.message };
-        return { success: true, action: 'unfollowed' };
-    } else {
-        const { error } = await supabase.from('follows').insert([{
-            follower_id: myId,
-            following_id: targetUserId
-        }]);
-        if (error) {
-            if (error.code === '23505') return { success: true, action: 'followed' };
-            return { error: error.message };
-        }
-        return { success: true, action: 'followed' };
-    }
-}
-
-export async function isFollowing(targetUserId) {
-    if (!supabase) return false;
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return false;
-
-    const { data, error } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', session.user.id)
-        .eq('following_id', targetUserId)
-        .maybeSingle();
-
-    return !error && !!data;
-}
-
-export async function getFollowerCount(userId) {
-    if (!supabase) return 0;
-
-    const { count, error } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', userId);
-
-    if (error) return 0;
-    return count || 0;
-}
-
-export async function getFollowingCount(userId) {
-    if (!supabase) return 0;
-
-    const { count, error } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', userId);
-
-    if (error) return 0;
-    return count || 0;
-}
-
-export async function getFollowingList(userId) {
-    if (!supabase) return [];
-    const { data, error } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId);
-
-    if (error) return [];
-    const ids = data.map(d => d.following_id).filter(Boolean);
-    if (ids.length === 0) return [];
-
-    const { data: profiles, error: profileError } = await supabase
-        .from('public_profiles')
-        .select('id, username, avatar_url, about')
-        .in('id', ids);
-
-    if (profileError || !profiles) return [];
-    return profiles;
-}
-
-export async function getFollowersList(userId) {
-    if (!supabase) return [];
-    const { data, error } = await supabase
-        .from('follows')
-        .select('follower_id')
-        .eq('following_id', userId);
-
-    if (error) return [];
-    const ids = data.map(d => d.follower_id).filter(Boolean);
-    if (ids.length === 0) return [];
-
-    const { data: profiles, error: profileError } = await supabase
-        .from('public_profiles')
-        .select('id, username, avatar_url, about')
-        .in('id', ids);
-
-    if (profileError || !profiles) return [];
-    return profiles;
-}
-
-export async function getProfileViews(username) {
-    if (!supabase) return 0;
-    const { data, error } = await supabase
-        .from('blogs')
-        .select('clicks_count')
-        .eq('author', username);
-    if (error || !data) return 0;
-    return data.reduce((sum, b) => sum + (b.clicks_count || 0), 0);
-}
-
-export async function getUserSavedCount(userId) {
-    if (!supabase) return 0;
-    const { count, error } = await supabase
-        .from('bookmarks')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-    if (error) return 0;
-    return count || 0;
-}
-
-export async function getLeaderboard(limit = 20) {
-    if (!supabase) return [];
-
-    const { data: profiles, error: pErr } = await supabase
-        .from('public_profiles')
-        .select('id, username, avatar_url, created_at');
-
-    if (pErr || !profiles) return [];
-
-    const results = await Promise.all(profiles.map(async p => {
-        const [count, views, saved] = await Promise.all([
-            getFollowerCount(p.id),
-            getProfileViews(p.username),
-            getUserSavedCount(p.id)
-        ]);
-        return { ...p, followers: count, views, saved };
-    }));
-
-    results.sort((a, b) => b.followers - a.followers);
-    return results.slice(0, limit);
 }
 
 export async function uploadAvatar(file) {
@@ -743,8 +557,6 @@ export async function deleteComment(commentId, blogId) {
     const { error } = await query;
 
     if (error) return { error: error.message };
-
-    await supabase.rpc('decrement_blog_comments', { blog_id: blogId });
 
     return { success: true };
 }

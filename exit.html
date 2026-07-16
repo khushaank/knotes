@@ -52,10 +52,12 @@
                 try {
                     const urlObj = new URL(targetUrl);
                     display.textContent = urlObj.href;
+                    if (!['http:', 'https:'].includes(urlObj.protocol)) throw new Error('Unsupported URL scheme');
                     continueBtn.href = urlObj.href;
                 } catch (e) {
-                    display.textContent = targetUrl;
-                    continueBtn.href = targetUrl;
+                    display.textContent = 'This link is not safe to open.';
+                    continueBtn.removeAttribute('href');
+                    continueBtn.setAttribute('aria-disabled', 'true');
                 }
             } else {
                 window.location.href = 'home';
@@ -74,5 +76,6 @@
             }
         }
     </script>
+    <script type="module" src="assets/js/session.js"></script>
 </body>
 </html>

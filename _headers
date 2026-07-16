@@ -10,3 +10,10 @@
 /*.map
   X-Robots-Tag: noindex
   Cache-Control: no-store
+
+/profile
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
+
+/service-worker.js
+  Cache-Control: no-cache

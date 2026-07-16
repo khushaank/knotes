@@ -2,273 +2,72 @@
 <html lang="en">
 
 <head>
-    <script>
-        (function () {
-            try {
-                var theme = localStorage.getItem('kn-theme') || 'light';
-                if (theme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    document.documentElement.classList.remove('dark');
-                }
-            } catch (e) { }
-        })();
-    </script>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <title>Profile - K. Notes</title>
-    <link href="assets/css/styles.css" rel="stylesheet" />
-    <link href="assets/css/modal.css" rel="stylesheet" />
-    <link href="assets/css/profile-extras.css" rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <link rel="icon" type="image/png" href="assets/img/logo.png" />
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; form-action 'self'; upgrade-insecure-requests;">
+    <title>Account - K. Notes</title>
+    <link href="assets/css/styles.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 </head>
 
-<body class="profile-page font-body-md text-body-md text-on-surface">
-    <div class="profile-shell max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
-        <header
-            class="bg-[#ff6600] text-black text-sm rounded-none w-full flat no shadows flex items-center px-2 py-0.5"
-            style="max-width: 100%;">
-            <div class="flex items-center gap-1 w-full text-[13px]">
-                <a href="home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-                <div class="flex flex-wrap items-center gap-1 text-black">
-                    <a class="hover:underline" href="home">feed</a> |
-                    <a class="hover:underline" href="comments">comments</a> |
-                    <a class="hover:underline" href="ask">ask</a> |
-                    <a class="hover:underline" href="show">show</a> |
-                    <a class="hover:underline" href="submit">submit</a> |
-                    <a class="hover:underline" href="leaderboard">leaders</a>
+<body class="account-body">
+    <div class="account-frame">
+        <header><div></div></header>
+
+        <main id="account-page" class="account-page" hidden>
+            <div class="account-heading">
+                <div>
+                    <p class="account-eyebrow">Private account</p>
+                    <h1>Account settings</h1>
+                    <p>Manage your login and open your creator dashboard.</p>
                 </div>
-                <div class="ml-auto text-black flex items-center gap-4">
-                    <a class="hover:underline text-black" href="login">login</a>
-                </div>
+                <a href="dashboard/home" class="account-button account-button-primary">Open dashboard</a>
             </div>
-        </header>
-        <main class="profile-main bg-[#f6f6ef] p-6 min-h-[50vh]">
-            <div id="profile-loading" class="p-6 text-center text-gray-500 text-sm">Loading profile...</div>
-            <div id="profile-container" class="hidden">
 
-                <section class="profile-header">
-                    <div class="profile-identity">
-
-                        <div class="avatar-wrapper flex-shrink-0">
-                            <div id="profile-avatar"
-                                class="profile-avatar bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-600 uppercase overflow-hidden">
-                                ?
-                            </div>
-                            <div class="avatar-edit hidden" id="avatar-edit-btn" title="Change photo">
-                                <span class="material-symbols-outlined" style="font-size:14px">edit</span>
-                            </div>
-                            <div class="avatar-menu hidden" id="avatar-menu">
-                                <button id="avatar-upload-btn">Upload photo</button>
-                                <button id="avatar-delete-btn" class="text-red">Remove photo</button>
-                            </div>
-                            <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
-                        </div>
-
-
-                        <div class="profile-info flex-1 min-w-0">
-                            <div class="profile-title-row">
-                                <div id="username-edit-container" class="flex items-center gap-2">
-                                    <span id="profile-username" class="profile-name"></span>
-                                    <button id="btn-edit-username"
-                                        class="hidden text-gray-400 hover:text-[#ff6600] transition-colors"
-                                        title="Change username">
-                                        <span class="material-symbols-outlined" style="font-size:16px">edit</span>
-                                    </button>
-                                </div>
-                                <div id="username-input-wrapper" class="hidden flex items-center gap-2">
-                                    <input type="text" id="username-input"
-                                        class="border border-gray-300 p-1 text-sm rounded focus:outline-none focus:border-[#ff6600] bg-white">
-                                    <button id="btn-save-username"
-                                        class="text-xs text-[#ff6600] font-bold">save</button>
-                                    <button id="btn-cancel-username" class="text-xs text-gray-500">cancel</button>
-                                </div>
-                                <button id="follow-btn" class="follow-btn follow hidden">Follow</button>
-                            </div>
-                            <div id="username-error" class="text-[10px] text-red-500 hidden mb-2"></div>
-                            <div id="username-hint" class="text-[10px] text-gray-400 hidden mb-2"></div>
-                            <div class="profile-meta">
-                                <span id="profile-link-pill" class="profile-link-pill">@profile</span>
-                                <span>Joined <span id="profile-created"></span></span>
-                            </div>
-                            <div class="profile-stats" aria-label="Profile stats">
-                                <div class="profile-stat">
-                                    <span id="profile-karma" class="profile-stat-value">0</span>
-                                    <span class="profile-stat-label">followers</span>
-                                    <span class="karma-trigger relative inline-flex items-center cursor-help">
-                                        <span class="profile-help">?</span>
-                                        <div class="karma-tip">
-                                            <b>What is Karma?</b>
-                                            Karma represents your community standing. You earn karma when other users
-                                            follow you
-                                            for your great content!
-                                        </div>
-                                    </span>
-                                </div>
-                                <div class="profile-stat">
-                                    <span id="profile-posts-count" class="profile-stat-value">0</span>
-                                    <span class="profile-stat-label">posts</span>
-                                </div>
-                                <div class="profile-stat">
-                                    <span id="profile-following-count" class="profile-stat-value">0</span>
-                                    <span class="profile-stat-label">following</span>
-                                </div>
-                            </div>
-                            <div class="profile-about-block">
-                                <label class="profile-label">About</label>
-                                <textarea id="profile-about"
-                                    class="profile-about-field border border-gray-300 p-2 text-sm w-full focus:outline-none focus:border-[#ff6600] rounded-sm resize-y bg-gray-50"></textarea>
-                            </div>
-                            <div class="mb-3 flex items-center gap-2" id="profile-privacy-container"
-                                style="display: none;">
-                                <input type="checkbox" id="profile-is-public" class="cursor-pointer">
-                                <label for="profile-is-public" class="text-xs text-gray-700 cursor-pointer">
-                                    Public profile (show on leaderboard)
-                                </label>
-                            </div>
-                            <div class="profile-actions">
-                                <button type="button" id="btn-share-profile"
-                                    class="profile-action-secondary flex items-center gap-1">
-                                    <span class="material-symbols-outlined" style="font-size:14px">ios_share</span>
-                                    Share profile
-                                </button>
-                                <button type="button" id="btn-update-profile" class="profile-action-secondary">
-                                    <span class="material-symbols-outlined" style="font-size:14px">check</span>
-                                    Update
-                                </button>
-                                <button type="button" id="btn-media-library-profile" style="display: none;"
-                                    class="profile-action-secondary flex items-center gap-1">
-                                    <span class="material-symbols-outlined" style="font-size:14px">photo_library</span>
-                                    Media Library
-                                </button>
-                                <a href="dashboard/home" id="btn-creator-dashboard"
-                                    style="display: none; text-decoration: none;"
-                                    class="profile-action-primary flex items-center gap-1">
-                                    <span class="material-symbols-outlined" style="font-size:14px">dashboard</span>
-                                    Creator Dashboard
-                                </a>
-                                <button type="button" id="btn-logout-profile" style="display: none;"
-                                    class="profile-action-secondary profile-action-danger flex items-center gap-1">
-                                    <span class="material-symbols-outlined" style="font-size:14px">logout</span>
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="account-grid">
+                <section class="account-panel" aria-labelledby="account-details-title">
+                    <h2 id="account-details-title">Account</h2>
+                    <p class="account-help">This private page is only available while you are signed in.</p>
+                    <button type="button" id="profile-logout" class="account-button account-button-secondary">Sign out</button>
                 </section>
 
+                <section class="account-panel" aria-labelledby="password-title">
+                    <h2 id="password-title">Change password</h2>
+                    <p class="account-help">Use at least 12 characters and avoid reusing another password.</p>
 
-                <nav class="profile-tabs" aria-label="Profile sections">
-                    <a href="#" class="profile-tab font-bold text-black border-b-2 border-[#ff6600]"
-                        data-tab="all">All</a>
-                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="news">Links</a>
-                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="show">Show</a>
-                    <a href="#" class="profile-tab text-gray-600 hover:text-black" data-tab="ask">Ask</a>
+                    <form id="password-form" class="password-form">
+                        <label for="current-password">Current password</label>
+                        <input id="current-password" name="current-password" type="password" autocomplete="current-password" required>
 
-                    <a href="#" class="profile-tab text-gray-600 hover:text-black"
-                        data-tab="subscriptions">Subscriptions</a>
-                </nav>
+                        <label for="new-password">New password</label>
+                        <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
 
+                        <label for="confirm-password">Confirm new password</label>
+                        <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
 
-                <div id="tab-content-all" class="tab-pane">
-                    <div id="profile-submissions" class="text-sm">Loading...</div>
-                </div>
-                <div id="tab-content-news" class="tab-pane hidden">
-                    <div id="profile-submissions-news" class="text-sm">Loading...</div>
-                </div>
-                <div id="tab-content-show" class="tab-pane hidden">
-                    <div id="profile-submissions-show" class="text-sm">Loading...</div>
-                </div>
-                <div id="tab-content-ask" class="tab-pane hidden">
-                    <div id="profile-submissions-ask" class="text-sm">Loading...</div>
-                </div>
+                        <label class="password-visibility">
+                            <input id="show-passwords" type="checkbox">
+                            <span>Show passwords</span>
+                        </label>
 
-                <div id="tab-content-subscriptions" class="tab-pane hidden">
-                    <div id="subscriptions-list" class="text-sm">Loading...</div>
-                </div>
-            </div>
-
-            <div id="auth-message" class="text-sm p-4 hidden">
-                Please <a href="login" class="underline font-bold">login</a> to view your profile.
+                        <p id="password-status" class="account-message" role="status" aria-live="polite"></p>
+                        <button type="submit" id="password-save" class="account-button account-button-primary">Update password</button>
+                    </form>
+                </section>
             </div>
         </main>
-        <footer
-            class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
-            style="max-width: 100%;">
-            <div class="flex justify-center w-full mb-2">
-                <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
-            </div>
-            <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
-                <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
-                <a class="hover:underline text-gray-600" href="faq">FAQ</a> |
-                <a class="hover:underline text-gray-600" href="lists">Lists</a> |
-                <a class="hover:underline text-gray-600" href="api">API</a> |
-                <a class="hover:underline text-gray-600" href="security">Security</a> |
-                <a class="hover:underline text-gray-600" href="legal">Legal</a> |
-                <a class="hover:underline text-gray-600" href="contact">Feedback</a>
-            </div>
-            <form id="footer-search-form" class="flex items-center gap-2"
-                onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-                <span class="text-gray-500 text-xs">Search:</span>
-                <input type="text" id="footer-search-input"
-                    class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
-            </form>
+
+        <p id="account-loading" class="account-loading" role="status">Loading account…</p>
+
+        <footer class="account-footer">
+            <a href="guidelines">Guidelines</a><span aria-hidden="true">|</span>
+            <a href="security">Security</a><span aria-hidden="true">|</span>
+            <a href="contact">Feedback</a>
         </footer>
     </div>
 
-    <div id="media-library-modal"
-        class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div
-            class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
-            <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#ff6600]">folder_shared</span>
-                    <h3 class="font-bold text-base text-gray-900">Media & Work Library</h3>
-                </div>
-                <button type="button" id="btn-close-media"
-                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
-                    <span class="material-symbols-outlined" style="font-size:20px">close</span>
-                </button>
-            </div>
-
-            <div class="p-6 overflow-y-auto flex-1 bg-gray-50/50">
-                <div id="media-library-grid" class="grid gap-3">
-                    <div class="col-span-full text-center py-12">
-                        <div
-                            class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4">
-                        </div>
-                        <p class="text-gray-500 text-sm italic">Fetching your media gallery...</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
-                <div class="text-xs text-gray-500 flex items-center gap-1">
-                    <span class="material-symbols-outlined" style="font-size:14px">info</span>
-                    Files and images you've uploaded
-                </div>
-                <button type="button" id="btn-upload-more"
-                    class="text-[11px] bg-[#ff6600] text-white px-3 py-1.5 rounded font-medium hover:bg-[#e65c00] transition-colors flex items-center gap-1 cursor-pointer">
-                    <span class="material-symbols-outlined" style="font-size:14px">upload_file</span>
-                    Upload New
-                </button>
-                <input type="file" id="media-upload-input"
-                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" class="hidden">
-            </div>
-        </div>
-    </div>
-
-    <script defer src="assets/js/exit-interceptor.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="module" src="assets/js/profile.js"></script>
     <script type="module" src="assets/js/session.js"></script>
 </body>

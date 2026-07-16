@@ -64,11 +64,9 @@
                 <a href="home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
                 <div class="flex flex-wrap items-center gap-1 text-black">
                     <a class="hover:underline" href="home">feed</a> |
-                    <a class="hover:underline" href="comments">comments</a> |
                     <a class="hover:underline" href="ask">ask</a> |
                     <a class="hover:underline" href="show">show</a> |
-                    <a class="hover:underline font-bold" href="submit">submit</a> |
-                    <a class="hover:underline" href="leaderboard">leaders</a>
+                    <a class="hover:underline font-bold" href="submit">submit</a>
                 </div>
                 <div class="ml-auto text-black flex items-center gap-4">
                     <a class="hover:underline text-black" href="login">login</a>
@@ -77,7 +75,7 @@
         </header>
         <main class="bg-[#f6f6ef] p-4">
             <div id="auth-message" class="mb-4 p-2 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
-                You must be <a href="login" class="underline font-bold">logged in</a> to submit news.
+                You must be <a href="login" class="underline font-bold">logged in</a> to publish.
             </div>
 
 
@@ -86,10 +84,10 @@
 
             <div id="submit-quick-links" class="hidden mb-3 flex flex-wrap gap-2 text-xs">
                 <span class="text-gray-500">Quick submit:</span>
-                <a href="#news"
+                <a href="#article"
                     class="submit-quick-link text-[#ff6600] hover:underline font-medium flex items-center gap-1"
-                    data-cat="news">
-                    <span class="material-symbols-outlined" style="font-size:14px;">newspaper</span> News
+                    data-cat="article">
+                    <span class="material-symbols-outlined" style="font-size:14px;">article</span> Article
                 </a>
                 <a href="#ask"
                     class="submit-quick-link text-[#ff6600] hover:underline font-medium flex items-center gap-1"
@@ -111,7 +109,7 @@
                             <td class="py-2">
                                 <select id="submit-category"
                                     class="border border-gray-400 p-1 text-sm w-full focus:outline-none focus:border-[#ff6600]">
-                                    <option value="news">News (Link)</option>
+                                    <option value="article">Article</option>
                                     <option value="ask">Ask (Discussion)</option>
                                     <option value="show">Show (Submit Work)</option>
                                 </select>
@@ -166,7 +164,7 @@
                 <div class="mt-8 text-gray-700 text-xs leading-relaxed border-t border-gray-200 pt-4">
                     <p class="mb-2 text-sm text-[#ff6600]"><b>Submission Rules:</b></p>
                     <ul class="list-disc ml-4 space-y-1 mb-4">
-                        <li>Select <b>News</b> to submit a link. <a href="#news"
+                        <li>Select <b>Article</b> to write an article or share one by URL. <a href="#article"
                                 class="text-[#ff6600] underline text-[10px] flex inline-flex items-center gap-0.5"><span
                                     class="material-symbols-outlined" style="font-size:10px;">link</span> quick link</a>
                         </li>
@@ -179,8 +177,8 @@
                                 class="text-[#ff6600] underline text-[10px] flex inline-flex items-center gap-0.5"><span
                                     class="material-symbols-outlined" style="font-size:10px;">rocket_launch</span> quick
                                 link</a></li>
-                        <li>Please read the <a href="guidelines" class="underline">Guidelines</a> and <a
-                                href="faq" class="underline">FAQ</a> before posting.</li>
+                        <li>Please read the <a href="guidelines" class="underline">Guidelines</a> and <a href="faq"
+                                class="underline">FAQ</a> before posting.</li>
                     </ul>
 
                     <p class="mb-2 text-sm text-[#ff6600]"><b>Formatting Manual:</b></p>
@@ -202,9 +200,6 @@
         <footer
             class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
             style="max-width: 100%;">
-            <div class="flex justify-center w-full mb-2">
-                <span class="text-[10px] text-gray-500 font-normal">By Khushaank Gupta</span>
-            </div>
             <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
                 <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
                 <a class="hover:underline text-gray-600" href="faq">FAQ</a> |

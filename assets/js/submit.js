@@ -42,7 +42,7 @@ const rateLimit = {
 };
 
 const HASH_TO_CATEGORY = {
-    '#news': 'news',
+    '#article': 'article',
     '#ask': 'ask',
     '#show': 'show',
 };
@@ -94,9 +94,9 @@ const HASH_TO_CATEGORY = {
     const rowText = document.getElementById('row-text');
 
     function applyCategoryView(cat) {
-        if (cat === 'news') {
+        if (cat === 'article') {
             if (rowUrl) rowUrl.style.display = '';
-            if (rowText) rowText.style.display = 'none';
+            if (rowText) rowText.style.display = '';
         } else if (cat === 'ask') {
             if (rowUrl) rowUrl.style.display = 'none';
             if (rowText) rowText.style.display = '';
@@ -228,14 +228,14 @@ const HASH_TO_CATEGORY = {
         }
 
         const categoryInput = document.getElementById('submit-category');
-        let finalCategory = categoryInput ? categoryInput.value : 'news';
+        let finalCategory = categoryInput ? categoryInput.value : 'article';
 
-        if (!['news', 'ask', 'show'].includes(finalCategory)) {
-            finalCategory = 'news';
+        if (!['article', 'ask', 'show'].includes(finalCategory)) {
+            finalCategory = 'article';
         }
-        if (finalCategory === 'news' && !url) {
-            showStatus('A URL is required for News submissions.', true);
-            document.getElementById('submit-url')?.focus();
+        if (finalCategory === 'article' && !url && !text) {
+            showStatus('Write the article or include a URL.', true);
+            document.getElementById('submit-text')?.focus();
             return;
         }
 

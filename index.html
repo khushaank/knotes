@@ -25,10 +25,349 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://tixugcvwvvtbgcaryjvu.supabase.co" crossorigin />
   <style>
-    *,::before,::after{box-sizing:border-box}body{margin:0;background:#f6f6ef;color:#261812;font:12px/16px Verdana,Geneva,sans-serif}a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}button,input{border:0;background:transparent;color:inherit;font:inherit}.hidden{display:none!important}.flex{display:flex}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-center{justify-content:center}.ml-auto{margin-left:auto}.mx-auto{margin-right:auto;margin-left:auto}.w-full{width:100%}.gap-1{gap:4px}.gap-2{gap:8px}.text-right{text-align:right}.text-center{text-align:center}.align-top{vertical-align:top}.font-bold{font-weight:700}.w-4{width:16px}.w-5{width:20px}.pr-1{padding-right:4px}.pt-\[2px\]{padding-top:2px}.h-\[2px\]{height:2px}body>div:first-of-type{max-width:85%;margin:8px auto 0;background:#f6f6ef;padding-bottom:32px}header{display:flex;align-items:center;width:100%;padding:2px 8px;background:#f60;color:#000;font-size:14px}header>div{display:flex;align-items:center;width:100%;gap:4px}header a:first-child{margin-right:8px;padding:0 4px;font-weight:700}#broadcast-banner{padding:8px 16px;border-bottom:1px solid #fde68a;background:#fff9c4;color:#713f12;text-align:center;font-size:12px}#feed-controls{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #d1d5db;background:#f6f6ef;color:#4b5563;font-size:12px}main{min-height:100vh;padding:8px 8px 16px;background:#f6f6ef}main table{border-collapse:collapse}.story-title{color:#000;font-size:10pt;line-height:1.2}.story-meta{padding-top:1px;color:#5f5f5f;font-size:7pt}.story-meta a,.domain-text,.domain-text a,.text-hn-grey{color:#5f5f5f}.domain-text{font-size:8pt}.knotes-upvote-triangle{display:inline-block;width:0;height:0;border-right:4px solid transparent;border-bottom:7px solid #828282;border-left:4px solid transparent;vertical-align:middle}.knotes-dropdown{position:relative;display:inline-block}.knotes-dropdown-trigger{padding:0 2px;color:#5f5f5f;cursor:pointer}.knotes-dropdown-menu{position:absolute;top:100%;left:0;z-index:1000;min-width:140px;margin-top:6px;padding:6px 0;border:1px solid #d1d1d1;border-radius:6px;background:#fff}.dropdown-item{padding:6px 12px;color:#333;white-space:nowrap;cursor:pointer}footer{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:100%;margin-top:16px;padding:32px 16px;border-top:2px solid #f60;background:#f6f6ef;color:#4b5563;font-size:12px}footer input{width:192px;padding:2px 8px;border:1px solid #9ca3af;background:#fff;color:#000}html.dark body,html.dark body>div:first-of-type,html.dark main,html.dark #feed-controls,html.dark footer{background:#1c1917;color:#e5e7eb}html.dark .story-title{color:#f3f4f6}html.dark .story-meta,html.dark .story-meta a,html.dark .domain-text,html.dark .domain-text a,html.dark .text-hn-grey{color:#9ca3af}
-    @media(max-width:639px){body>div:first-of-type{max-width:100%;margin:4px 0 0}header{position:relative;min-height:54px}header>div{flex-wrap:wrap;gap:4px 2px;padding:6px 8px}header .flex.flex-wrap.items-center.gap-1{gap:2px;font-size:11px}header .ml-auto{margin-left:0;font-size:11px}.kn-theme-separator{display:none}.kn-theme-toggle{position:absolute;top:6px;right:8px}#feed-controls{flex-wrap:wrap;justify-content:center;gap:8px;padding:8px}main{padding-right:6px;padding-left:6px}main table{width:100%}.story-title{line-height:1.35}.story-meta{line-height:1.5}footer input{max-width:240px;width:100%}}
+    *,
+    ::before,
+    ::after {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: #f6f6ef;
+      color: #261812;
+      font: 12px/16px Verdana, Geneva, sans-serif
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none
+    }
+
+    a:hover {
+      text-decoration: underline
+    }
+
+    button,
+    input {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .flex-col {
+      flex-direction: column
+    }
+
+    .flex-wrap {
+      flex-wrap: wrap
+    }
+
+    .items-center {
+      align-items: center
+    }
+
+    .justify-center {
+      justify-content: center
+    }
+
+    .ml-auto {
+      margin-left: auto
+    }
+
+    .mx-auto {
+      margin-right: auto;
+      margin-left: auto
+    }
+
+    .w-full {
+      width: 100%
+    }
+
+    .gap-1 {
+      gap: 4px
+    }
+
+    .gap-2 {
+      gap: 8px
+    }
+
+    .text-right {
+      text-align: right
+    }
+
+    .text-center {
+      text-align: center
+    }
+
+    .align-top {
+      vertical-align: top
+    }
+
+    .font-bold {
+      font-weight: 700
+    }
+
+    .w-4 {
+      width: 16px
+    }
+
+    .w-5 {
+      width: 20px
+    }
+
+    .pr-1 {
+      padding-right: 4px
+    }
+
+    .pt-\[2px\] {
+      padding-top: 2px
+    }
+
+    .h-\[2px\] {
+      height: 2px
+    }
+
+    body>div:first-of-type {
+      max-width: 85%;
+      margin: 8px auto 0;
+      background: #f6f6ef;
+      padding-bottom: 32px
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 2px 8px;
+      background: #f60;
+      color: #000;
+      font-size: 14px
+    }
+
+    header>div {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 4px
+    }
+
+    header a:first-child {
+      margin-right: 8px;
+      padding: 0 4px;
+      font-weight: 700
+    }
+
+    #broadcast-banner {
+      padding: 8px 16px;
+      border-bottom: 1px solid #fde68a;
+      background: #fff9c4;
+      color: #713f12;
+      text-align: center;
+      font-size: 12px
+    }
+
+    #feed-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-bottom: 1px solid #d1d5db;
+      background: #f6f6ef;
+      color: #4b5563;
+      font-size: 12px
+    }
+
+    main {
+      min-height: 100vh;
+      padding: 8px 8px 16px;
+      background: #f6f6ef
+    }
+
+    main table {
+      border-collapse: collapse
+    }
+
+    .story-title {
+      color: #000;
+      font-size: 10pt;
+      line-height: 1.2
+    }
+
+    .story-meta {
+      padding-top: 1px;
+      color: #5f5f5f;
+      font-size: 7pt
+    }
+
+    .story-meta a,
+    .domain-text,
+    .domain-text a,
+    .text-hn-grey {
+      color: #5f5f5f
+    }
+
+    .domain-text {
+      font-size: 8pt
+    }
+
+    .knotes-upvote-triangle {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-right: 4px solid transparent;
+      border-bottom: 7px solid #828282;
+      border-left: 4px solid transparent;
+      vertical-align: middle
+    }
+
+    .knotes-dropdown {
+      position: relative;
+      display: inline-block
+    }
+
+    .knotes-dropdown-trigger {
+      padding: 0 2px;
+      color: #5f5f5f;
+      cursor: pointer
+    }
+
+    .knotes-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 1000;
+      min-width: 140px;
+      margin-top: 6px;
+      padding: 6px 0;
+      border: 1px solid #d1d1d1;
+      border-radius: 6px;
+      background: #fff
+    }
+
+    .dropdown-item {
+      padding: 6px 12px;
+      color: #333;
+      white-space: nowrap;
+      cursor: pointer
+    }
+
+    footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 16px;
+      padding: 32px 16px;
+      border-top: 2px solid #f60;
+      background: #f6f6ef;
+      color: #4b5563;
+      font-size: 12px
+    }
+
+    footer input {
+      width: 192px;
+      padding: 2px 8px;
+      border: 1px solid #9ca3af;
+      background: #fff;
+      color: #000
+    }
+
+    html.dark body,
+    html.dark body>div:first-of-type,
+    html.dark main,
+    html.dark #feed-controls,
+    html.dark footer {
+      background: #1c1917;
+      color: #e5e7eb
+    }
+
+    html.dark .story-title {
+      color: #f3f4f6
+    }
+
+    html.dark .story-meta,
+    html.dark .story-meta a,
+    html.dark .domain-text,
+    html.dark .domain-text a,
+    html.dark .text-hn-grey {
+      color: #9ca3af
+    }
+
+    @media(max-width:639px) {
+      body>div:first-of-type {
+        max-width: 100%;
+        margin: 4px 0 0
+      }
+
+      header {
+        position: relative;
+        min-height: 54px
+      }
+
+      header>div {
+        flex-wrap: wrap;
+        gap: 4px 2px;
+        padding: 6px 8px
+      }
+
+      header .flex.flex-wrap.items-center.gap-1 {
+        gap: 2px;
+        font-size: 11px
+      }
+
+      header .ml-auto {
+        margin-left: 0;
+        font-size: 11px
+      }
+
+      .kn-theme-separator {
+        display: none
+      }
+
+      .kn-theme-toggle {
+        position: absolute;
+        top: 6px;
+        right: 8px
+      }
+
+      #feed-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px
+      }
+
+      main {
+        padding-right: 6px;
+        padding-left: 6px
+      }
+
+      main table {
+        width: 100%
+      }
+
+      .story-title {
+        line-height: 1.35
+      }
+
+      .story-meta {
+        line-height: 1.5
+      }
+
+      footer input {
+        max-width: 240px;
+        width: 100%
+      }
+    }
   </style>
-  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
 <body class="font-body-md text-body-md text-on-surface">
@@ -37,10 +376,9 @@
       style="max-width: 100%;">
       <div class="flex items-center gap-1 w-full text-[13px]"> <a href="/home"
           class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-        <div class="flex flex-wrap items-center gap-1 text-black"> <a class="hover:underline" href="/home">feed</a>
-          | <a class="hover:underline" href="/comments">comments</a> | <a class="hover:underline"
-            href="/ask">ask</a> | <a class="hover:underline" href="/show">show</a> | <a class="hover:underline"
-            href="/submit">submit</a> | <a class="hover:underline" href="/leaderboard">leaders</a> </div>
+        <div class="flex flex-wrap items-center gap-1 text-black"> <a class="hover:underline" href="/home">feed</a> | <a class="hover:underline" href="/ask">ask</a> |
+          <a class="hover:underline" href="/show">show</a> | <a class="hover:underline" href="/submit">submit</a>
+        </div>
         <div class="ml-auto text-black flex items-center gap-4"> <a class="hover:underline text-black"
             href="/login">login</a> </div>
       </div>
@@ -54,82 +392,34 @@
           data-filter="new">new</a> </div>
       <div class="flex items-center gap-2"> <span id="stats-summary"
           class="hidden sm:inline text-[10px] text-gray-700"></span> <button id="refresh-trending"
-          class="flex-shrink-0 hover:text-black flex items-center gap-1 focus:outline-none"> <span
-            aria-hidden="true" class="text-sm">↻</span> refresh </button> </div>
+          class="flex-shrink-0 hover:text-black flex items-center gap-1 focus:outline-none"> <span aria-hidden="true"
+            class="text-sm">↻</span> refresh </button> </div>
     </div>
     <main class="bg-[#f6f6ef] pt-2 pb-4" style="min-height:100vh">
       <table class="border-spacing-0 border-collapse">
-        <tbody data-prerendered="true">
-          <tr class="story-row" data-id="24">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">1.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="24"></div></td>
-            <td class="story-title align-top"><a href="pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life" class="story-link" data-id="24">A Theory I Can't Stop Thinking About - Theory of Life</a><span class="domain-text"> (<a href="#">news</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="24"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 2 months ago | <a href="#" class="hide-link hover:underline" data-id="24">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="24">+</button></span> | <a href="pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life" class="hover:underline">7 comments</a> | <a href="#" class="share-link hover:underline" data-title="A Theory I Can't Stop Thinking About - Theory of Life" data-url="/pulse/home?s=a-theory-i-cant-stop-thinking-about-theory-of-life">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="24"></tr>
-          <tr class="story-row" data-id="38">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">2.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="38"></div></td>
-            <td class="story-title align-top"><a href="pulse/home?s=show-kn-curiosity-mpnko9at" class="story-link" data-id="38">Show KN: Curiosity</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="38"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="38">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="38">+</button></span> | <a href="pulse/home?s=show-kn-curiosity-mpnko9at" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: Curiosity" data-url="/pulse/home?s=show-kn-curiosity-mpnko9at">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="38"></tr>
-          <tr class="story-row" data-id="37">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">3.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="37"></div></td>
-            <td class="story-title align-top"><a href="pulse/home?s=show-kn-the-crazy-belief-mpnkn86d" class="story-link" data-id="37">Show KN: The Crazy belief !</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="37"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="37">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="37">+</button></span> | <a href="pulse/home?s=show-kn-the-crazy-belief-mpnkn86d" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: The Crazy belief !" data-url="/pulse/home?s=show-kn-the-crazy-belief-mpnkn86d">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="37"></tr>
-          <tr class="story-row" data-id="41">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">4.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="41"></div></td>
-            <td class="story-title align-top"><a href="pulse/home?s=in-this-ask-mptj91rl" class="story-link" data-id="41">in this ask</a><span class="domain-text"> (<a href="#">ask</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="41"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="41">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="41">+</button></span> | <a href="pulse/home?s=in-this-ask-mptj91rl" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="in this ask" data-url="/pulse/home?s=in-this-ask-mptj91rl">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="41"></tr>
-          <tr class="story-row" data-id="40">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">5.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="40"></div></td>
-            <td class="story-title align-top"><a href="https://BILL.COM" target="_blank" rel="noopener noreferrer" class="story-link" data-id="40">OHH</a><span class="domain-text"> (<a href="https://BILL.COM" target="_blank" rel="noopener noreferrer">bill.com</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="40"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="40">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="40">+</button></span> | <a href="pulse/home?s=ohh-mptj1fm5" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="OHH" data-url="https://BILL.COM">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="40"></tr>
-          <tr class="story-row" data-id="39">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">6.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="39"></div></td>
-            <td class="story-title align-top"><a href="pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x" class="story-link" data-id="39">Show KN: A Theory I Can't Stop Thinking About - Theory of Life</a><span class="domain-text"> (<a href="#">show</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="39"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=khushaankgupta" class="hover:underline">khushaankgupta</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="39">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="39">+</button></span> | <a href="pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="Show KN: A Theory I Can't Stop Thinking About - Theory of Life" data-url="/pulse/home?s=show-kn-a-theory-i-can-t-stop-thinking-about-theory-of-life-mpnkpd7x">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="39"></tr>
-          <tr class="story-row" data-id="35">
-            <td class="text-right align-top w-5 pr-1 text-hn-grey text-[10pt]">7.</td>
-            <td class="align-top w-4 pt-[2px] text-center"><div class="knotes-upvote-triangle" title="upvote" data-id="35"></div></td>
-            <td class="story-title align-top"><a href="https://b2bindustrial.in" target="_blank" rel="noopener noreferrer" class="story-link" data-id="35">B2B</a><span class="domain-text"> (<a href="https://b2bindustrial.in" target="_blank" rel="noopener noreferrer">b2bindustrial.in</a>)</span></td>
-          </tr>
-          <tr class="story-meta-row" data-id="35"><td colspan="2"></td><td class="story-meta">by <a href="profile?user=uniquevara.ai" class="hover:underline">uniquevara.ai</a> | 1 month ago | <a href="#" class="hide-link hover:underline" data-id="35">hide</a> | <span class="bookmark-container"><button class="knotes-dropdown-trigger" title="Add to list" data-id="35">+</button></span> | <a href="pulse/home?s=b2b-mp5elrry" class="hover:underline">0 comments</a> | <a href="#" class="share-link hover:underline" data-title="B2B" data-url="https://b2bindustrial.in">share</a></td></tr>
-          <tr class="h-[2px] story-spacer" data-id="35"></tr>
+        <tbody>
+          <tr><td colspan="3" class="p-4 text-center">Loading stories…</td></tr>
         </tbody>
       </table>
     </main>
     <footer
       class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
       style="max-width: 100%;">
-      <div class="flex justify-center w-full mb-2"> <span class="text-[10px] text-gray-700 font-normal">By Khushaank
-          Gupta</span> </div>
-      <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4"> <a class="hover:underline text-gray-600 py-1.5"
-          href="/guidelines">Guidelines</a> | <a class="hover:underline text-gray-600 py-1.5" href="/faq">FAQ</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/lists">Lists</a> | <a class="hover:underline text-gray-600 py-1.5"
-          href="/api">API</a> | <a class="hover:underline text-gray-600 py-1.5" href="/security">Security</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/legal">Legal</a> | <a class="hover:underline text-gray-600 py-1.5"
-          href="/about">About</a> | <a class="hover:underline text-gray-600 py-1.5" href="/contact">Feedback</a> </div>
+      <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4"> <a
+          class="hover:underline text-gray-600 py-1.5" href="/guidelines">Guidelines</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/faq">FAQ</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/lists">Lists</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/api">API</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/security">Security</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/legal">Legal</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/about">About</a> | <a
+          class="hover:underline text-gray-600 py-1.5" href="/contact">Feedback</a> </div>
       <form id="footer-search-form" class="flex flex-col items-center gap-2"
         onsubmit="event.preventDefault(); window.location.href='/search?search='+document.getElementById('footer-search-input').value;">
-        <div class="flex items-center gap-2"><label class="text-gray-700 text-xs" for="footer-search-input">Search:</label><input type="text"
-            id="footer-search-input"
+        <div class="flex items-center gap-2"><label class="text-gray-700 text-xs"
+            for="footer-search-input">Search:</label><input type="text" id="footer-search-input"
             class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
         </div>
-        <div id="trending-searches" class="text-[10px] text-gray-700 flex gap-2"></div>
       </form>
     </footer>
   </div>

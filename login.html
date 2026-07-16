@@ -48,7 +48,7 @@
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword('login-password')">
+                                onclick="togglePassword(event, 'login-password')">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
                         </td>
@@ -85,7 +85,7 @@
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword('signup-password')">
+                                onclick="togglePassword(event, 'signup-password')">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
                         </td>
@@ -103,7 +103,7 @@
     </main>
     </div>
     <script>
-        function togglePassword(id) {
+        function togglePassword(event, id) {
             const input = document.getElementById(id);
             const icon = event.currentTarget.querySelector('.material-symbols-outlined');
             if (input.type === 'password') {

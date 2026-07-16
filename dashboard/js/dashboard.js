@@ -73,15 +73,6 @@ function createMessageRow(colspan, text, style) {
 }
 
 /**
- * Parses a hardcoded static HTML/SVG string into a DOM node using DOMParser.
- * MUST only be used with developer-controlled static strings, never user data.
- */
-function parseStaticHTML(htmlString) {
-    const doc = new DOMParser().parseFromString(htmlString, 'text/html');
-    return doc.body.firstChild;
-}
-
-/**
  * Parses a static SVG string into a DOM node using DOMParser.
  * MUST only be used with developer-controlled static strings, never user data.
  */
@@ -127,7 +118,6 @@ let myWrittenComments = [];
 async function initDashboard() {
     await checkUserAuth();
     setupSidebar();
-    setupResponsiveMenu();
 }
 
 if (document.readyState === 'loading') {
@@ -221,9 +211,8 @@ async function checkUserAuth() {
 // DATA LOADERS (Personalized to Logged-in User)
 // =============================================
 async function loadCreatorData() {
-    await loadPosts();
+    await Promise.all([loadPosts(), loadMyWrittenComments()]);
     await loadComments();
-    await loadMyWrittenComments();
     await populateOverviewMetrics();
 }
 
@@ -685,17 +674,10 @@ function showToast(message, type = 'success') {
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const brandToggle = document.getElementById('sidebar-brand-toggle');
-    const hamburger = document.getElementById('sidebar-toggle');
 
     if (brandToggle && sidebar) {
         brandToggle.addEventListener('click', () => {
             document.body.classList.toggle('sidebar-collapsed');
-        });
-    }
-
-    if (hamburger) {
-        hamburger.addEventListener('click', () => {
-            document.body.classList.toggle('sidebar-open');
         });
     }
 
@@ -723,48 +705,28 @@ function setupSidebar() {
             const targetTab = document.getElementById(targetId);
             if (targetTab) targetTab.classList.remove('hidden');
 
-            document.body.classList.remove('sidebar-open');
             window.history.replaceState(null, '', '#' + targetId);
         });
-    });
-}
-
-function setupResponsiveMenu() {
-    // Close sidebar on responsive layout click outside
-    document.addEventListener('click', (e) => {
-        if (document.body.classList.contains('sidebar-open')) {
-            const sidebar = document.getElementById('sidebar');
-            const hamburger = document.getElementById('sidebar-toggle');
-            if (sidebar && !sidebar.contains(e.target) && hamburger && !hamburger.contains(e.target)) {
-                document.body.classList.remove('sidebar-open');
-            }
-        }
     });
 }
 
 // =============================================
 // CHART DEFAULTS & LOGIC
 // =============================================
-const chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            labels: { color: '#8b8fa7', font: { family: 'Inter', size: 12 } }
+function getChartDefaults() {
+    const styles = getComputedStyle(document.documentElement);
+    const text = styles.getPropertyValue('--text-secondary').trim();
+    const grid = styles.getPropertyValue('--border').trim();
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: text, font: { family: 'Inter', size: 12 } } } },
+        scales: {
+            x: { ticks: { color: text, font: { size: 11 } }, grid: { color: grid } },
+            y: { beginAtZero: true, ticks: { color: text, precision: 0, font: { size: 11 } }, grid: { color: grid } }
         }
-    },
-    scales: {
-        x: {
-            ticks: { color: '#5c5f75', font: { size: 11 } },
-            grid: { color: 'rgba(42,45,62,0.5)' }
-        },
-        y: {
-            beginAtZero: true,
-            ticks: { color: '#5c5f75', precision: 0, font: { size: 11 } },
-            grid: { color: 'rgba(42,45,62,0.5)' }
-        }
-    }
-};
+    };
+}
 
 function groupByDate(items, dateField) {
     const counts = Object.create(null);
@@ -795,7 +757,7 @@ function drawPostsChart() {
                 borderRadius: 4
             }]
         },
-        options: chartDefaults
+        options: getChartDefaults()
     });
 }
 
@@ -825,7 +787,7 @@ function drawCategoryChart() {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { color: '#8b8fa7', font: { family: 'Inter', size: 12 }, padding: 16 }
+                    labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(), font: { family: 'Inter', size: 12 }, padding: 16 }
                 }
             }
         }
@@ -878,9 +840,15 @@ function drawCumulativeChart() {
                 }
             ]
         },
-        options: chartDefaults
+        options: getChartDefaults()
     });
 }
+
+window.addEventListener('kn-theme-change', () => {
+    drawPostsChart();
+    drawCategoryChart();
+    drawCumulativeChart();
+});
 
 // =============================================
 // DROPDOWN BUILDER (Safe DOM construction)

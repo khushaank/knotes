@@ -44,23 +44,9 @@ async function performSearch(query) {
     }
 
     const totalCount = blogs[0].total_count;
-    const blogIds = blogs.map(b => b.id);
-
-    const { data: allComments, error: commentError } = await supabase
-        .from('comments')
-        .select('blog_id, comment_text, user_name')
-        .in('blog_id', blogIds);
-
-    if (commentError) {
-    }
-
-    const results = blogs.map(blog => ({
-        ...blog,
-        comments: (allComments || []).filter(c => c.blog_id === blog.id)
-    }));
 
     status.textContent = `Found ${totalCount} results for "${query}". Showing page ${page}.`;
-    renderResults(results, query, totalCount, page);
+    renderResults(blogs, query, totalCount, page);
 }
 
 function applyHighlight(element, text, query) {
@@ -107,12 +93,6 @@ function renderResults(results, query, totalCount, page) {
         if (item.url?.toLowerCase().includes(query.toLowerCase())) occurrences.push('link');
         if (item.published_at?.toLowerCase().includes(query.toLowerCase())) occurrences.push('date');
 
-        const matchingComments = item.comments.filter(c =>
-            c.comment_text?.toLowerCase().includes(query.toLowerCase()) ||
-            c.user_name?.toLowerCase().includes(query.toLowerCase())
-        );
-        if (matchingComments.length > 0) occurrences.push(`comment (${matchingComments.length})`);
-
         const timeAgo = calculateTimeAgo(item.published_at);
         const domain = item.url ? new URL(item.url).hostname.replace('www.', '') : null;
 
@@ -157,7 +137,7 @@ function renderResults(results, query, totalCount, page) {
         const authorSpan = document.createElement('span');
         applyHighlight(authorSpan, item.author || 'anonymous', query);
         metaDiv.appendChild(authorSpan);
-        metaDiv.appendChild(document.createTextNode(` | ${timeAgo} | ${item.comments.length} comments`));
+        metaDiv.appendChild(document.createTextNode(` | ${timeAgo} | ${item.comments_count || 0} comments`));
         cardDiv.appendChild(metaDiv);
 
         const occDiv = document.createElement('div');
@@ -174,27 +154,6 @@ function renderResults(results, query, totalCount, page) {
             excDiv.className = 'text-sm text-gray-600 line-clamp-2 mb-2';
             applyHighlight(excDiv, item.excerpt, query);
             cardDiv.appendChild(excDiv);
-        }
-
-        if (matchingComments.length > 0) {
-            const cmtDiv = document.createElement('div');
-            cmtDiv.className = 'mt-3 pl-3 border-l-2 border-[#ff6600] bg-gray-50 p-2 text-xs';
-
-            const cmtTitle = document.createElement('div');
-            cmtTitle.className = 'font-bold text-gray-500 mb-1';
-            cmtTitle.textContent = 'Matching Comment Snippet:';
-            cmtDiv.appendChild(cmtTitle);
-
-            const cmtText = document.createElement('div');
-            cmtText.className = 'text-gray-700';
-            cmtText.appendChild(document.createTextNode('"'));
-            const cmtSpan = document.createElement('span');
-            applyHighlight(cmtSpan, (matchingComments[0].comment_text || '').substring(0, 150), query);
-            cmtText.appendChild(cmtSpan);
-            cmtText.appendChild(document.createTextNode('..."'));
-            cmtDiv.appendChild(cmtText);
-
-            cardDiv.appendChild(cmtDiv);
         }
 
         const linkDiv = document.createElement('div');

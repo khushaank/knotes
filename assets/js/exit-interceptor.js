@@ -193,6 +193,10 @@
         if (link.hasAttribute('download') || link.dataset.noIntercept === 'true') return;
 
         const url = link.getAttribute('href');
+        if (/^(?:javascript|data|vbscript):/i.test((url || '').trim())) {
+            e.preventDefault();
+            return;
+        }
         if (isExternalLink(url)) {
             e.preventDefault();
 

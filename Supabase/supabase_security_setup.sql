@@ -1,4 +1,6 @@
 -- ==========================================
+
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 -- K. NOTES SECURITY SETUP (HARDENED)
 -- Run this in your Supabase SQL Editor
 -- ==========================================
@@ -28,6 +30,10 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='about') THEN
     ALTER TABLE public.profiles ADD COLUMN about TEXT;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='email') THEN
+    ALTER TABLE public.profiles ADD COLUMN email TEXT;
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='created_at') THEN
@@ -141,10 +147,32 @@ CREATE TRIGGER on_profile_update
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_profile_update();
 
+-- Create the private profile even when email confirmation delays the first session.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  base_username TEXT;
+BEGIN
+  base_username := left(COALESCE(NULLIF(regexp_replace(split_part(NEW.email, '@', 1), '[^a-zA-Z0-9]', '', 'g'), ''), 'member'), 27);
+  INSERT INTO public.profiles (id, email, username)
+  VALUES (NEW.id, NEW.email, lower(base_username) || '-' || left(NEW.id::text, 8))
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- Automatically set author and reset counts on blog insert
 CREATE OR REPLACE FUNCTION public.handle_blog_insert()
 RETURNS TRIGGER AS $$
 BEGIN
+  IF COALESCE(NEW.url, '') <> '' AND NEW.url !~* '^https?://' THEN
+    RAISE EXCEPTION 'Only HTTP and HTTPS URLs are allowed';
+  END IF;
   SELECT COALESCE(username, auth.uid()::text) INTO NEW.author FROM public.profiles WHERE id = auth.uid();
   NEW.author := COALESCE(NEW.author, auth.uid()::text);
   NEW.author_id := auth.uid();
@@ -160,6 +188,14 @@ DROP TRIGGER IF EXISTS on_blog_insert ON public.blogs;
 CREATE TRIGGER on_blog_insert
   BEFORE INSERT ON public.blogs
   FOR EACH ROW EXECUTE FUNCTION public.handle_blog_insert();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'blogs_url_http') THEN
+    ALTER TABLE public.blogs ADD CONSTRAINT blogs_url_http
+      CHECK (COALESCE(url, '') = '' OR url ~* '^https?://') NOT VALID;
+  END IF;
+END $$;
 
 -- Automatically set user_id on comment insert
 CREATE OR REPLACE FUNCTION public.handle_comment_insert()
@@ -241,59 +277,54 @@ CREATE TRIGGER on_blog_update
   FOR EACH ROW EXECUTE FUNCTION public.handle_blog_update();
 
 
--- 3. PROFILES POLICIES
-CREATE OR REPLACE VIEW public.public_profiles AS
-SELECT id, username, avatar_url, about, created_at, is_public
-FROM public.profiles
-WHERE is_public = true;
-
-GRANT SELECT ON public.public_profiles TO anon, authenticated;
+-- 3. PRIVATE PROFILES POLICIES
+DROP VIEW IF EXISTS public.public_profiles;
+REVOKE ALL ON public.profiles FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
 
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 DROP POLICY IF EXISTS "Users and admins can view full profiles" ON public.profiles;
-CREATE POLICY "Users and admins can view full profiles"
-ON public.profiles FOR SELECT USING (
-  auth.uid() = id OR
-  public.is_admin(auth.uid())
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+CREATE POLICY "Users can view their own profile"
+ON public.profiles FOR SELECT TO authenticated USING (
+  (select auth.uid()) = id
 );
 
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile" 
-ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" 
-ON public.profiles FOR UPDATE 
-USING (auth.uid() = id OR public.is_admin(auth.uid()))
-WITH CHECK (auth.uid() = id OR public.is_admin(auth.uid()));
+ON public.profiles FOR UPDATE TO authenticated
+USING ((select auth.uid()) = id)
+WITH CHECK ((select auth.uid()) = id);
 
--- Admins can delete profiles
+-- A profile can only be deleted by its owner.
 DROP POLICY IF EXISTS "Admins can delete profiles" ON public.profiles;
 CREATE POLICY "Admins can delete profiles"
-ON public.profiles FOR DELETE USING (
-  public.is_admin(auth.uid())
-);
+ON public.profiles FOR DELETE TO authenticated USING ((select auth.uid()) = id);
 
 
 -- 4. BLOGS (POSTS) POLICIES
 DROP POLICY IF EXISTS "Published blogs are viewable by everyone" ON public.blogs;
 CREATE POLICY "Published blogs are viewable by everyone" 
-ON public.blogs FOR SELECT USING (status = 'published');
+ON public.blogs FOR SELECT TO anon, authenticated USING (status = 'published');
 
 DROP POLICY IF EXISTS "Authenticated users can create blogs" ON public.blogs;
 CREATE POLICY "Authenticated users can create blogs" 
-ON public.blogs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+ON public.blogs FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = author_id);
 
 DROP POLICY IF EXISTS "Users can update their own blogs" ON public.blogs;
-CREATE POLICY "Users can update their own blogs" 
-ON public.blogs FOR UPDATE USING (
+CREATE POLICY "Users can update their own blogs"
+ON public.blogs FOR UPDATE TO authenticated USING (
   auth.uid() = author_id OR
   public.is_admin(auth.uid())
-);
+) WITH CHECK (auth.uid() = author_id OR public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "Users can delete their own blogs" ON public.blogs;
 CREATE POLICY "Users can delete their own blogs" 
-ON public.blogs FOR DELETE USING (
+ON public.blogs FOR DELETE TO authenticated USING (
   auth.uid() = author_id OR
   public.is_admin(auth.uid())
 );
@@ -302,19 +333,20 @@ ON public.blogs FOR DELETE USING (
 -- 5. COMMENTS POLICIES
 DROP POLICY IF EXISTS "Comments are viewable by everyone" ON public.comments;
 CREATE POLICY "Comments are viewable by everyone" 
-ON public.comments FOR SELECT USING (true);
+ON public.comments FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Authenticated users can post comments" ON public.comments;
 CREATE POLICY "Authenticated users can post comments" 
-ON public.comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+ON public.comments FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = user_id);
 
 DROP POLICY IF EXISTS "Users can update their own comments" ON public.comments;
 CREATE POLICY "Users can update their own comments" 
-ON public.comments FOR UPDATE USING (auth.uid() = user_id);
+ON public.comments FOR UPDATE TO authenticated USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can delete their own comments" ON public.comments;
 CREATE POLICY "Users can delete their own comments" 
-ON public.comments FOR DELETE USING (
+ON public.comments FOR DELETE TO authenticated USING (
   auth.uid() = user_id OR 
   public.is_admin(auth.uid())
 );
@@ -323,27 +355,23 @@ ON public.comments FOR DELETE USING (
 -- 6. LIKES, BOOKMARKS, FOLLOWS POLICIES
 -- LIKES
 DROP POLICY IF EXISTS "Likes are viewable by everyone" ON public.likes;
-CREATE POLICY "Likes are viewable by everyone" ON public.likes FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Users can manage their own likes" ON public.likes;
 CREATE POLICY "Users can manage their own likes" 
-ON public.likes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+ON public.likes FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
 -- BOOKMARKS
 DROP POLICY IF EXISTS "Users can view their own bookmarks" ON public.bookmarks;
-CREATE POLICY "Users can view their own bookmarks" ON public.bookmarks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can view their own bookmarks" ON public.bookmarks FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can manage their own bookmarks" ON public.bookmarks;
 CREATE POLICY "Users can manage their own bookmarks" 
-ON public.bookmarks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+ON public.bookmarks FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- FOLLOWS
+-- FOLLOWS (feature disabled; data retained for rollback)
 DROP POLICY IF EXISTS "Follows are viewable by everyone" ON public.follows;
-CREATE POLICY "Follows are viewable by everyone" ON public.follows FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Users can manage their own follows" ON public.follows;
-CREATE POLICY "Users can manage their own follows" 
-ON public.follows FOR ALL USING (auth.uid() = follower_id) WITH CHECK (auth.uid() = follower_id);
+REVOKE ALL ON public.follows FROM anon, authenticated;
 
 
 -- 7. COUNTER PROTECTION (DATABASE FUNCTIONS) - HARDENED WITH AUTH CHECKS
@@ -414,27 +442,36 @@ CREATE OR REPLACE FUNCTION decrement_blog_comments(blog_id BIGINT) RETURNS void 
 
 -- Policy for 'avatars' bucket
 -- Note: 'storage.objects' is where file metadata lives.
+UPDATE storage.buckets SET public = false WHERE id = 'avatars';
+
 DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
-CREATE POLICY "Avatar images are publicly accessible" ON storage.objects
-  FOR SELECT USING (bucket_id = 'avatars');
+DROP POLICY IF EXISTS "Users can view their own avatar" ON storage.objects;
+CREATE POLICY "Users can view their own avatar" ON storage.objects
+  FOR SELECT TO authenticated USING (
+    bucket_id = 'avatars' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
 CREATE POLICY "Users can upload their own avatar" ON storage.objects
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO authenticated WITH CHECK (
     bucket_id = 'avatars' AND 
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
 CREATE POLICY "Users can update their own avatar" ON storage.objects
-  FOR UPDATE USING (
+  FOR UPDATE TO authenticated USING (
     bucket_id = 'avatars' AND 
+    (storage.foldername(name))[1] = auth.uid()::text
+  ) WITH CHECK (
+    bucket_id = 'avatars' AND
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
 CREATE POLICY "Users can delete their own avatar" ON storage.objects
-  FOR DELETE USING (
+  FOR DELETE TO authenticated USING (
     bucket_id = 'avatars' AND 
     (storage.foldername(name))[1] = auth.uid()::text
   );
@@ -442,19 +479,22 @@ CREATE POLICY "Users can delete their own avatar" ON storage.objects
 -- Policy for 'media' bucket
 DROP POLICY IF EXISTS "Media is publicly viewable" ON storage.objects;
 CREATE POLICY "Media is publicly viewable" ON storage.objects
-  FOR SELECT USING (bucket_id = 'media');
+  FOR SELECT TO anon, authenticated USING (bucket_id = 'media');
 
 DROP POLICY IF EXISTS "Users can upload media" ON storage.objects;
 CREATE POLICY "Users can upload media" ON storage.objects
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO authenticated WITH CHECK (
     bucket_id = 'media' AND 
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "Users can manage their media" ON storage.objects;
 CREATE POLICY "Users can manage their media" ON storage.objects
-  FOR ALL USING (
+  FOR ALL TO authenticated USING (
     bucket_id = 'media' AND 
+    (storage.foldername(name))[1] = auth.uid()::text
+  ) WITH CHECK (
+    bucket_id = 'media' AND
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
@@ -462,7 +502,7 @@ CREATE POLICY "Users can manage their media" ON storage.objects
 ALTER TABLE public.search_stats ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Search stats are viewable by everyone" ON public.search_stats;
-CREATE POLICY "Search stats are viewable by everyone" ON public.search_stats FOR SELECT USING (true);
+CREATE POLICY "Search stats are viewable by everyone" ON public.search_stats FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Anon users can insert search stats" ON public.search_stats;
 -- REMOVED: old open policy that allowed anyone to insert
@@ -471,12 +511,13 @@ DROP POLICY IF EXISTS "Authenticated users can insert search stats" ON public.se
 DROP POLICY IF EXISTS "Admins can manage search stats" ON public.search_stats;
 DROP POLICY IF EXISTS "Admins can insert search stats" ON public.search_stats;
 CREATE POLICY "Admins can insert search stats" ON public.search_stats 
-  FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "Authenticated users can update search stats" ON public.search_stats;
 DROP POLICY IF EXISTS "Admins can update search stats" ON public.search_stats;
 CREATE POLICY "Admins can update search stats" ON public.search_stats 
-  FOR UPDATE USING (public.is_admin(auth.uid()));
+  FOR UPDATE TO authenticated USING (public.is_admin(auth.uid()))
+  WITH CHECK (public.is_admin(auth.uid()));
 
 -- PROTECTED RPC FOR SEARCH (now requires auth)
 CREATE OR REPLACE FUNCTION increment_search_count(search_term TEXT)
@@ -552,15 +593,6 @@ BEGIN
         OR b.author ILIKE '%' || q || '%'
         OR b.category ILIKE '%' || q || '%'
         OR b.url ILIKE '%' || q || '%'
-        OR EXISTS (
-          SELECT 1
-          FROM public.comments c
-          WHERE c.blog_id = b.id
-            AND (
-              c.comment_text ILIKE '%' || q || '%'
-              OR c.user_name ILIKE '%' || q || '%'
-            )
-        )
       )
   )
   SELECT
@@ -599,6 +631,34 @@ CREATE INDEX IF NOT EXISTS idx_blogs_slug ON public.blogs (slug);
 
 -- Speed up comment loading
 CREATE INDEX IF NOT EXISTS idx_comments_blog_id ON public.comments (blog_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blogs_author_id ON public.blogs (author_id, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON public.likes (user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON public.comments (user_id, created_at DESC);
 
 -- Speed up search stats
 CREATE INDEX IF NOT EXISTS idx_search_stats_count ON public.search_stats (count DESC);
+
+-- SECURITY DEFINER functions are private unless the browser genuinely needs the RPC.
+REVOKE EXECUTE ON FUNCTION public.is_admin(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_profile_update() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_blog_insert() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_comment_insert() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_comment_update() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.enforce_blog_rate_limit() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_blog_update() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_like_insert_delete() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_comment_insert_delete() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_blog_likes(BIGINT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.decrement_blog_likes(BIGINT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_blog_comments(BIGINT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.decrement_blog_comments(BIGINT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_search_stat(TEXT) FROM PUBLIC;
+
+REVOKE EXECUTE ON FUNCTION public.increment_blog_clicks(BIGINT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.increment_blog_clicks(BIGINT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.increment_search_count(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.increment_search_count(TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.search_all_content(TEXT, INTEGER, INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.search_all_content(TEXT, INTEGER, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;

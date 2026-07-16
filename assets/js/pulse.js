@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, incrementCommentCount, sharePost, toggleFollow, getCache, setCache } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache } from './supabaseClient.js';
 import { renderMarkdown } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -11,10 +11,6 @@ const slugFromPath = pathParts.length > 1 && pathParts[0] === 'pulse' ? pathPart
 const activeSlug = slugParam || slugFromPath;
 let userBookmarks = [];
 let userLikes = [];
-
-function profileHref(username) {
-    return `../profile?user=${encodeURIComponent(username || '')}`;
-}
 
 async function fetchStory() {
     if (!supabase) return null;
@@ -108,11 +104,7 @@ function renderCommentList(comments) {
         const metaDiv = document.createElement('div');
         metaDiv.className = 'story-meta opacity-70';
         
-        const authorLink = document.createElement('a');
-        authorLink.className = 'hover:underline text-black font-medium';
-        authorLink.href = profileHref(comment.user_name);
-        authorLink.textContent = comment.user_name || 'anonymous';
-        metaDiv.appendChild(authorLink);
+        metaDiv.appendChild(document.createTextNode(comment.user_name || 'anonymous'));
 
         const timeLink = document.createElement('a');
         timeLink.className = 'hover:underline mx-0.5 comment-time-link';
@@ -139,7 +131,7 @@ function renderCommentList(comments) {
         footerDiv.className = 'story-meta mt-1 comment-footer opacity-60 text-[10px]';
         const replyLink = document.createElement('a');
         replyLink.className = 'hover:underline reply-btn';
-        replyLink.href = 'javascript:void(0)';
+        replyLink.href = '#';
         replyLink.textContent = 'reply';
         footerDiv.appendChild(replyLink);
         contentDiv.appendChild(footerDiv);
@@ -345,11 +337,7 @@ function renderStoryDetails(story) {
     metaSpan.appendChild(pointsSpan);
     
     metaSpan.appendChild(document.createTextNode(' by '));
-    const authorLink = document.createElement('a');
-    authorLink.className = 'hover:underline';
-    authorLink.href = profileHref(story.author);
-    authorLink.textContent = story.author || 'anonymous';
-    metaSpan.appendChild(authorLink);
+    metaSpan.appendChild(document.createTextNode(story.author || 'anonymous'));
 
     metaSpan.appendChild(document.createTextNode(` | ${timeAgo} | `));
 
@@ -523,7 +511,6 @@ function renderCommentsSection(comments, blogId) {
                     return;
                 }
 
-                await incrementCommentCount(window.currentStoryId);
 
                 textarea.value = '';
                 addBtn.disabled = false;
@@ -765,41 +752,5 @@ function renderCommentsSection(comments, blogId) {
             }
         }
 
-        if (e.target.classList.contains('boost-karma-pulse-btn')) {
-            e.preventDefault();
-            const btn = e.target;
-            const author = btn.getAttribute('data-author');
-            if (!author) return;
-
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-
-            const { data: profile } = await supabase.from('public_profiles').select('id').eq('username', author).maybeSingle();
-            if (!profile) {
-                alert('User not found.');
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                return;
-            }
-
-            const result = await toggleFollow(profile.id);
-            if (result.error) {
-                alert(result.error);
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            } else {
-                if (result.action === 'followed') {
-                    btn.classList.replace('text-gray-500', 'text-[#ff6600]');
-                    btn.title = "Decrease karma";
-                    btn.textContent = "[decrease karma]";
-                } else {
-                    btn.classList.replace('text-[#ff6600]', 'text-gray-500');
-                    btn.title = "Increase karma";
-                    btn.textContent = "[increase karma]";
-                }
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            }
-        }
     });
 });
