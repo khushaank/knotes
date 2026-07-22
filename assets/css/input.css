@@ -802,3 +802,112 @@ html.dark .account-body {
         animation-iteration-count: 1 !important;
     }
 }
+
+/* Shared site header: these rules are in the initial stylesheet so the
+   server-rendered header and the session-enhanced header have identical
+   geometry. This prevents the navigation from jumping after page load. */
+.kn-site-header,
+body>div:first-child>header:first-child {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 0;
+    background: #ff6600 !important;
+    color: #000 !important;
+    font: 14px/normal Verdana, Geneva, sans-serif;
+}
+
+.kn-header-inner,
+body>div:first-child>header:first-child>div {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    font: inherit;
+}
+
+.kn-header-brand,
+body>div:first-child>header:first-child>div>a:first-child {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    margin-right: 8px;
+    padding: 0 4px;
+    color: #000 !important;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.kn-header-nav,
+body>div:first-child>header:first-child>div>div:first-of-type {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    color: #000 !important;
+}
+
+.kn-header-auth,
+body>div:first-child>header:first-child>div>div:last-child {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin-left: auto !important;
+    color: #000 !important;
+    white-space: nowrap;
+}
+
+.kn-header-current,
+.kn-site-header [aria-current="page"] {
+    font-weight: 700;
+}
+
+@media (max-width: 639px) {
+    .kn-site-header,
+    body>div:first-child>header:first-child {
+        min-height: 0;
+        padding: 2px 6px;
+    }
+
+    .kn-header-inner,
+    body>div:first-child>header:first-child>div {
+        flex-wrap: wrap !important;
+        gap: 1px 3px !important;
+        padding: 0;
+        font-size: 12px;
+    }
+
+    .kn-header-brand,
+    body>div:first-child>header:first-child>div>a:first-child {
+        order: 1;
+        margin-right: 4px;
+        font-size: 13px;
+    }
+
+    .kn-header-nav,
+    body>div:first-child>header:first-child>div>div:first-of-type {
+        order: 3;
+        width: 100%;
+        flex-wrap: nowrap;
+        gap: 3px;
+        padding-left: 4px;
+        font-size: 12px;
+    }
+
+    .kn-header-auth,
+    body>div:first-child>header:first-child>div>div:last-child {
+        order: 2;
+        gap: 3px;
+        max-width: 55%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+    }
+}

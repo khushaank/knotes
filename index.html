@@ -14,14 +14,28 @@
   <meta property="og:title" content="K. Notes - High-Signal Tech News & Discussion" />
   <meta property="og:description"
     content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
-  <meta property="og:image" content="assets/img/logo.png" />
-  <meta property="og:url" content="/home" />
+  <meta property="og:image" content="https://knotes.dpdns.org/assets/img/logo.png" />
+  <meta property="og:url" content="https://knotes.dpdns.org/" />
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:title" content="K. Notes - High-Signal Tech News & Discussion" />
   <meta property="twitter:description"
     content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
-  <meta property="twitter:image" content="assets/img/logo.png" />
+  <meta property="twitter:image" content="https://knotes.dpdns.org/assets/img/logo.png" />
   <link rel="canonical" href="https://knotes.dpdns.org/" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "K. Notes",
+      "url": "https://knotes.dpdns.org/",
+      "description": "A community-driven technology news aggregator and discussion forum.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://knotes.dpdns.org/search?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://tixugcvwvvtbgcaryjvu.supabase.co" crossorigin />
   <style>
@@ -304,27 +318,6 @@
       body>div:first-of-type {
         max-width: 100%;
         margin: 4px 0 0
-      }
-
-      header {
-        position: relative;
-        min-height: 54px
-      }
-
-      header>div {
-        flex-wrap: wrap;
-        gap: 4px 2px;
-        padding: 6px 8px
-      }
-
-      header .flex.flex-wrap.items-center.gap-1 {
-        gap: 2px;
-        font-size: 11px
-      }
-
-      header .ml-auto {
-        margin-left: 0;
-        font-size: 11px
       }
 
       .kn-theme-separator {

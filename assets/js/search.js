@@ -18,19 +18,56 @@ async function performSearch(query) {
     container.replaceChildren(loadingDiv);
     status.textContent = `Searching for "${query}"...`;
 
-    supabase.rpc('increment_search_count', { search_term: query.toLowerCase().trim() }).catch(() => { });
+    if (!supabase) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'p-8 text-center text-red-500';
+        errorDiv.textContent = 'Search is temporarily unavailable.';
+        container.replaceChildren(errorDiv);
+        status.textContent = 'Could not connect to search. Please try again.';
+        return;
+    }
 
-    const { data: blogs, error: blogError } = await supabase.rpc('search_all_content', {
-        search_query: query,
-        page_limit: RESULTS_PER_PAGE,
-        page_offset: offset
-    });
+    if (!supabase) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'p-8 text-center text-red-500';
+        errorDiv.textContent = 'Search is temporarily unavailable.';
+        container.replaceChildren(errorDiv);
+        status.textContent = 'Could not connect to search. Please try again.';
+        return;
+    }
+
+    // Supabase query builders are awaitable, but they are not native Promises
+    // and do not expose .catch(). Keep analytics best-effort and non-blocking.
+    void (async () => {
+        try {
+            await supabase.rpc('increment_search_count', {
+                search_term: query.toLowerCase().trim()
+            });
+        } catch (error) {
+            console.debug('Search analytics unavailable:', error);
+        }
+    })();
+
+    let blogs;
+    let blogError;
+    try {
+        const response = await supabase.rpc('search_all_content', {
+            search_query: query,
+            page_limit: RESULTS_PER_PAGE,
+            page_offset: offset
+        });
+        blogs = response.data;
+        blogError = response.error;
+    } catch (error) {
+        blogError = error;
+    }
 
     if (blogError) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'p-8 text-center text-red-500';
         errorDiv.textContent = 'An error occurred while searching.';
         container.replaceChildren(errorDiv);
+        status.textContent = 'Search is temporarily unavailable. Please try again.';
         return;
     }
 
@@ -94,7 +131,14 @@ function renderResults(results, query, totalCount, page) {
         if (item.published_at?.toLowerCase().includes(query.toLowerCase())) occurrences.push('date');
 
         const timeAgo = calculateTimeAgo(item.published_at);
-        const domain = item.url ? new URL(item.url).hostname.replace('www.', '') : null;
+        let domain = null;
+        if (item.url) {
+            try {
+                domain = new URL(item.url).hostname.replace('www.', '');
+            } catch (error) {
+                console.debug('Ignoring invalid result URL:', item.url);
+            }
+        }
 
         const cardDiv = document.createElement('div');
         cardDiv.className = 'bg-white p-4 border border-gray-200 rounded-sm shadow-sm hover:shadow-md transition-shadow mb-4';

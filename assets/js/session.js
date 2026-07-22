@@ -12,6 +12,9 @@ if (currentTheme === 'dark') {
 const AUTH_CACHE_KEY = 'kn-auth-cache';
 const INSTALL_PROMPT_KEY = 'kn-install-prompt-seen';
 const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
+const CLEAN_PATH = window.location.pathname.replace(/\/+$/, '');
+const PAGE_NAME = (CLEAN_PATH.split('/').pop()?.replace(/\.html$/i, '') || 'home').toLowerCase();
+const HEADERLESS_PAGES = new Set(['login']);
 
 function getCachedAuth() {
     try {
@@ -96,7 +99,7 @@ function renderSharedHeader() {
         header = document.createElement('header');
         document.body.prepend(header);
     }
-    header.className = 'kn-site-header';
+    header.classList.add('kn-site-header');
 
     let inner = header.querySelector(':scope > div');
     if (!inner) {
@@ -105,16 +108,48 @@ function renderSharedHeader() {
     }
 
     const prefix = APP_ROOT;
-    inner.className = 'kn-header-inner';
-    inner.innerHTML = `
-        <a href="${prefix}home" class="kn-header-brand" title="K. Notes">K. Notes</a>
-        <nav class="kn-header-nav" aria-label="Main navigation">
-            <a href="${prefix}home">feed</a><span aria-hidden="true">|</span>
-            <a href="${prefix}ask">ask</a><span aria-hidden="true">|</span>
-            <a href="${prefix}show">show</a><span aria-hidden="true">|</span>
-            <a href="${prefix}submit">submit</a>
-        </nav>
-        <div class="kn-header-auth"><a href="${prefix}login">login</a></div>`;
+    let brand = inner.querySelector(':scope > a');
+    let nav = inner.querySelector(':scope > nav') || Array.from(inner.children).find(element =>
+        element !== brand && element.querySelector('a[href*="ask"]')
+    );
+    let auth = Array.from(inner.children).find(element =>
+        element !== nav && element.querySelector('a[href*="login"]')
+    );
+
+    // Most pages ship this markup in the HTML. Preserve it so hydration cannot
+    // replace the header after first paint and cause a visible layout shift.
+    if (!brand || !nav || !auth) {
+        inner.innerHTML = `
+            <a href="${prefix}home" title="K. Notes">K. Notes</a>
+            <nav aria-label="Main navigation">
+                <a href="${prefix}home">feed</a><span aria-hidden="true">|</span>
+                <a href="${prefix}ask">ask</a><span aria-hidden="true">|</span>
+                <a href="${prefix}show">show</a><span aria-hidden="true">|</span>
+                <a href="${prefix}submit">submit</a>
+            </nav>
+            <div><a href="${prefix}login">login</a></div>`;
+        brand = inner.querySelector(':scope > a');
+        nav = inner.querySelector(':scope > nav');
+        auth = inner.querySelector(':scope > div');
+    }
+
+    inner.classList.add('kn-header-inner');
+    brand.classList.add('kn-header-brand');
+    nav.classList.add('kn-header-nav');
+    nav.setAttribute('aria-label', 'Main navigation');
+    auth.classList.add('kn-header-auth');
+
+    const currentPage = PAGE_NAME === 'index' ? 'home' : PAGE_NAME;
+    nav.querySelectorAll('a').forEach(link => {
+        const destination = link.getAttribute('href').split('/').pop().replace(/\.html$/, '');
+        const linkPage = destination === 'index' ? 'home' : destination;
+        link.classList.remove('font-bold', 'kn-header-current');
+        link.removeAttribute('aria-current');
+        if (linkPage === currentPage || (currentPage === 'home' && linkPage === 'home')) {
+            link.classList.add('kn-header-current');
+            link.setAttribute('aria-current', 'page');
+        }
+    });
 }
 
 function injectMobileHeaderStyles() {
@@ -127,10 +162,11 @@ function injectMobileHeaderStyles() {
             background: #ff6600 !important;
             color: #000000 !important;
             width: 100%;
-            min-height: 32px;
-            padding: 0px 8px;
+            min-height: 0;
+            padding: 2px 8px;
             border: 0;
             border-radius: 0;
+            font: 14px/normal Verdana, Geneva, sans-serif;
         }
 
         header.kn-site-header a,
@@ -141,17 +177,19 @@ function injectMobileHeaderStyles() {
         .kn-header-brand {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
             white-space: nowrap;
+            margin-right: 8px;
+            padding: 0 4px;
+            font-weight: 700;
         }
 
         .kn-header-inner {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 4px;
             width: 100%;
             min-width: 0;
-            font-size: 12px;
+            font: inherit;
         }
 
         .kn-header-nav {
@@ -159,6 +197,10 @@ function injectMobileHeaderStyles() {
             flex-wrap: wrap;
             align-items: center;
             gap: 4px;
+        }
+
+        .kn-header-current {
+            font-weight: 700;
         }
 
         .kn-header-auth {
@@ -238,8 +280,8 @@ function injectMobileHeaderStyles() {
                 position: sticky;
                 top: 0;
                 z-index: 80;
-                min-height: 36px;
-                padding: 4px 6px;
+                min-height: 0;
+                padding: 2px 6px;
                 border-bottom: 1px solid rgba(0, 0, 0, 0.22);
             }
 
@@ -258,18 +300,24 @@ function injectMobileHeaderStyles() {
 
             header.kn-site-header .kn-header-inner {
                 flex-wrap: wrap !important;
-                gap: 3px 6px !important;
+                gap: 1px 3px !important;
+                font-size: 12px;
+            }
+
+            .kn-header-brand {
+                order: 1;
             }
 
             .kn-header-nav {
                 order: 3;
                 width: 100%;
-                flex-wrap: wrap;
-                padding-top: 2px;
+                flex-wrap: nowrap;
+                padding-left: 4px;
                 font-size: 12px;
             }
 
             .kn-header-auth {
+                order: 2;
                 max-width: 55%;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -355,8 +403,10 @@ function addThemeToggle() {
     : (cb) => cb()
 )(async () => {
     setupInstallPrompt();
-    renderSharedHeader();
-    injectMobileHeaderStyles();
+    if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
+        renderSharedHeader();
+        injectMobileHeaderStyles();
+    }
     document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
         document.body.style.visibility = 'visible';

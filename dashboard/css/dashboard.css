@@ -362,16 +362,60 @@ body.sidebar-collapsed .nav-item.active {
     position: sticky;
     top: 0;
     z-index: 50;
-    height: var(--topbar-height);
-    background: var(--bg-body);
-    border-bottom: 1px solid var(--border);
+    min-height: 32px;
+    background: #ff6600;
+    color: #000;
+    border: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 32px;
+    gap: 7px;
+    padding: 2px 8px;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 13px;
+}
+
+.topbar a,
+.topbar button,
+.topbar .admin-badge {
+    color: #000;
+}
+
+.topbar-brand {
+    flex: 0 0 auto;
+    padding: 0 4px;
+    margin-right: 8px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.topbar-nav a {
+    text-decoration: none;
+}
+
+.topbar a:hover,
+.topbar button:hover {
+    text-decoration: underline;
+}
+
+.topbar .btn {
+    min-height: 30px;
+    padding: 2px 4px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #000;
+    font: inherit;
 }
 
 .topbar-right {
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -379,7 +423,6 @@ body.sidebar-collapsed .nav-item.active {
 
 .admin-badge {
     font-size: 13px;
-    color: var(--text-secondary);
     padding: 5px 0;
     max-width: 150px;
     white-space: nowrap;
@@ -917,8 +960,27 @@ tbody tr:hover {
 
     .topbar {
         position: static;
-        height: 54px;
-        padding: 0 16px;
+        min-height: 36px;
+        padding: 4px 6px;
+        flex-wrap: wrap;
+        gap: 3px 6px;
+    }
+
+    .topbar-nav {
+        order: 3;
+        width: 100%;
+        padding-top: 2px;
+        font-size: 12px;
+    }
+
+    .topbar-right {
+        gap: 6px !important;
+        max-width: 55%;
+        font-size: 12px;
+    }
+
+    .topbar .admin-badge {
+        max-width: 92px;
     }
 
     .content {
@@ -1177,9 +1239,4 @@ button:focus-visible {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
     }
-}
-
-.topbar-title {
-    color: var(--text-primary);
-    font-size: 15px;
 }

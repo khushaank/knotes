@@ -1,48 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>home</loc>
+    <loc>https://knotes.dpdns.org/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>login</loc>
+    <loc>https://knotes.dpdns.org/ask</loc>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>guidelines</loc>
+    <loc>https://knotes.dpdns.org/show</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://knotes.dpdns.org/guidelines</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>faq</loc>
+    <loc>https://knotes.dpdns.org/faq</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>lists</loc>
+    <loc>https://knotes.dpdns.org/lists</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>api</loc>
+    <loc>https://knotes.dpdns.org/api</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>security</loc>
+    <loc>https://knotes.dpdns.org/security</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>legal</loc>
+    <loc>https://knotes.dpdns.org/legal</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>contact</loc>
+    <loc>https://knotes.dpdns.org/contact</loc>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>about</loc>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>author</loc>
+    <loc>https://knotes.dpdns.org/about</loc>
     <priority>0.5</priority>
   </url>
 </urlset>

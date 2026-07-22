@@ -17,12 +17,16 @@ body {
 header {
     background-color: #ff6600;
     padding: 2px 8px;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 header a {
     color: #000;
     text-decoration: none;
+    font-weight: normal;
+}
+
+header > div > a:first-child {
     font-weight: bold;
 }
 

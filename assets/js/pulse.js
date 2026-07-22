@@ -248,6 +248,14 @@ function renderStoryDetails(story) {
     document.querySelector('meta[property="twitter:title"]')?.setAttribute('content', cleanTitle);
     document.querySelector('meta[property="twitter:description"]')?.setAttribute('content', cleanExcerpt);
 
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = 'canonical';
+        document.head.appendChild(canonical);
+    }
+    canonical.href = storyUrl;
+
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "NewsArticle",
