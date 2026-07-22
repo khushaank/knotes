@@ -90,20 +90,10 @@ const HASH_TO_CATEGORY = {
 
     const btnSubmit = document.getElementById('btn-submit');
     const categorySelect = document.getElementById('submit-category');
-    const rowUrl = document.getElementById('row-url');
     const rowText = document.getElementById('row-text');
 
     function applyCategoryView(cat) {
-        if (cat === 'article') {
-            if (rowUrl) rowUrl.style.display = '';
-            if (rowText) rowText.style.display = '';
-        } else if (cat === 'ask') {
-            if (rowUrl) rowUrl.style.display = 'none';
-            if (rowText) rowText.style.display = '';
-        } else if (cat === 'show') {
-            if (rowUrl) rowUrl.style.display = '';
-            if (rowText) rowText.style.display = '';
-        }
+        if (rowText) rowText.style.display = '';
     }
 
     if (categorySelect) {
@@ -144,18 +134,6 @@ const HASH_TO_CATEGORY = {
         }
     });
 
-    const urlInput = document.getElementById('submit-url');
-    if (urlInput) {
-        function fixUrlProtocol() {
-            const val = urlInput.value.trim();
-            if (val && !val.startsWith('http://') && !val.startsWith('https://')) {
-                urlInput.value = 'https://' + val;
-            }
-        }
-        urlInput.addEventListener('paste', () => setTimeout(fixUrlProtocol, 0));
-        urlInput.addEventListener('blur', fixUrlProtocol);
-    }
-
     const titleInput = document.getElementById('submit-title');
     if (titleInput) {
         const counter = document.createElement('span');
@@ -195,7 +173,7 @@ const HASH_TO_CATEGORY = {
         }
 
         let title = sanitize(document.getElementById('submit-title')?.value ?? '');
-        const url = sanitize(document.getElementById('submit-url')?.value ?? '');
+        const url = '';
         const text = sanitize(document.getElementById('submit-text')?.value ?? '');
 
         if (!title) {
@@ -214,27 +192,14 @@ const HASH_TO_CATEGORY = {
             return;
         }
 
-        if (url) {
-            try {
-                const parsed = new URL(url);
-                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                    showStatus('Only http and https URLs are allowed.', true);
-                    return;
-                }
-            } catch {
-                showStatus('Please enter a valid URL (e.g. https://example.com)', true);
-                return;
-            }
-        }
-
         const categoryInput = document.getElementById('submit-category');
         let finalCategory = categoryInput ? categoryInput.value : 'article';
 
         if (!['article', 'ask', 'show'].includes(finalCategory)) {
             finalCategory = 'article';
         }
-        if (finalCategory === 'article' && !url && !text) {
-            showStatus('Write the article or include a URL.', true);
+        if (finalCategory === 'article' && !text) {
+            showStatus('Write an article before submitting.', true);
             document.getElementById('submit-text')?.focus();
             return;
         }

@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js';
 import { renderMarkdown } from './contentRenderer.js';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -11,6 +11,7 @@ const slugFromPath = pathParts.length > 1 && pathParts[0] === 'pulse' ? pathPart
 const activeSlug = slugParam || slugFromPath;
 let userBookmarks = [];
 let userLikes = [];
+let currentSession = null;
 
 async function fetchStory() {
     if (!supabase) return null;
@@ -114,11 +115,6 @@ function renderCommentList(comments) {
         timeLink.textContent = timeAgo;
         metaDiv.appendChild(timeLink);
 
-        const collapseSpan = document.createElement('span');
-        collapseSpan.className = 'cursor-pointer hover:underline collapse-toggle text-hn-grey';
-        collapseSpan.textContent = '[–]';
-        metaDiv.appendChild(collapseSpan);
-
         contentDiv.appendChild(metaDiv);
 
         const bodyDiv = document.createElement('div');
@@ -148,34 +144,26 @@ function renderCommentList(comments) {
 
     if (comments.length > visibleCount) {
         const moreDiv = document.createElement('div');
-        moreDiv.className = 'mt-8 mb-4 flex items-center gap-4';
-
-        const line1 = document.createElement('div');
-        line1.className = 'flex-1 h-[1px] bg-gray-200';
-        moreDiv.appendChild(line1);
+        moreDiv.className = 'comments-more-row mt-4 mb-4';
 
         const btn = document.createElement('button');
         btn.id = 'show-more-comments';
-        btn.className = 'group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-300 bg-white text-gray-500 hover:text-[#ff6600] hover:border-[#ff6600] hover:bg-[#fffbf0] text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer shadow-sm hover:shadow-md outline-none';
+        btn.className = 'classic-comments-button';
         btn.setAttribute('data-more', comments.length - visibleCount);
         btn.setAttribute('data-total', comments.length);
 
         const icon = document.createElement('span');
-        icon.className = 'material-symbols-outlined transition-transform duration-200';
+        icon.className = 'material-symbols-outlined';
         icon.id = 'expand-icon';
         icon.style.fontSize = '18px';
         icon.textContent = 'expand_more';
         btn.appendChild(icon);
 
         const spanText = document.createElement('span');
-        spanText.textContent = `View all ${comments.length} comments`;
+        spanText.textContent = `See all ${comments.length} comments`;
         btn.appendChild(spanText);
 
         moreDiv.appendChild(btn);
-
-        const line2 = document.createElement('div');
-        line2.className = 'flex-1 h-[1px] bg-gray-200';
-        moreDiv.appendChild(line2);
 
         fragment.appendChild(moreDiv);
     }
@@ -226,7 +214,8 @@ async function renderPage() {
 }
 
 async function loadUserStats() {
-    [userBookmarks, userLikes] = await Promise.all([
+    [currentSession, userBookmarks, userLikes] = await Promise.all([
+        getCurrentSession(),
         getUserBookmarks(),
         getUserLikes()
     ]);
@@ -302,7 +291,7 @@ function renderStoryDetails(story) {
     const contentWrapper = document.createElement('div');
     
     const h1 = document.createElement('h1');
-    h1.className = 'story-title text-lg font-bold leading-tight';
+    h1.className = 'story-title viewer-title font-bold leading-tight';
     const titleLink = document.createElement('a');
     titleLink.className = 'hover:underline';
     titleLink.href = story.url || '#';
@@ -350,11 +339,11 @@ function renderStoryDetails(story) {
     metaSpan.appendChild(document.createTextNode(` | ${timeAgo} | `));
 
     const hideLink = document.createElement('a');
-    hideLink.className = 'hover:underline';
-    hideLink.href = '../home';
+    hideLink.className = 'hover:underline hide-story-link';
+    hideLink.href = '#';
+    hideLink.setAttribute('data-id', story.id);
     hideLink.textContent = 'hide';
     metaSpan.appendChild(hideLink);
-    metaSpan.appendChild(document.createTextNode(' | '));
 
     const bookmarkContainer = document.createElement('span');
     bookmarkContainer.className = 'bookmark-container inline-block';
@@ -394,7 +383,10 @@ function renderStoryDetails(story) {
     
     dropdownSpan.appendChild(menu);
     bookmarkContainer.appendChild(dropdownSpan);
-    metaSpan.appendChild(bookmarkContainer);
+    if (currentSession) {
+        metaSpan.appendChild(document.createTextNode(' | '));
+        metaSpan.appendChild(bookmarkContainer);
+    }
     metaSpan.appendChild(document.createTextNode(' | '));
 
     const shareLink = document.createElement('a');
@@ -438,7 +430,7 @@ function renderStoryDetails(story) {
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content';
-        contentDiv.style.cssText = 'white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;';
+        contentDiv.style.cssText = 'overflow-wrap: anywhere; word-wrap: break-word;';
         contentDiv.innerHTML = renderMarkdown(story.content).trim();
         fragment.appendChild(contentDiv);
     }
@@ -534,23 +526,6 @@ function renderCommentsSection(comments, blogId) {
     }
 
     document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('collapse-toggle')) {
-            const toggle = e.target;
-            const commentRoot = toggle.closest('.flex.items-start').parentElement;
-            const body = commentRoot.querySelector('.comment-body');
-            const footer = commentRoot.querySelector('.comment-footer');
-
-            if (toggle.innerText === '[–]') {
-                toggle.innerText = '[+]';
-                if (body) body.style.display = 'none';
-                if (footer) footer.style.display = 'none';
-            } else {
-                toggle.innerText = '[–]';
-                if (body) body.style.display = 'block';
-                if (footer) footer.style.display = 'block';
-            }
-        }
-
         if (e.target.classList.contains('reply-btn') || e.target.classList.contains('add-comment-link')) {
             e.preventDefault();
             const activeTextarea = document.getElementById('comment-input');
@@ -742,22 +717,18 @@ function renderCommentsSection(comments, blogId) {
             }
         }
 
+        if (e.target.classList.contains('hide-story-link')) {
+            e.preventDefault();
+            await hideStory(e.target.getAttribute('data-id'));
+            window.location.replace('../home');
+            return;
+        }
+
         if (e.target.closest('#show-more-comments')) {
             const btn = e.target.closest('#show-more-comments');
             const extraComments = document.getElementById('extra-comments');
-            const icon = btn.querySelector('#expand-icon');
-            const text = btn.querySelector('span:not(.material-symbols-outlined)');
-            const totalCount = btn.getAttribute('data-total');
-
-            if (extraComments.classList.contains('hidden')) {
-                extraComments.classList.remove('hidden');
-                icon.style.transform = 'rotate(180deg)';
-                text.textContent = 'Hide comments';
-            } else {
-                extraComments.classList.add('hidden');
-                icon.style.transform = 'rotate(0deg)';
-                text.textContent = `View all ${totalCount} comments`;
-            }
+            extraComments?.classList.remove('hidden');
+            btn.parentElement?.remove();
         }
 
     });

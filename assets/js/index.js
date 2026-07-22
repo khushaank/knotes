@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getCache, setCache } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
@@ -12,19 +12,6 @@ function normalizeSearchInput(input) {
         .trim()
         .replace(/[%_]/g, '')
         .substring(0, 200);
-}
-
-function getHiddenStories() {
-    try {
-        return JSON.parse(localStorage.getItem('kn-hidden-stories') || '[]');
-    } catch { return []; }
-}
-function hideStory(id) {
-    const hidden = getHiddenStories();
-    if (!hidden.includes(id)) {
-        hidden.push(id);
-        localStorage.setItem('kn-hidden-stories', JSON.stringify(hidden));
-    }
 }
 
 async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
@@ -140,7 +127,7 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         statsSummary.textContent = `Showing ${stories.length} ${filter} stories (Page ${page})`;
     }
 
-    const hiddenIds = getHiddenStories();
+    const hiddenIds = await getHiddenStoryIds();
     const visibleStories = stories.filter(s => !hiddenIds.includes(String(s.id)));
 
     const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -237,7 +224,6 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
         hideLink.setAttribute('data-id', story.id);
         hideLink.textContent = 'hide';
         td2_2.appendChild(hideLink);
-        td2_2.appendChild(document.createTextNode(' | '));
 
         const bookmarkSpan = document.createElement('span');
         bookmarkSpan.className = 'bookmark-container';
@@ -278,7 +264,10 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
 
         dropdownSpan.appendChild(dropMenu);
         bookmarkSpan.appendChild(dropdownSpan);
-        td2_2.appendChild(bookmarkSpan);
+        if (session) {
+            td2_2.appendChild(document.createTextNode(' | '));
+            td2_2.appendChild(bookmarkSpan);
+        }
 
         td2_2.appendChild(document.createTextNode(' | '));
 
@@ -659,7 +648,7 @@ async function loadUserStats() {
         if (e.target.classList.contains('hide-link')) {
             e.preventDefault();
             const storyId = e.target.getAttribute('data-id');
-            hideStory(storyId);
+            await hideStory(storyId);
             const rows = document.querySelectorAll(`[data-id="${storyId}"]`);
             rows.forEach(row => {
                 row.style.transition = 'opacity 0.25s ease-out';
@@ -721,8 +710,11 @@ async function loadUserStats() {
             .maybeSingle();
 
         if (data && data.value && data.value.trim() !== '') {
-            const cleanHtml = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(data.value) : data.value;
-            banner.innerHTML = cleanHtml;
+            if (typeof DOMPurify !== 'undefined') {
+                banner.innerHTML = DOMPurify.sanitize(data.value);
+            } else {
+                banner.textContent = data.value;
+            }
             banner.classList.remove('hidden');
         } else {
             banner.classList.add('hidden');

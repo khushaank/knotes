@@ -19,18 +19,18 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Login - K. Notes</title>
     <meta name="description"
         content="Sign in to K. Notes or create an account to join technology discussions and save your activity." />
     <meta name="robots" content="noindex, follow" />
-    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="assets/css/styles.css?v=8" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
-<body class="bg-white font-body-md text-body-md text-on-surface p-4">
+<body class="auth-page bg-white font-body-md text-body-md text-on-surface p-4">
     <div id="message-container" class="text-sm font-bold mb-4 hidden"></div>
 
     <div class="mb-8">
@@ -103,8 +103,6 @@
             </table>
         </form>
     </div>
-    </main>
-    </div>
     <script>
         function togglePassword(event, id) {
             const input = document.getElementById(id);
@@ -132,7 +130,7 @@
         checkSession();
     </script>
     <script type="module" src="assets/js/auth.js"></script>
-    <script type="module" src="assets/js/session.js"></script>
+    <script type="module" src="assets/js/session.js?v=7"></script>
     <script defer src="assets/js/exit-interceptor.js"></script>
 </body>
 

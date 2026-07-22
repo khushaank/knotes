@@ -4,7 +4,7 @@
 <head>
   <script>        (function () { try { var theme = localStorage.getItem('kn-theme') || 'light'; if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); document.documentElement.classList.add('dark'); } else { document.documentElement.setAttribute('data-theme', 'light'); document.documentElement.classList.remove('dark'); } } catch (e) { } })();    </script>
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src *;" />
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>K. Notes - High-Signal Tech News & Discussion</title>
@@ -364,6 +364,7 @@
       }
     }
   </style>
+  <link href="assets/css/styles.css?v=8" rel="stylesheet" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
@@ -373,8 +374,10 @@
       style="max-width: 100%;">
       <div class="flex items-center gap-1 w-full text-[13px]"> <a href="/home"
           class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-        <div class="flex flex-wrap items-center gap-1 text-black"> <a class="hover:underline" href="/home">feed</a> | <a class="hover:underline" href="/ask">ask</a> |
-          <a class="hover:underline" href="/show">show</a> | <a class="hover:underline" href="/submit">submit</a> </div>
+        <div class="flex flex-wrap items-center gap-1 text-black"> <a class="hover:underline font-bold"
+            href="/home">feed</a> | <a class="hover:underline" href="/ask">ask</a> |
+          <a class="hover:underline" href="/show">show</a> | <a class="hover:underline" href="/submit">submit</a>
+        </div>
         <div class="ml-auto text-black flex items-center gap-4"> <a class="hover:underline text-black"
             href="/login">login</a> </div>
       </div>
@@ -393,37 +396,37 @@
     </div>
     <main class="bg-[#f6f6ef] pt-2 pb-4" style="min-height:100vh">
       <table class="border-spacing-0 border-collapse">
-<tbody>
-          <tr><td colspan="3" class="p-4 text-center">Loading stories…</td></tr>
+        <tbody>
+          <tr>
+            <td colspan="3" class="p-4 text-center">Loading stories…</td>
+          </tr>
         </tbody>
       </table>
     </main>
     <footer
       class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
       style="max-width: 100%;">
-      <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4"> <a
-          class="hover:underline text-gray-600 py-1.5" href="/guidelines">Guidelines</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/faq">FAQ</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/lists">Lists</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/api">API</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/security">Security</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/legal">Legal</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/about">About</a> | <a
-          class="hover:underline text-gray-600 py-1.5" href="/contact">Feedback</a> </div>
-      <form id="footer-search-form" class="flex flex-col items-center gap-2"
-        onsubmit="event.preventDefault(); window.location.href='/search?search='+document.getElementById('footer-search-input').value;">
-        <div class="flex items-center gap-2"><label class="text-gray-700 text-xs"
-            for="footer-search-input">Search:</label><input type="text" id="footer-search-input"
-            class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
-        </div>
+      <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
+        <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
+        <a class="hover:underline text-gray-600" href="faq">FAQ</a> |
+        <a class="hover:underline text-gray-600" href="lists">Lists</a> | <a class="hover:underline text-gray-600"
+          href="security">Security</a> |
+        <a class="hover:underline text-gray-600" href="legal">Legal</a> | <a class="hover:underline text-gray-600"
+          href="contact">Feedback</a>
+      </div>
+      <form id="footer-search-form" class="flex items-center gap-2"
+        onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
+        <span class="text-gray-500 text-xs">Search:</span>
+        <input type="text" id="footer-search-input"
+          class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
       </form>
     </footer>
   </div>
   <div id="toast-container"></div>
   <script defer src="assets/js/exit-interceptor.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.12/dist/purify.min.js"></script>
   <script type="module" src="assets/js/index.js"></script>
-  <script type="module" src="assets/js/session.js"></script>
+  <script type="module" src="assets/js/session.js?v=7"></script>
 </body>
 
 </html>

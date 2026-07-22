@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Feedback - K. Notes</title>
     <meta name="description" content="Send feedback, report an issue, or contact the K. Notes team about the technology news and discussion community." />
     <link rel="canonical" href="https://knotes.dpdns.org/contact" />
-    <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="assets/css/styles.css?v=8" rel="stylesheet" />
     <link rel="icon" type="image/png" href="assets/img/logo.png" />
 </head>
 
@@ -134,12 +134,8 @@
             <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
                 <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
                 <a class="hover:underline text-gray-600" href="faq">FAQ</a> |
-                <a class="hover:underline text-gray-600" href="lists">Lists</a> |
-                <a class="hover:underline text-gray-600" href="api">API</a> |
-                <a class="hover:underline text-gray-600" href="security">Security</a> |
-                <a class="hover:underline text-gray-600" href="legal">Legal</a> |
-                <a class="hover:underline text-gray-600" href="about">About</a> |
-                <a class="hover:underline text-gray-600" href="contact">Feedback</a>
+                <a class="hover:underline text-gray-600" href="lists">Lists</a> | <a class="hover:underline text-gray-600" href="security">Security</a> |
+                <a class="hover:underline text-gray-600" href="legal">Legal</a> | <a class="hover:underline text-gray-600" href="contact">Feedback</a>
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
@@ -150,7 +146,7 @@
         </footer>
     </div>
     <script defer src="assets/js/exit-interceptor.js"></script>
-    <script type="module" src="assets/js/session.js"></script>
+    <script type="module" src="assets/js/session.js?v=7"></script>
 </body>
 
 </html>

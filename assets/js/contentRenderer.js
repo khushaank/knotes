@@ -31,47 +31,62 @@ function hardenRenderedHtml(html) {
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
     });
 
-    template.content.querySelectorAll('a[target="_blank"]').forEach(anchor => {
-        anchor.setAttribute('rel', 'noopener noreferrer');
+    template.content.querySelectorAll('a').forEach(anchor => {
+        const href = anchor.getAttribute('href') || '';
+        if (/^https?:\/\//i.test(href)) {
+            anchor.setAttribute('target', '_blank');
+            anchor.setAttribute('rel', 'noopener noreferrer nofollow');
+        }
+    });
+
+    template.content.querySelectorAll('img').forEach(image => {
+        image.setAttribute('loading', 'lazy');
+        image.setAttribute('decoding', 'async');
+        if (!image.hasAttribute('alt')) image.setAttribute('alt', '');
     });
 
     return template.innerHTML;
 }
 
+function escapePlainText(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 export function renderMarkdown(text) {
     if (!text) return '';
 
-    let processedText = text;
-    const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+    let processedText = String(text).replace(/\r\n?/g, '\n');
+    const ytRegex = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?[^\s]*?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<]*)?/gi;
     processedText = processedText.replace(ytRegex, (match, videoId) => {
-        if (match.includes('iframe') || match.includes('youtube.com/embed')) return match;
-        return `\n<iframe class="w-full max-w-2xl rounded shadow-md mt-2 mb-4" height="315" src="https://www.youtube-nocookie.com/embed/${videoId}" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
+        return `\n<iframe class="kn-media-embed" title="YouTube video" src="https://www.youtube-nocookie.com/embed/${videoId}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
     });
 
     const imgRegex = /(?<!\!\[.*?\]\()(?<!src=["'])(https?:\/\/[^\s<]+?\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<]*)?)/gi;
     processedText = processedText.replace(imgRegex, '![]($1)');
 
     let parsed = '';
-    if (typeof marked !== 'undefined') {
-        parsed = marked.parse(processedText, { breaks: true, gfm: true });
+    if (globalThis.marked?.parse) {
+        parsed = globalThis.marked.parse(processedText, { breaks: true, gfm: true });
     } else {
-        parsed = sanitize(processedText);
+        // Keep viewer pages functional if the optional Markdown parser fails
+        // to load, without treating user text as HTML.
+        parsed = escapePlainText(processedText).replace(/\r?\n/g, '<br>');
     }
 
-    if (typeof DOMPurify !== 'undefined') {
-        const cleanHtml = DOMPurify.sanitize(parsed, {
+    if (globalThis.DOMPurify?.sanitize) {
+        const cleanHtml = globalThis.DOMPurify.sanitize(parsed, {
             ADD_TAGS: ['iframe'],
             ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'height', 'loading', 'referrerpolicy', 'sandbox', 'scrolling', 'src']
         });
         return hardenRenderedHtml(cleanHtml);
     }
 
-    return parsed
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return escapePlainText(processedText).replace(/\n/g, '<br>');
 }
 
 export function setupLinkPreviews() {

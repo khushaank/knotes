@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com; form-action 'self'; upgrade-insecure-requests;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; form-action 'self'; upgrade-insecure-requests;">
     <title>Account - K. Notes</title>
-    <link href="assets/css/styles.css" rel="stylesheet">
+    <link href="assets/css/styles.css?v=8" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/img/logo.png">
 </head>
 
@@ -42,6 +42,20 @@
                     <button type="button" id="profile-logout" class="account-button account-button-secondary">Sign out</button>
                 </section>
 
+                <section class="account-panel" aria-labelledby="theme-title">
+                    <h2 id="theme-title">Appearance</h2>
+                    <p class="account-help">Choose how K. Notes looks on this account.</p>
+                    <form id="theme-form" class="theme-form">
+                        <label for="theme-preference">Theme</label>
+                        <select id="theme-preference" name="theme-preference">
+                            <option value="system">Use device setting</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                        <p id="theme-status" class="account-message" role="status" aria-live="polite"></p>
+                    </form>
+                </section>
+
                 <section class="account-panel" aria-labelledby="password-title">
                     <h2 id="password-title">Change password</h2>
                     <p class="account-help">Use at least 12 characters and avoid reusing another password.</p>
@@ -65,6 +79,19 @@
                         <button type="submit" id="password-save" class="account-button account-button-primary">Update password</button>
                     </form>
                 </section>
+
+                <section class="account-panel account-hidden-panel" aria-labelledby="hidden-items-title">
+                    <div class="hidden-items-heading">
+                        <div>
+                            <h2 id="hidden-items-title">Hidden items</h2>
+                            <p class="account-help">Stories you hide disappear from the feed. Restore one here at any time.</p>
+                        </div>
+                        <span id="hidden-items-count" class="hidden-items-count" aria-live="polite"></span>
+                    </div>
+                    <div id="hidden-items-list" class="hidden-items-list" aria-live="polite">
+                        <p class="account-help">Loading hidden itemsâ€¦</p>
+                    </div>
+                </section>
             </div>
         </main>
 
@@ -78,7 +105,7 @@
     </div>
 
     <script type="module" src="assets/js/profile.js"></script>
-    <script type="module" src="assets/js/session.js"></script>
+    <script type="module" src="assets/js/session.js?v=7"></script>
 </body>
 
 </html>

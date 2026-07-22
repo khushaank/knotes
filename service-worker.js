@@ -1,5 +1,10 @@
-const CACHE = 'knotes-v3';
+const CACHE = 'knotes-v8';
 const SHELL = ['/home', '/assets/css/styles.css', '/assets/img/logo.png'];
+const PUBLIC_PAGES = new Set([
+    '/', '/home', '/ask', '/show', '/contact', '/faq',
+    '/guidelines', '/legal', '/security', '/search'
+]);
+const STATIC_ASSET = /^\/assets\/(?:css|img|js)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(SHELL.map(url => cache.add(url)))));
@@ -18,18 +23,37 @@ self.addEventListener('fetch', event => {
 
     if (request.mode === 'navigate') {
         event.respondWith(fetch(request).then(response => {
-            const copy = response.clone();
-            if (!response.headers.get('Cache-Control')?.includes('no-store')) {
-                caches.open(CACHE).then(cache => cache.put(request, copy));
+            if (response.ok && PUBLIC_PAGES.has(url.pathname) && !url.search) {
+                const copy = response.clone();
+                event.waitUntil(caches.open(CACHE).then(cache => cache.put(url.pathname, copy)));
             }
             return response;
-        }).catch(() => caches.match(request).then(response => response || caches.match('/home'))));
+        }).catch(() => {
+            if (!PUBLIC_PAGES.has(url.pathname)) return caches.match('/home');
+            return caches.match(url.pathname).then(response => response || caches.match('/home'));
+        }));
         return;
     }
 
-    event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
-        const copy = response.ok ? response.clone() : null;
-        if (copy) caches.open(CACHE).then(cache => cache.put(request, copy));
+    if (!STATIC_ASSET.test(url.pathname)) return;
+
+    if (/\.(?:css|js)$/i.test(url.pathname)) {
+        // Do not let a stale stylesheet keep an old header layout after deploy.
+        event.respondWith(fetch(request).then(response => {
+            if (response.ok) {
+                const copy = response.clone();
+                event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+            }
+            return response;
+        }).catch(() => caches.match(request)));
+        return;
+    }
+
+    event.respondWith(caches.match(request, { ignoreSearch: false }).then(cached => cached || fetch(request).then(response => {
+        if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+        }
         return response;
     })));
 });

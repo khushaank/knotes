@@ -1,20 +1,41 @@
 import { supabase } from './supabaseClient.js';
 
-const currentTheme = localStorage.getItem('kn-theme') || 'light';
-if (currentTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.documentElement.classList.add('dark');
-} else {
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.documentElement.classList.remove('dark');
+function applyTheme(preference = 'system') {
+    const resolved = preference === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preference;
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+    try { localStorage.setItem('kn-theme-preference', preference); } catch (e) { }
 }
+
+try { applyTheme(localStorage.getItem('kn-theme-preference') || 'system'); } catch (e) { applyTheme('system'); }
 
 const AUTH_CACHE_KEY = 'kn-auth-cache';
 const INSTALL_PROMPT_KEY = 'kn-install-prompt-seen';
 const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
 const CLEAN_PATH = window.location.pathname.replace(/\/+$/, '');
 const PAGE_NAME = (CLEAN_PATH.split('/').pop()?.replace(/\.html$/i, '') || 'home').toLowerCase();
-const HEADERLESS_PAGES = new Set(['login']);
+const HEADERLESS_PAGES = new Set(['login', 'maintenance']);
+
+function isCompactHeader() {
+    return window.matchMedia('(max-width: 639px)').matches;
+}
+
+function syncHeaderLabels() {
+    const compact = isCompactHeader();
+    const brand = document.querySelector('.kn-header-brand');
+    if (brand) brand.textContent = compact ? 'KN' : 'K. Notes';
+
+    document.querySelectorAll('.kn-user-name').forEach(node => {
+        node.hidden = compact;
+    });
+    document.querySelectorAll('.kn-user-initials').forEach(node => {
+        node.hidden = !compact;
+    });
+}
+
+window.addEventListener('resize', syncHeaderLabels);
 
 function getCachedAuth() {
     try {
@@ -139,17 +160,8 @@ function renderSharedHeader() {
     nav.setAttribute('aria-label', 'Main navigation');
     auth.classList.add('kn-header-auth');
 
-    const currentPage = PAGE_NAME === 'index' ? 'home' : PAGE_NAME;
-    nav.querySelectorAll('a').forEach(link => {
-        const destination = link.getAttribute('href').split('/').pop().replace(/\.html$/, '');
-        const linkPage = destination === 'index' ? 'home' : destination;
-        link.classList.remove('font-bold', 'kn-header-current');
-        link.removeAttribute('aria-current');
-        if (linkPage === currentPage || (currentPage === 'home' && linkPage === 'home')) {
-            link.classList.add('kn-header-current');
-            link.setAttribute('aria-current', 'page');
-        }
-    });
+    // Active links are declared in the page HTML. Keeping that state static
+    // avoids changing the navigation width after first paint.
 }
 
 function injectMobileHeaderStyles() {
@@ -358,45 +370,27 @@ function applyAuthUI(username) {
     const profile = document.createElement('a');
     profile.href = prefix + 'profile';
     profile.className = 'hover:underline text-black';
-    profile.textContent = username;
+    const initials = String(username || 'member')
+        .split(/[^a-z0-9]+/i)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join('') || 'M';
+    profile.title = username;
+    profile.setAttribute('aria-label', `Profile: ${username}`);
+    const name = document.createElement('span');
+    name.className = 'kn-user-name';
+    name.textContent = username;
+    const compactName = document.createElement('span');
+    compactName.className = 'kn-user-initials';
+    compactName.setAttribute('aria-hidden', 'true');
+    compactName.textContent = initials;
+    profile.append(name, compactName);
     auth.replaceChildren(profile);
-    addThemeToggle();
+    syncHeaderLabels();
 }
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
-function addThemeToggle() {
-    const headerRight = document.querySelector('.kn-header-auth');
-    if (!headerRight || headerRight.querySelector('.kn-theme-toggle')) return;
-
-    const sep = document.createElement('span');
-    sep.className = 'kn-theme-separator';
-    sep.textContent = ' | ';
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'kn-theme-toggle';
-    btn.title = 'Change color theme';
-    btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (document.documentElement.getAttribute('data-theme') === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('kn-theme', 'light');
-            btn.textContent = 'dark';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('kn-theme', 'dark');
-            btn.textContent = 'light';
-        }
-    });
-
-    headerRight.appendChild(sep);
-    headerRight.appendChild(btn);
-}
-
 // ─── Main Session Logic ───────────────────────────────────────────────────────
 (document.readyState === 'loading'
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
@@ -405,12 +399,11 @@ function addThemeToggle() {
     setupInstallPrompt();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
         renderSharedHeader();
-        injectMobileHeaderStyles();
+        syncHeaderLabels();
     }
     document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
         document.body.style.visibility = 'visible';
-        addThemeToggle();
         return;
     }
 
@@ -418,8 +411,8 @@ function addThemeToggle() {
     const cached = getCachedAuth();
     if (cached && cached.username) {
         applyAuthUI(cached.username);
+        applyTheme(cached.themePreference || 'system');
     }
-    addThemeToggle();
 
     // Show body immediately when we have cached state — no flicker
     if (cached) {
@@ -446,27 +439,31 @@ function addThemeToggle() {
                 // First load — fetch profile and cache it
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('is_admin, username')
+                    .select('is_admin, username, theme_preference')
                     .eq('id', session.user.id)
                     .single();
 
                 if (profile) {
                     const username = profile.username || session.user.email.split('@')[0];
-                    setCachedAuth({ username, isAdmin: !!profile.is_admin });
+                    const themePreference = profile.theme_preference || 'system';
+                    setCachedAuth({ username, isAdmin: !!profile.is_admin, themePreference });
+                    applyTheme(themePreference);
                     applyAuthUI(username);
                 }
             } else {
                 // Cache hit — silently refresh cache in background, no UI change
                 supabase
                     .from('profiles')
-                    .select('is_admin, username')
+                    .select('is_admin, username, theme_preference')
                     .eq('id', session.user.id)
                     .single()
                     .then(({ data: profile }) => {
                         if (profile) {
                             const username = profile.username || session.user.email.split('@')[0];
                             // Only update cache — don't touch the DOM (already correct)
-                            setCachedAuth({ username, isAdmin: !!profile.is_admin });
+                            const themePreference = profile.theme_preference || 'system';
+                            setCachedAuth({ username, isAdmin: !!profile.is_admin, themePreference });
+                            applyTheme(themePreference);
                         }
                     });
             }

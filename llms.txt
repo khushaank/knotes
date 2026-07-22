@@ -8,4 +8,4 @@ Authentication and Database are provided by Supabase.
 - home: Main story feed
 - viewer: View a single story and its comments
 - login: Authentication (Login/Register)
-- static pages: faq, guidelines, legal, api, lists, security, contact
+- static pages: faq, guidelines, legal, lists, security, contact

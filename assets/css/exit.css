@@ -10,8 +10,8 @@ body {
 .container-wrap {
     max-width: 85%;
     margin: 8px auto 0;
-    background-color: #fff8f6;
-    padding-bottom: 32px;
+    background-color: #f6f6ef;
+    padding-bottom: 0;
 }
 
 header {

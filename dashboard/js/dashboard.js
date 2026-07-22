@@ -25,7 +25,7 @@ function createTimeoutFetch(timeoutMs = SUPABASE_TIMEOUT_MS) {
 
 try {
     const supabaseModule = await withTimeout(
-        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'),
+        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm'),
         SUPABASE_TIMEOUT_MS,
         'Supabase client'
     );

@@ -4,6 +4,7 @@ let createClient = null;
 const SUPABASE_TIMEOUT_MS = 8000;
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const MEDIA_MAX_BYTES = 10 * 1024 * 1024;
+const HIDDEN_STORIES_KEY = 'kn-hidden-stories';
 const AVATAR_TYPES = new Map([
     ['jpg', ['image/jpeg']],
     ['jpeg', ['image/jpeg']],
@@ -54,7 +55,7 @@ function createTimeoutFetch(timeoutMs = SUPABASE_TIMEOUT_MS) {
 
 try {
     const supabaseModule = await withTimeout(
-        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'),
+        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm'),
         SUPABASE_TIMEOUT_MS,
         'Supabase client'
     );
@@ -559,5 +560,91 @@ export async function deleteComment(commentId, blogId) {
     if (error) return { error: error.message };
 
     return { success: true };
+}
+
+export function getLocalHiddenStoryIds() {
+    try {
+        const ids = JSON.parse(localStorage.getItem(HIDDEN_STORIES_KEY) || '[]');
+        return Array.isArray(ids) ? [...new Set(ids.map(String))] : [];
+    } catch {
+        return [];
+    }
+}
+
+function storeLocalHiddenStoryIds(ids) {
+    localStorage.setItem(HIDDEN_STORIES_KEY, JSON.stringify([...new Set(ids.map(String))]));
+}
+
+export async function getHiddenStoryIds() {
+    const localIds = getLocalHiddenStoryIds();
+    const session = await getCurrentSession();
+    if (!supabase || !session) return localIds;
+
+    const { data, error } = await supabase
+        .from('hidden_stories')
+        .select('blog_id')
+        .eq('user_id', session.user.id);
+
+    // Keep hiding functional before the optional database hardening SQL is run.
+    if (error) return localIds;
+
+    const merged = [...new Set([...localIds, ...(data || []).map(row => String(row.blog_id))])];
+    storeLocalHiddenStoryIds(merged);
+
+    const missingRemoteIds = localIds.filter(id => !(data || []).some(row => String(row.blog_id) === id));
+    if (missingRemoteIds.length) {
+        await supabase.from('hidden_stories').upsert(
+            missingRemoteIds.map(id => ({ user_id: session.user.id, blog_id: Number(id) })),
+            { onConflict: 'user_id,blog_id', ignoreDuplicates: true }
+        );
+    }
+
+    return merged;
+}
+
+export async function hideStory(storyId) {
+    const id = String(storyId);
+    storeLocalHiddenStoryIds([...getLocalHiddenStoryIds(), id]);
+
+    const session = await getCurrentSession();
+    if (!supabase || !session) return { success: true, persisted: false };
+
+    const { error } = await supabase.from('hidden_stories').upsert(
+        { user_id: session.user.id, blog_id: Number(id) },
+        { onConflict: 'user_id,blog_id', ignoreDuplicates: true }
+    );
+
+    return error ? { success: true, persisted: false, error: error.message } : { success: true, persisted: true };
+}
+
+export async function unhideStory(storyId) {
+    const id = String(storyId);
+    storeLocalHiddenStoryIds(getLocalHiddenStoryIds().filter(hiddenId => hiddenId !== id));
+
+    const session = await getCurrentSession();
+    if (!supabase || !session) return { success: true, persisted: false };
+
+    const { error } = await supabase
+        .from('hidden_stories')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('blog_id', Number(id));
+
+    return error ? { success: true, persisted: false, error: error.message } : { success: true, persisted: true };
+}
+
+export async function getHiddenPosts() {
+    if (!supabase) return [];
+    const ids = await getHiddenStoryIds();
+    if (!ids.length) return [];
+
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('id, title, slug, url, published_at, author')
+        .in('id', ids.map(Number));
+
+    if (error) return [];
+    const order = new Map(ids.map((id, index) => [String(id), index]));
+    return (data || []).sort((a, b) => order.get(String(a.id)) - order.get(String(b.id)));
 }
 

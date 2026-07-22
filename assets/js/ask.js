@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js';
 import { sortStories } from './algorithm.js';
 
 const STORIES_PER_PAGE = 10;
@@ -71,10 +71,11 @@ async function renderStories() {
         const startIndex = (page - 1) * STORIES_PER_PAGE;
 
         const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+        const hiddenIds = await getHiddenStoryIds();
         const parsedFolders = session ? JSON.parse(localStorage.getItem(`kn-folders-${session.user.id}`) || '{}') : {};
         const folderMapping = new Map(Object.entries(parsedFolders));
 
-        stories.forEach((story, index) => {
+        stories.filter(story => !hiddenIds.includes(String(story.id))).forEach((story, index) => {
             const timeAgo = calculateTimeAgo(story.published_at);
             const isBookmarked = userBookmarks.includes(story.id);
             const isUpvoted = userLikes.includes(story.id);
@@ -132,7 +133,6 @@ async function renderStories() {
             hideLink.setAttribute('data-id', story.id);
             hideLink.textContent = 'hide';
             td2_2.appendChild(hideLink);
-            td2_2.appendChild(document.createTextNode(' | '));
 
             const bookmarkSpan = document.createElement('span');
             bookmarkSpan.className = 'bookmark-container';
@@ -173,7 +173,10 @@ async function renderStories() {
 
             dropdownSpan.appendChild(dropMenu);
             bookmarkSpan.appendChild(dropdownSpan);
-            td2_2.appendChild(bookmarkSpan);
+            if (session) {
+                td2_2.appendChild(document.createTextNode(' | '));
+                td2_2.appendChild(bookmarkSpan);
+            }
 
             td2_2.appendChild(document.createTextNode(' | '));
 
@@ -404,6 +407,7 @@ async function loadUserStats() {
         if (e.target.classList.contains('hide-link')) {
             e.preventDefault();
             const storyId = e.target.getAttribute('data-id');
+            await hideStory(storyId);
             const rows = document.querySelectorAll(`[data-id="${storyId}"]`);
             rows.forEach(row => {
                 row.style.transition = 'opacity 0.3s';
