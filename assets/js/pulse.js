@@ -1,5 +1,5 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js';
-import { renderMarkdown } from './contentRenderer.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=8';
+import { renderMarkdown } from './contentRenderer.js?v=8';
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');

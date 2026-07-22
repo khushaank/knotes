@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js?v=8';
 
 const ready = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))

@@ -4,7 +4,7 @@
 <head>
   <script>        (function () { try { var theme = localStorage.getItem('kn-theme') || 'light'; if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); document.documentElement.classList.add('dark'); } else { document.documentElement.setAttribute('data-theme', 'light'); document.documentElement.classList.remove('dark'); } } catch (e) { } })();    </script>
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src *;" />
+    content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>K. Notes - High-Signal Tech News & Discussion</title>
@@ -372,14 +372,17 @@
   <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
     <header class="bg-[#ff6600] text-black text-sm rounded-none w-full flat no shadows flex items-center px-2 py-0.5"
       style="max-width: 100%;">
-      <div class="flex items-center gap-1 w-full text-[13px]"> <a href="/home"
-          class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-        <div class="flex flex-wrap items-center gap-1 text-black"> <a class="hover:underline font-bold"
-            href="/home">feed</a> | <a class="hover:underline" href="/ask">ask</a> |
-          <a class="hover:underline" href="/show">show</a> | <a class="hover:underline" href="/submit">submit</a>
+      <div class="flex items-center gap-1 w-full text-[13px]">
+        <a href="home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
+        <div class="flex flex-wrap items-center gap-1 text-black">
+          <a class="hover:underline font-bold" href="home">feed</a> |
+          <a class="hover:underline" href="ask">ask</a> |
+          <a class="hover:underline" href="show">show</a> |
+          <a class="hover:underline" href="submit">submit</a>
         </div>
-        <div class="ml-auto text-black flex items-center gap-4"> <a class="hover:underline text-black"
-            href="/login">login</a> </div>
+        <div class="ml-auto text-black flex items-center gap-4">
+          <a class="hover:underline text-black" href="login">login</a>
+        </div>
       </div>
     </header>
     <div id="broadcast-banner"

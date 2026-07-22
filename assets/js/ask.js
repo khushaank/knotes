@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=8';
 import { sortStories } from './algorithm.js';
 
 const STORIES_PER_PAGE = 10;

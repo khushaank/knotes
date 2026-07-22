@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=8';
 
 function applyTheme(preference = 'system') {
     const resolved = preference === 'system'
