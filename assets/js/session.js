@@ -37,6 +37,24 @@ function syncHeaderLabels() {
 
 window.addEventListener('resize', syncHeaderLabels);
 
+function enhanceFormAccessibility() {
+    document.querySelectorAll('input, textarea, select').forEach(field => {
+        if (!field.name && field.id) field.name = field.id;
+
+        const hasLabel = field.id && document.querySelector(`label[for="${CSS.escape(field.id)}"]`);
+        if (!hasLabel && !field.hasAttribute('aria-label')) {
+            const fallback = field.placeholder || field.title || field.id?.replace(/[-_]+/g, ' ');
+            if (fallback) field.setAttribute('aria-label', fallback);
+        }
+    });
+
+    document.querySelectorAll('[id*="search-input"]').forEach(input => {
+        input.name = 'search';
+        input.setAttribute('aria-label', 'Search');
+        input.setAttribute('autocomplete', 'off');
+    });
+}
+
 function getCachedAuth() {
     try {
         const raw = sessionStorage.getItem(AUTH_CACHE_KEY);
@@ -115,7 +133,9 @@ function setupInstallPrompt() {
             });
 
             try {
-                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js');
+                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js', {
+                    updateViaCache: 'none'
+                });
                 await registration.update();
             } catch (e) { }
         });
@@ -410,6 +430,7 @@ function applyAuthUI(username) {
     : (cb) => cb()
 )(async () => {
     setupInstallPrompt();
+    enhanceFormAccessibility();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
         renderSharedHeader();
         syncHeaderLabels();

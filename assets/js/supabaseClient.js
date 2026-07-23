@@ -16,13 +16,7 @@ const MEDIA_TYPES = new Map([
     ...AVATAR_TYPES,
     ['pdf', ['application/pdf']],
     ['txt', ['text/plain']],
-    ['csv', ['text/csv', 'application/csv', 'application/vnd.ms-excel']],
-    ['doc', ['application/msword', 'application/octet-stream']],
-    ['docx', ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']],
-    ['xls', ['application/vnd.ms-excel', 'application/octet-stream']],
-    ['xlsx', ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']],
-    ['ppt', ['application/vnd.ms-powerpoint', 'application/octet-stream']],
-    ['pptx', ['application/vnd.openxmlformats-officedocument.presentationml.presentation']]
+    ['csv', ['text/csv', 'application/csv']]
 ]);
 
 function withTimeout(promise, timeoutMs, label) {
@@ -112,7 +106,6 @@ function validateUploadFile(file, allowedTypes, maxBytes) {
     if (!expectedTypes) return 'This file type is not allowed';
 
     if (file.type && !expectedTypes.includes(file.type)) {
-        if (file.type === 'application/octet-stream' && allowedTypes === MEDIA_TYPES) return null;
         return 'File type does not match the selected file';
     }
 
@@ -120,7 +113,7 @@ function validateUploadFile(file, allowedTypes, maxBytes) {
 }
 
 // =============================================
-// CACHING UTILITIES
+
 // =============================================
 const CACHE_PREFIX = 'kn-cache-';
 const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
@@ -403,19 +396,22 @@ export async function uploadAvatar(file) {
 
     if (uploadError) return { error: uploadError.message };
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData, error: signedUrlError } = await supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 3600);
 
-    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+    if (signedUrlError || !urlData?.signedUrl) {
+        return { error: signedUrlError?.message || 'Could not create a private avatar URL' };
+    }
+
     const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', userId);
 
     if (updateError) return { error: updateError.message };
 
-    return { success: true, url: publicUrl };
+    return { success: true, url: urlData.signedUrl, path: filePath };
 }
 
 export async function deleteAvatar() {
@@ -687,4 +683,3 @@ export async function getHiddenPosts() {
     const order = new Map(ids.map((id, index) => [String(id), index]));
     return (data || []).sort((a, b) => order.get(String(a.id)) - order.get(String(b.id)));
 }
-

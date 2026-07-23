@@ -1,9 +1,9 @@
 {
-  "name": "kg-news",
+  "name": "knotes",
   "version": "1.0.0",
-  "description": "",
+  "description": "A community-driven technology news aggregator and discussion forum.",
   "scripts": {
-    "test": "node scripts/check.mjs && node scripts/renderer-check.mjs",
+    "test": "node scripts/check.mjs && node scripts/renderer-check.mjs && node scripts/security-check.mjs && node scripts/worker-check.mjs",
     "build": "npx tailwindcss -i assets/css/input.css -o assets/css/styles.css --minify",
     "audit": "npm audit"
   },
@@ -12,13 +12,13 @@
     "url": "git+https://github.com/khushaank/knotes.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Khushaank Gupta",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/khushaank/knotes/issues"
   },
-  "homepage": "https://github.com/khushaank/knotes#readme",
+  "homepage": "https://knotes.dpdns.org/",
   "devDependencies": {
     "@tailwindcss/cli": "4.3.0",
     "@tailwindcss/container-queries": "0.1.1",

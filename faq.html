@@ -120,8 +120,8 @@
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-                <span class="text-gray-500 text-xs">Search:</span>
-                <input type="text" id="footer-search-input"
+                <label for="footer-search-input" class="text-gray-500 text-xs">Search:</label>
+                <input type="text" id="footer-search-input" name="search" autocomplete="off" aria-label="Search"
                     class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
             </form>
         </footer>

@@ -39,19 +39,19 @@
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">email:</td>
-                        <td class="py-1"><input type="email" id="login-email"
+                        <td class="py-1 pr-2"><label for="login-email">email:</label></td>
+                        <td class="py-1"><input type="email" id="login-email" name="email" autocomplete="email" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                         </td>
                     </tr>
                     <tr>
-                        <td class="py-1 pr-2">password:</td>
+                        <td class="py-1 pr-2"><label for="login-password">password:</label></td>
                         <td class="py-1 relative">
-                            <input type="password" id="login-password"
+                            <input type="password" id="login-password" name="password" autocomplete="current-password" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword(event, 'login-password')">
+                                onclick="togglePassword(event, 'login-password')" aria-label="Show or hide login password">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
                         </td>
@@ -76,19 +76,19 @@
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">email:</td>
-                        <td class="py-1"><input type="email" id="signup-email"
+                        <td class="py-1 pr-2"><label for="signup-email">email:</label></td>
+                        <td class="py-1"><input type="email" id="signup-email" name="email" autocomplete="email" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                         </td>
                     </tr>
                     <tr>
-                        <td class="py-1 pr-2">password:</td>
+                        <td class="py-1 pr-2"><label for="signup-password">password:</label></td>
                         <td class="py-1 relative">
-                            <input type="password" id="signup-password"
+                            <input type="password" id="signup-password" name="password" autocomplete="new-password" minlength="12" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword(event, 'signup-password')">
+                                onclick="togglePassword(event, 'signup-password')" aria-label="Show or hide signup password">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
                         </td>

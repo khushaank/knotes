@@ -2,7 +2,7 @@
   "id": "/",
   "name": "K. Notes",
   "short_name": "K. Notes",
-  "description": "Private, high-signal articles and discussions.",
+  "description": "A community for high-signal technology articles and discussions.",
   "start_url": "/home",
   "scope": "/",
   "display": "standalone",

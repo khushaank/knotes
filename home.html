@@ -219,7 +219,7 @@
     .story-meta {
       padding-top: 1px;
       color: #5f5f5f;
-      font-size: 7pt
+      font-size: 11px
     }
 
     .story-meta a,
@@ -398,6 +398,7 @@
             class="text-sm">↻</span> refresh </button> </div>
     </div>
     <main class="bg-[#f6f6ef] pt-2 pb-4" style="min-height:100vh">
+      <h1 class="sr-only">K. Notes technology news and discussions</h1>
       <table class="border-spacing-0 border-collapse">
         <tbody>
           <tr>
@@ -419,8 +420,8 @@
       </div>
       <form id="footer-search-form" class="flex items-center gap-2"
         onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-        <span class="text-gray-500 text-xs">Search:</span>
-        <input type="text" id="footer-search-input"
+        <label for="footer-search-input" class="text-gray-500 text-xs">Search:</label>
+        <input type="text" id="footer-search-input" name="search" autocomplete="off" aria-label="Search"
           class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
       </form>
     </footer>

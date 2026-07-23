@@ -1,0 +1,10 @@
+# Copy to wrangler.toml, then replace the placeholders.
+name = "knotes-security-headers"
+main = "worker.js"
+compatibility_date = "2026-07-23"
+workers_dev = false
+
+# Configure this route in Cloudflare after authentication. Do not commit IDs.
+# routes = [
+#   { pattern = "knotes.dpdns.org/*", zone_name = "dpdns.org" }
+# ]

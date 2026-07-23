@@ -1,0 +1,6 @@
+Contact: mailto:uniquevara.ai@gmail.com
+Expires: 2027-07-23T23:59:59Z
+Preferred-Languages: en
+Canonical: https://knotes.dpdns.org/.well-known/security.txt
+Policy: https://knotes.dpdns.org/security
+Acknowledgments: https://knotes.dpdns.org/security

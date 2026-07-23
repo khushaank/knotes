@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.js';
 const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_MIN_LENGTH = 12;
 
 function getLoginAttempts() {
     try {
@@ -85,7 +86,7 @@ function clearFailedLogins() {
 
             if (error) {
                 recordFailedLogin();
-                showMessage(error.message, true);
+                showMessage('Login failed. Check your credentials and try again.', true);
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'login';
             } else {
@@ -114,8 +115,8 @@ function clearFailedLogins() {
                 return;
             }
 
-            if (password.length < 6) {
-                showMessage('Password must be at least 6 characters.', true);
+            if (password.length < PASSWORD_MIN_LENGTH) {
+                showMessage(`Password must be at least ${PASSWORD_MIN_LENGTH} characters.`, true);
                 return;
             }
 
@@ -129,7 +130,7 @@ function clearFailedLogins() {
             });
 
             if (error) {
-                showMessage(error.message, true);
+                showMessage('Account creation failed. Check your details or try again later.', true);
                 signupBtn.disabled = false;
                 signupBtn.textContent = 'create account';
             } else {
@@ -171,7 +172,7 @@ function clearFailedLogins() {
             forgotLink.style.pointerEvents = '';
 
             if (error) {
-                showMessage(error.message, true);
+                showMessage('Password reset could not be started. Please try again later.', true);
             } else {
                 showMessage('Password reset email sent! Check your inbox.', false);
             }
@@ -204,13 +205,13 @@ function showResetPasswordForm() {
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">new password:</td>
-                        <td class="py-1"><input type="password" id="new-password"
+                        <td class="py-1 pr-2"><label for="new-password">new password:</label></td>
+                        <td class="py-1"><input type="password" id="new-password" name="new-password" minlength="12" autocomplete="new-password" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]"></td>
                     </tr>
                     <tr>
-                        <td class="py-1 pr-2">confirm:</td>
-                        <td class="py-1"><input type="password" id="confirm-password"
+                        <td class="py-1 pr-2"><label for="confirm-password">confirm:</label></td>
+                        <td class="py-1"><input type="password" id="confirm-password" name="confirm-password" minlength="12" autocomplete="new-password" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]"></td>
                     </tr>
                     <tr>
@@ -230,8 +231,8 @@ function showResetPasswordForm() {
         const newPass = document.getElementById('new-password').value;
         const confirmPass = document.getElementById('confirm-password').value;
 
-        if (!newPass || newPass.length < 6) {
-            messageContainer.textContent = 'Password must be at least 6 characters.';
+        if (!newPass || newPass.length < PASSWORD_MIN_LENGTH) {
+            messageContainer.textContent = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
             messageContainer.classList.remove('hidden');
             messageContainer.classList.add('text-red-600');
             return;
@@ -263,7 +264,7 @@ function showResetPasswordForm() {
         const { error } = await supabase.auth.updateUser({ password: newPass });
 
         if (error) {
-            messageContainer.textContent = error.message;
+            messageContainer.textContent = 'Password update failed. Request a new recovery link and try again.';
             messageContainer.classList.remove('hidden');
             messageContainer.classList.add('text-red-600');
         } else {

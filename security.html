@@ -32,7 +32,7 @@
             </div>
         </header>
         <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">Security Policy</b>
+            <h1 class="text-black text-lg font-bold block mb-4">Security Policy</h1>
 
             <p class="mb-4">
                 We take the security of K. Notes seriously. Our backend is powered by Supabase, which provides robust
@@ -41,9 +41,11 @@
 
             <p class="mb-4"><b>Vulnerability Reporting</b></p>
             <p class="mb-4 ml-4">
-                If you find a security vulnerability, please contact us immediately at <a
-                    href="mailto:security@knotes.com" class="underline">security@knotes.com</a>.
-                We will investigate and respond as quickly as possible.
+                If you find a security vulnerability, email <a
+                    href="mailto:uniquevara.ai@gmail.com" class="underline">uniquevara.ai@gmail.com</a>.
+                Please include reproduction steps and avoid accessing other users' data. We will acknowledge valid reports
+                as quickly as possible. Automated disclosure information is available in <a class="underline"
+                    href=".well-known/security.txt">.well-known/security.txt</a>.
             </p>
 
             <p class="mb-4"><b>Authentication</b></p>
@@ -64,8 +66,8 @@
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-                <span class="text-gray-500 text-xs">Search:</span>
-                <input type="text" id="footer-search-input"
+                <label for="footer-search-input" class="text-gray-500 text-xs">Search:</label>
+                <input type="text" id="footer-search-input" name="search" autocomplete="off" aria-label="Search"
                     class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
             </form>
         </footer>
