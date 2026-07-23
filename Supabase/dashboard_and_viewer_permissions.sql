@@ -11,6 +11,16 @@ ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, UPDATE, DELETE ON public.blogs TO authenticated;
 GRANT SELECT, DELETE ON public.comments TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.bookmarks TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+DELETE FROM public.bookmarks a
+USING public.bookmarks b
+WHERE a.user_id = b.user_id
+  AND a.blog_id = b.blog_id
+  AND a.id < b.id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS bookmarks_user_blog_unique_idx
+ON public.bookmarks (user_id, blog_id);
 
 DROP POLICY IF EXISTS "Users can update their own blogs" ON public.blogs;
 CREATE POLICY "Users can update their own blogs"

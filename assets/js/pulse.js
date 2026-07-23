@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=9';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=10';
 import { renderMarkdown } from './contentRenderer.js?v=8';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -283,8 +283,9 @@ function renderStoryDetails(story) {
     }
     script.text = JSON.stringify(jsonLd);
 
-    const isBookmarked = userBookmarks.includes(story.id);
-    const isUpvoted = userLikes.includes(story.id);
+    const storyKey = String(story.id);
+    const isBookmarked = userBookmarks.includes(storyKey);
+    const isUpvoted = userLikes.includes(storyKey);
     const timeAgo = calculateTimeAgo(story.published_at);
 
     const articleEl = document.querySelector('article');
@@ -649,7 +650,7 @@ function renderCommentsSection(comments, blogId) {
 
                 menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
 
-                const idx = userBookmarks.indexOf(storyId);
+                const idx = userBookmarks.indexOf(String(storyId));
                 if (idx > -1) userBookmarks.splice(idx, 1);
 
                 const userId = (await supabase.auth.getSession()).data.session?.user?.id;
@@ -660,21 +661,33 @@ function renderCommentsSection(comments, blogId) {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                setBookmark(storyId, false).then(result => {
-                    if (result.error) {
-                        trigger.textContent = 'saved';
-                        trigger.classList.add('saved');
-                        if (!userBookmarks.includes(storyId)) userBookmarks.push(storyId);
-                        showInlineMsg(trigger, result.error);
-                    }
-                }).catch(err => console.error('Failed to unsave:', err));
+                const result = await setBookmark(storyId, false);
+                if (result.error) {
+                    trigger.textContent = 'saved';
+                    trigger.classList.add('saved');
+                    if (!userBookmarks.includes(String(storyId))) userBookmarks.push(String(storyId));
+                    showInlineMsg(trigger, result.error);
+                }
             } else {
+                trigger.textContent = 'saving...';
+                trigger.disabled = true;
+
+                const result = await setBookmark(storyId, true);
+                trigger.disabled = false;
+
+                if (result.error) {
+                    trigger.textContent = '+';
+                    trigger.classList.remove('saved');
+                    showInlineMsg(trigger, result.error);
+                    return;
+                }
+
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
                 showInlineMsg(trigger, `Added to ${folderName}`);
 
-                if (!userBookmarks.includes(storyId)) {
-                    userBookmarks.push(storyId);
+                if (!userBookmarks.includes(String(storyId))) {
+                    userBookmarks.push(String(storyId));
                 }
 
                 const userId = (await supabase.auth.getSession()).data.session?.user?.id;
@@ -684,16 +697,6 @@ function renderCommentsSection(comments, blogId) {
                     mapping[storyId] = folderName;
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
-
-                setBookmark(storyId, true).then(result => {
-                    if (result.error) {
-                        trigger.textContent = '+';
-                        trigger.classList.remove('saved');
-                        const idx = userBookmarks.indexOf(storyId);
-                        if (idx > -1) userBookmarks.splice(idx, 1);
-                        showInlineMsg(trigger, result.error);
-                    }
-                }).catch(err => console.error('Failed to save:', err));
 
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');

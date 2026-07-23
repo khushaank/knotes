@@ -278,24 +278,29 @@ export async function setBookmark(storyId, shouldSave) {
         if (!session) return { error: 'Please login to save posts' };
 
         const userId = session.user.id;
+        const blogId = Number(storyId);
+        if (!Number.isInteger(blogId) || blogId <= 0) {
+            return { error: 'This story cannot be saved right now' };
+        }
+
         if (shouldSave) {
             const { data: existing, error: lookupError } = await supabase
                 .from('bookmarks')
                 .select('id')
-                .eq('blog_id', storyId)
+                .eq('blog_id', blogId)
                 .eq('user_id', userId)
                 .maybeSingle();
             if (lookupError) return { error: lookupError.message };
             if (existing) return { success: true, action: 'added' };
 
-            const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
+            const { error } = await supabase.from('bookmarks').insert([{ blog_id: blogId, user_id: userId }]);
             return error ? { error: error.message } : { success: true, action: 'added' };
         }
 
         const { error } = await supabase
             .from('bookmarks')
             .delete()
-            .eq('blog_id', storyId)
+            .eq('blog_id', blogId)
             .eq('user_id', userId);
         return error ? { error: error.message } : { success: true, action: 'removed' };
     } catch (error) {
@@ -315,7 +320,7 @@ export async function getUserBookmarks() {
         .eq('user_id', session.user.id);
 
     if (error) return [];
-    return data.map(b => b.blog_id);
+    return data.map(b => String(b.blog_id));
 }
 
 export async function getUserLikes() {
@@ -330,7 +335,7 @@ export async function getUserLikes() {
         .eq('user_id', session.user.id);
 
     if (error) return [];
-    return data.map(b => b.blog_id);
+    return data.map(b => String(b.blog_id));
 }
 
 export async function getBookmarkedPosts(userId = null) {

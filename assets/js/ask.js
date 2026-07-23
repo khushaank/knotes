@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=9';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=10';
 import { sortStories } from './algorithm.js';
 
 const STORIES_PER_PAGE = 10;
@@ -77,8 +77,9 @@ async function renderStories() {
 
         stories.filter(story => !hiddenIds.includes(String(story.id))).forEach((story, index) => {
             const timeAgo = calculateTimeAgo(story.published_at);
-            const isBookmarked = userBookmarks.includes(story.id);
-            const isUpvoted = userLikes.includes(story.id);
+            const storyKey = String(story.id);
+            const isBookmarked = userBookmarks.includes(storyKey);
+            const isUpvoted = userLikes.includes(storyKey);
             const currentFolder = folderMapping.get(String(story.id));
 
             const tr1 = document.createElement('tr');
@@ -344,7 +345,7 @@ async function loadUserStats() {
 
                 menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('bg-orange-50', 'text-[#ff6600]', 'font-bold'));
 
-                const idx = userBookmarks.indexOf(storyId);
+                const idx = userBookmarks.indexOf(String(storyId));
                 if (idx > -1) userBookmarks.splice(idx, 1);
 
                 const userId = supabase ? (await supabase.auth.getSession()).data.session?.user?.id : null;
@@ -359,7 +360,7 @@ async function loadUserStats() {
                     if (result.error) {
                         trigger.textContent = 'saved';
                         trigger.classList.add('saved');
-                        if (!userBookmarks.includes(storyId)) userBookmarks.push(storyId);
+                        if (!userBookmarks.includes(String(storyId))) userBookmarks.push(String(storyId));
                         showTip(trigger, result.error);
                     }
                 }).catch(err => console.error('Failed to unsave:', err));
@@ -368,8 +369,8 @@ async function loadUserStats() {
                 trigger.classList.add('saved');
                 showTip(trigger, `Added to ${folderName}`);
 
-                if (!userBookmarks.includes(storyId)) {
-                    userBookmarks.push(storyId);
+                if (!userBookmarks.includes(String(storyId))) {
+                    userBookmarks.push(String(storyId));
                 }
 
                 const userId = supabase ? (await supabase.auth.getSession()).data.session?.user?.id : null;
@@ -384,7 +385,7 @@ async function loadUserStats() {
                     if (result.error) {
                         trigger.textContent = '+';
                         trigger.classList.remove('saved');
-                        const idx = userBookmarks.indexOf(storyId);
+                        const idx = userBookmarks.indexOf(String(storyId));
                         if (idx > -1) userBookmarks.splice(idx, 1);
                         showTip(trigger, result.error);
                     }
