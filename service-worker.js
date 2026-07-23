@@ -1,8 +1,8 @@
-const CACHE = 'knotes-v8';
+const CACHE = 'knotes-v9';
 const SHELL = ['/home', '/assets/css/styles.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
     '/', '/home', '/ask', '/show', '/contact', '/faq',
-    '/guidelines', '/legal', '/security', '/search'
+    '/guidelines', '/legal', '/security', '/search', '/profile', '/dashboard', '/dashboard/home'
 ]);
 const STATIC_ASSET = /^\/assets\/(?:css|img|js)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
 

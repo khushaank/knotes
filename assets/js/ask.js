@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=8';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=9';
 import { sortStories } from './algorithm.js';
 
 const STORIES_PER_PAGE = 10;
@@ -355,9 +355,9 @@ async function loadUserStats() {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                toggleBookmark(storyId).catch(err => {
-                    console.error('Failed to unsave:', err);
-                });
+                setBookmark(storyId, false).then(result => {
+                    if (result.error) showTip(trigger, result.error);
+                }).catch(err => console.error('Failed to unsave:', err));
             } else {
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
@@ -375,9 +375,9 @@ async function loadUserStats() {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                toggleBookmark(storyId).catch(err => {
-                    console.error('Failed to save:', err);
-                });
+                setBookmark(storyId, true).then(result => {
+                    if (result.error) showTip(trigger, result.error);
+                }).catch(err => console.error('Failed to save:', err));
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');
                     divider.className = 'dropdown-divider border-t border-gray-100 my-1';

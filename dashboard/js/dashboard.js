@@ -106,6 +106,10 @@ function createTrashIcon() {
     return parseSvgIcon(`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`);
 }
 
+function createEditIcon() {
+    return parseSvgIcon(`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>`);
+}
+
 let currentUser = null;
 let currentProfile = null;
 let allPosts = [];
@@ -871,6 +875,15 @@ function buildDropdownForCell(cell) {
         const itemTitle = cell.dataset.itemTitle;
         const itemUrl = cell.dataset.itemUrl;
 
+        const editBtn = document.createElement('button');
+        editBtn.className = 'row-dropdown-item';
+        editBtn.setAttribute('style', 'padding: 8px; border-radius: var(--radius-sm); font-size: 12px; width: 100%; display: flex; align-items: center;');
+        editBtn.appendChild(createEditIcon());
+        editBtn.appendChild(document.createTextNode('Edit'));
+        editBtn.addEventListener('click', () => {
+            window.creatorActions.editPost(itemId);
+        });
+
         // Share button
         const shareBtn = document.createElement('button');
         shareBtn.className = 'row-dropdown-item';
@@ -892,6 +905,7 @@ function buildDropdownForCell(cell) {
         });
 
         container.style.minWidth = '140px';
+        container.appendChild(editBtn);
         container.appendChild(shareBtn);
         container.appendChild(deleteBtn);
 
@@ -926,7 +940,146 @@ function buildDropdownForCell(cell) {
 // =============================================
 // WINDOW EXPOSED CREATOR ACTIONS
 // =============================================
+function clearPostCaches(slug) {
+    if (!slug) return;
+    localStorage.removeItem(`kn-cache-pulse-${slug}`);
+    Object.keys(localStorage)
+        .filter(key => key.startsWith('kn-cache-stories-'))
+        .forEach(key => localStorage.removeItem(key));
+}
+
+function openEditPostDialog(post) {
+    const existing = document.getElementById('edit-post-dialog');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'edit-post-dialog';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'edit-post-title');
+    overlay.setAttribute('style', 'position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);');
+
+    const form = document.createElement('form');
+    form.setAttribute('style', 'width:min(680px,100%);max-height:90vh;overflow:auto;border-radius:12px;padding:24px;background:var(--bg-card,#fff);color:var(--text-primary,#111827);box-shadow:0 24px 48px rgba(0,0,0,.28);');
+
+    const heading = document.createElement('h2');
+    heading.id = 'edit-post-title';
+    heading.textContent = 'Edit post';
+    heading.setAttribute('style', 'margin:0 0 6px;font-size:20px;');
+    form.appendChild(heading);
+
+    const note = document.createElement('p');
+    note.textContent = 'Your post URL stays the same. Readers will see that it was edited.';
+    note.setAttribute('style', 'margin:0 0 18px;color:var(--text-secondary,#64748b);font-size:13px;');
+    form.appendChild(note);
+
+    const fields = {};
+    const addField = (labelText, name, value, type = 'input') => {
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        label.setAttribute('style', 'display:block;margin:12px 0 5px;font-size:13px;font-weight:600;');
+        const control = type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+        control.name = name;
+        control.value = value || '';
+        if (type === 'textarea') control.rows = 10;
+        else control.type = name === 'url' ? 'url' : 'text';
+        control.required = name === 'title';
+        control.setAttribute('style', 'display:block;width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;background:transparent;color:inherit;font:inherit;');
+        label.appendChild(control);
+        form.appendChild(label);
+        fields[name] = control;
+    };
+
+    addField('Title', 'title', post.title);
+    addField('Link (optional)', 'url', post.url);
+
+    const categoryLabel = document.createElement('label');
+    categoryLabel.textContent = 'Post type';
+    categoryLabel.setAttribute('style', 'display:block;margin:12px 0 5px;font-size:13px;font-weight:600;');
+    const category = document.createElement('select');
+    category.setAttribute('style', 'display:block;width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;background:transparent;color:inherit;font:inherit;');
+    [['article', 'Article'], ['ask', 'Ask (Discussion)'], ['show', 'Show (Submit Work)']].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        option.selected = value === post.category;
+        category.appendChild(option);
+    });
+    categoryLabel.appendChild(category);
+    form.appendChild(categoryLabel);
+    addField('Post text', 'content', post.content, 'textarea');
+
+    const actions = document.createElement('div');
+    actions.setAttribute('style', 'display:flex;justify-content:flex-end;gap:10px;margin-top:20px;');
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn btn-secondary';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', () => overlay.remove());
+    const save = document.createElement('button');
+    save.type = 'submit';
+    save.className = 'btn btn-primary';
+    save.textContent = 'Save changes';
+    actions.append(cancel, save);
+    form.appendChild(actions);
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const title = fields.title.value.trim();
+        const url = fields.url.value.trim();
+        const content = fields.content.value.trim();
+        if (title.length < 3) {
+            showToast('Title must be at least 3 characters.', 'error');
+            fields.title.focus();
+            return;
+        }
+        if (url) {
+            try { new URL(url); } catch {
+                showToast('Enter a valid link or leave it blank.', 'error');
+                fields.url.focus();
+                return;
+            }
+        }
+
+        save.disabled = true;
+        save.textContent = 'Saving…';
+        const { error } = await supabase
+            .from('blogs')
+            .update({ title, url, content, category: category.value, updated_at: new Date().toISOString() })
+            .eq('id', post.id)
+            .eq('author_id', currentUser.id);
+        if (error) {
+            showToast('Could not save: ' + error.message, 'error');
+            save.disabled = false;
+            save.textContent = 'Save changes';
+            return;
+        }
+
+        clearPostCaches(post.slug);
+        overlay.remove();
+        showToast('Post updated. Readers can now see it was edited.', 'success');
+        await loadCreatorData();
+    });
+
+    overlay.appendChild(form);
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+    fields.title.focus();
+}
+
 window.creatorActions = {
+    editPost(id) {
+        const post = allPosts.find(item => String(item.id) === String(id));
+        if (!post) {
+            showToast('Post details are no longer available. Please refresh.', 'error');
+            return;
+        }
+        document.querySelector('.row-dropdown')?.remove();
+        openEditPostDialog(post);
+    },
+
     async deletePost(id) {
         if (!confirm('Are you sure you want to delete this post?')) return;
         const { error } = await supabase.from('blogs').delete().eq('id', id);

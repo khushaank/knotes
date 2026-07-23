@@ -268,6 +268,37 @@ export async function toggleBookmark(storyId) {
     }
 }
 
+// Keep menu actions idempotent: moving a story between folders must never
+// toggle an existing bookmark off.
+export async function setBookmark(storyId, shouldSave) {
+    if (!supabase) return { error: 'Saving is unavailable right now' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login to save posts' };
+
+    const userId = session.user.id;
+    if (shouldSave) {
+        const { data: existing, error: lookupError } = await supabase
+            .from('bookmarks')
+            .select('id')
+            .eq('blog_id', storyId)
+            .eq('user_id', userId)
+            .maybeSingle();
+        if (lookupError) return { error: lookupError.message };
+        if (existing) return { success: true, action: 'added' };
+
+        const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
+        return error ? { error: error.message } : { success: true, action: 'added' };
+    }
+
+    const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('blog_id', storyId)
+        .eq('user_id', userId);
+    return error ? { error: error.message } : { success: true, action: 'removed' };
+}
+
 export async function getUserBookmarks() {
     if (!supabase) return [];
 

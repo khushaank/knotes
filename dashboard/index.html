@@ -3,7 +3,7 @@
 
 <head>
     <script>
-        (function() {
+        (function () {
             try {
                 var theme = localStorage.getItem('kn-theme') || 'light';
                 if (theme === 'dark') {
@@ -13,7 +13,7 @@
                     document.documentElement.setAttribute('data-theme', 'light');
                     document.documentElement.classList.remove('dark');
                 }
-            } catch (e) {}
+            } catch (e) { }
         })();
     </script>
     <meta charset="UTF-8">

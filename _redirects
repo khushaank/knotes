@@ -12,6 +12,7 @@
 /contact /contact.html 200
 /search /search.html 200
 /profile /profile.html 200
+/dashboard /dashboard/index.html 200
 /dashboard/home /dashboard/index.html 200
 /pulse/home /pulse/index.html 200
 /* /404.html 404

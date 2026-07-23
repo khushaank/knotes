@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=8';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=9';
 import { renderMarkdown } from './contentRenderer.js?v=8';
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -338,6 +338,16 @@ function renderStoryDetails(story) {
 
     metaSpan.appendChild(document.createTextNode(` | ${timeAgo} | `));
 
+    const wasEdited = story.updated_at && Math.abs(new Date(story.updated_at) - new Date(story.published_at)) > 1000;
+    if (wasEdited) {
+        const edited = document.createElement('span');
+        edited.className = 'text-xs';
+        edited.title = `Edited ${calculateTimeAgo(story.updated_at)}`;
+        edited.textContent = 'edited';
+        metaSpan.appendChild(edited);
+        metaSpan.appendChild(document.createTextNode(' | '));
+    }
+
     const hideLink = document.createElement('a');
     hideLink.className = 'hover:underline hide-story-link';
     hideLink.href = '#';
@@ -638,7 +648,7 @@ function renderCommentsSection(comments, blogId) {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                toggleBookmark(storyId).catch(err => {
+                setBookmark(storyId, false).catch(err => {
                     console.error('Failed to unsave:', err);
                 });
             } else {
@@ -658,7 +668,7 @@ function renderCommentsSection(comments, blogId) {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                toggleBookmark(storyId).catch(err => {
+                setBookmark(storyId, true).catch(err => {
                     console.error('Failed to save:', err);
                 });
 

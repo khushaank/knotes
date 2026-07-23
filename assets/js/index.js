@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=8';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=9';
 import { sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
@@ -14,9 +14,11 @@ function normalizeSearchInput(input) {
         .substring(0, 200);
 }
 
+const FEED_CANDIDATE_LIMIT = 250;
+
 async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     if (!supabase) {
-        return { stories: [], count: 0 };
+        throw new Error('Feed service is unavailable');
     }
 
     if (searchQuery) {
@@ -28,26 +30,24 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
         .select('*', { count: 'exact' })
         .eq('status', 'published');
 
-    if (filter === 'new') {
-        query = query.order('published_at', { ascending: false });
-    } else {
-        query = query.order('likes_count', { ascending: false });
+    // Fetch a broad, deterministic candidate set before scoring. Sorting only a
+    // ten-row database page made Trending and Relevant inaccurate and brittle.
+    const candidateLimit = Math.max(FEED_CANDIDATE_LIMIT, page * STORIES_PER_PAGE);
+    query = query.order('published_at', { ascending: false }).range(0, candidateLimit - 1);
+
+    let response;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        response = await query;
+        if (!response.error) break;
+        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 350));
     }
 
+    const { data: stories, error, count } = response;
+    if (error) throw new Error(error.message || 'Unable to load the feed');
+
+    const ranked = sortStories(stories || [], filter);
     const start = (page - 1) * STORIES_PER_PAGE;
-    const end = start + STORIES_PER_PAGE - 1;
-
-    const { data: stories, error, count } = await query.range(start, end);
-
-    if (error) {
-        return { stories: [], count: 0 };
-    }
-
-    const result = sortStories(stories, filter);
-
-    const finalResult = { stories: result, count: count || 0 };
-
-    return finalResult;
+    return { stories: ranked.slice(start, start + STORIES_PER_PAGE), count: count || 0 };
 }
 
 async function fetchSearchStories(searchQuery, filter, page) {
@@ -63,7 +63,7 @@ async function fetchSearchStories(searchQuery, filter, page) {
     });
 
     if (error) {
-        return { stories: [], count: 0 };
+        throw new Error(error.message || 'Search is unavailable');
     }
 
     const sorted = sortStories(data || [], filter);
@@ -73,7 +73,7 @@ async function fetchSearchStories(searchQuery, filter, page) {
     return { stories, count: Number(data?.[0]?.total_count || sorted.length) };
 }
 
-async function renderStories(searchQuery = '', filter = 'trending') {
+async function renderStories(searchQuery = '', filter = 'trending', forceRefresh = false) {
     const urlParams = new URLSearchParams(window.location.search);
     const page = parseInt(urlParams.get('p')) || 1;
 
@@ -87,7 +87,7 @@ async function renderStories(searchQuery = '', filter = 'trending') {
 
         await loadUserStats();
 
-        if (cached) {
+        if (cached && !forceRefresh) {
             await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
             if (!cached.stale) {
                 if (tbody) tbody.style.opacity = '1';
@@ -192,7 +192,8 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
             domainSpan.className = 'domain-text';
             domainSpan.appendChild(document.createTextNode(' ('));
             const domainLink = document.createElement('a');
-            domainLink.href = '#';
+            const categoryRoutes = { ask: 'ask', show: 'show' };
+            domainLink.href = categoryRoutes[String(story.category).toLowerCase()] || `search?search=${encodeURIComponent(story.category)}`;
             domainLink.textContent = story.category;
             domainSpan.appendChild(domainLink);
             domainSpan.appendChild(document.createTextNode(')'));
@@ -387,7 +388,13 @@ async function loadUserStats() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
             const searchInput = document.getElementById('footer-search-input');
-            renderStories(searchInput?.value.trim() || '', currentFilter);
+            refreshBtn.disabled = true;
+            refreshBtn.setAttribute('aria-busy', 'true');
+            renderStories(searchInput?.value.trim() || '', currentFilter, true)
+                .finally(() => {
+                    refreshBtn.disabled = false;
+                    refreshBtn.removeAttribute('aria-busy');
+                });
         });
     }
 
@@ -595,9 +602,9 @@ async function loadUserStats() {
                     delete mapping[storyId];
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
-                toggleBookmark(storyId).catch(err => {
-                    console.error('Failed to unsave:', err);
-                });
+                setBookmark(storyId, false).then(result => {
+                    if (result.error) showInlineMsg(trigger, result.error);
+                }).catch(err => console.error('Failed to unsave:', err));
             } else {
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
@@ -615,9 +622,9 @@ async function loadUserStats() {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                toggleBookmark(storyId).catch(err => {
-                    console.error('Failed to save:', err);
-                });
+                setBookmark(storyId, true).then(result => {
+                    if (result.error) showInlineMsg(trigger, result.error);
+                }).catch(err => console.error('Failed to save:', err));
 
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');
