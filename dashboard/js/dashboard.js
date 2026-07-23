@@ -120,6 +120,11 @@ function createRowAction(label, icon, onClick, danger = false) {
     return button;
 }
 
+function setTextIfPresent(id, value) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value;
+}
+
 let currentUser = null;
 let currentProfile = null;
 let allPosts = [];
@@ -206,7 +211,7 @@ async function checkUserAuth() {
 
     // Hide loader, show dashboard shell
     document.getElementById('loading-overlay')?.classList.add('hidden');
-    document.getElementById('admin-dashboard').classList.remove('hidden');
+    document.getElementById('admin-dashboard')?.classList.remove('hidden');
 
     // Register Logout
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
@@ -479,18 +484,18 @@ function renderMyWrittenCommentsTable(commentsList) {
 // =============================================
 async function populateOverviewMetrics() {
     // Total posts
-    document.getElementById('metric-posts').textContent = allPosts.length;
+    setTextIfPresent('metric-posts', allPosts.length);
 
     // Total Likes sum
     const totalLikes = allPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
-    document.getElementById('metric-likes').textContent = totalLikes;
+    setTextIfPresent('metric-likes', totalLikes);
 
     // Total Comments sum
-    document.getElementById('metric-comments').textContent = allComments.length;
+    setTextIfPresent('metric-comments', allComments.length);
 
     // Total Views (clicks) sum
     const totalClicks = allPosts.reduce((sum, p) => sum + (p.clicks_count || 0), 0);
-    document.getElementById('metric-clicks').textContent = totalClicks;
+    setTextIfPresent('metric-clicks', totalClicks);
 
     // Popular posts list
     const topPostsTbody = document.querySelector('#top-posts-table tbody');

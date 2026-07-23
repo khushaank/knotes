@@ -1,4 +1,4 @@
-const CACHE = 'knotes-v13';
+const CACHE = 'knotes-v14';
 const SHELL = ['/home', '/assets/css/styles.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
     '/', '/home', '/ask', '/show', '/contact', '/faq',
