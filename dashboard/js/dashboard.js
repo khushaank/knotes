@@ -194,15 +194,12 @@ async function checkUserAuth() {
         currentProfile = profile;
     }
 
-    // Populate Creator Username
-    document.getElementById('admin-name').textContent = currentProfile.username;
-
     // Hide loader, show dashboard shell
     document.getElementById('loading-overlay')?.classList.add('hidden');
     document.getElementById('admin-dashboard').classList.remove('hidden');
 
     // Register Logout
-    document.getElementById('logout-btn').addEventListener('click', async () => {
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
         await supabase.auth.signOut();
         window.location.href = '../login';
     });

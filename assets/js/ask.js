@@ -356,7 +356,12 @@ async function loadUserStats() {
                 }
 
                 setBookmark(storyId, false).then(result => {
-                    if (result.error) showTip(trigger, result.error);
+                    if (result.error) {
+                        trigger.textContent = 'saved';
+                        trigger.classList.add('saved');
+                        if (!userBookmarks.includes(storyId)) userBookmarks.push(storyId);
+                        showTip(trigger, result.error);
+                    }
                 }).catch(err => console.error('Failed to unsave:', err));
             } else {
                 trigger.textContent = 'saved';
@@ -376,7 +381,13 @@ async function loadUserStats() {
                 }
 
                 setBookmark(storyId, true).then(result => {
-                    if (result.error) showTip(trigger, result.error);
+                    if (result.error) {
+                        trigger.textContent = '+';
+                        trigger.classList.remove('saved');
+                        const idx = userBookmarks.indexOf(storyId);
+                        if (idx > -1) userBookmarks.splice(idx, 1);
+                        showTip(trigger, result.error);
+                    }
                 }).catch(err => console.error('Failed to save:', err));
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');

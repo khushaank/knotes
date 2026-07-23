@@ -22,7 +22,6 @@
     --pink: #ec4899;
     --cyan: #06b6d4;
     --sidebar-width: 260px;
-    --topbar-height: 64px;
     --radius: 8px;
     --radius-sm: 6px;
     --shadow: 0 1px 2px rgba(38, 24, 18, 0.06);
@@ -432,7 +431,7 @@ body.sidebar-collapsed .nav-item.active {
 
 .content {
     flex: 1;
-    padding: 32px 40px;
+    padding: clamp(20px, 3vw, 40px);
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -933,18 +932,21 @@ tbody tr:hover {
     }
 
     .sidebar-nav {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4px;
-        padding: 8px;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding: 8px 12px;
+        overflow-x: auto;
+        scrollbar-width: thin;
     }
 
     .nav-item {
-        width: 100%;
+        width: auto;
+        flex: 0 0 auto;
         min-height: 44px;
         justify-content: center;
-        padding: 9px 12px;
-        white-space: normal;
+        padding: 9px 14px;
+        white-space: nowrap;
         text-align: center;
     }
 
@@ -955,33 +957,14 @@ tbody tr:hover {
     }
 
     .sidebar-footer {
-        display: none;
+        display: flex;
+        gap: 6px;
+        padding: 8px 12px 12px;
+        border-top: 0;
+        overflow-x: auto;
     }
 
-    .topbar {
-        position: static;
-        min-height: 36px;
-        padding: 4px 6px;
-        flex-wrap: wrap;
-        gap: 3px 6px;
-    }
-
-    .topbar-nav {
-        order: 3;
-        width: 100%;
-        padding-top: 2px;
-        font-size: 12px;
-    }
-
-    .topbar-right {
-        gap: 6px !important;
-        max-width: 55%;
-        font-size: 12px;
-    }
-
-    .topbar .admin-badge {
-        max-width: 92px;
-    }
+    .sidebar-footer .nav-item { flex: 0 0 auto; }
 
     .content {
         padding: 20px 16px;
@@ -1002,10 +985,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 480px) {
-    .sidebar-nav {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .metrics-grid {
         grid-template-columns: 1fr;
     }
@@ -1022,9 +1001,6 @@ tbody tr:hover {
         font-size: 22px;
     }
 
-    .admin-badge {
-        display: none;
-    }
 }
 
 

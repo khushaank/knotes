@@ -648,9 +648,14 @@ function renderCommentsSection(comments, blogId) {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                setBookmark(storyId, false).catch(err => {
-                    console.error('Failed to unsave:', err);
-                });
+                setBookmark(storyId, false).then(result => {
+                    if (result.error) {
+                        trigger.textContent = 'saved';
+                        trigger.classList.add('saved');
+                        if (!userBookmarks.includes(storyId)) userBookmarks.push(storyId);
+                        showInlineMsg(trigger, result.error);
+                    }
+                }).catch(err => console.error('Failed to unsave:', err));
             } else {
                 trigger.textContent = 'saved';
                 trigger.classList.add('saved');
@@ -668,9 +673,15 @@ function renderCommentsSection(comments, blogId) {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
 
-                setBookmark(storyId, true).catch(err => {
-                    console.error('Failed to save:', err);
-                });
+                setBookmark(storyId, true).then(result => {
+                    if (result.error) {
+                        trigger.textContent = '+';
+                        trigger.classList.remove('saved');
+                        const idx = userBookmarks.indexOf(storyId);
+                        if (idx > -1) userBookmarks.splice(idx, 1);
+                        showInlineMsg(trigger, result.error);
+                    }
+                }).catch(err => console.error('Failed to save:', err));
 
                 if (!menu.querySelector('[data-folder="unsave"]')) {
                     const divider = document.createElement('div');

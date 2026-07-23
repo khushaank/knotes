@@ -273,30 +273,34 @@ export async function toggleBookmark(storyId) {
 export async function setBookmark(storyId, shouldSave) {
     if (!supabase) return { error: 'Saving is unavailable right now' };
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { error: 'Please login to save posts' };
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return { error: 'Please login to save posts' };
 
-    const userId = session.user.id;
-    if (shouldSave) {
-        const { data: existing, error: lookupError } = await supabase
+        const userId = session.user.id;
+        if (shouldSave) {
+            const { data: existing, error: lookupError } = await supabase
+                .from('bookmarks')
+                .select('id')
+                .eq('blog_id', storyId)
+                .eq('user_id', userId)
+                .maybeSingle();
+            if (lookupError) return { error: lookupError.message };
+            if (existing) return { success: true, action: 'added' };
+
+            const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
+            return error ? { error: error.message } : { success: true, action: 'added' };
+        }
+
+        const { error } = await supabase
             .from('bookmarks')
-            .select('id')
+            .delete()
             .eq('blog_id', storyId)
-            .eq('user_id', userId)
-            .maybeSingle();
-        if (lookupError) return { error: lookupError.message };
-        if (existing) return { success: true, action: 'added' };
-
-        const { error } = await supabase.from('bookmarks').insert([{ blog_id: storyId, user_id: userId }]);
-        return error ? { error: error.message } : { success: true, action: 'added' };
+            .eq('user_id', userId);
+        return error ? { error: error.message } : { success: true, action: 'removed' };
+    } catch (error) {
+        return { error: error?.message || 'Could not update this saved story' };
     }
-
-    const { error } = await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('blog_id', storyId)
-        .eq('user_id', userId);
-    return error ? { error: error.message } : { success: true, action: 'removed' };
 }
 
 export async function getUserBookmarks() {

@@ -1,5 +1,5 @@
 import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=9';
-import { sortStories } from './algorithm.js';
+import { calculateRelevanceScore, sortStories } from './algorithm.js';
 
 let currentFilter = 'trending';
 const STORIES_PER_PAGE = 10;
@@ -15,6 +15,27 @@ function normalizeSearchInput(input) {
 }
 
 const FEED_CANDIDATE_LIMIT = 250;
+
+function rankFeedStories(stories, filter) {
+    if (filter !== 'relevant') return sortStories(stories, filter);
+
+    const signalledIds = new Set([...userBookmarks, ...userLikes].map(String));
+    const categoryAffinity = new Map();
+    stories.forEach(story => {
+        if (!signalledIds.has(String(story.id)) || !story.category) return;
+        categoryAffinity.set(story.category, (categoryAffinity.get(story.category) || 0) + 1);
+    });
+
+    return [...stories].sort((a, b) => {
+        const score = story => {
+            const ageHours = Math.max(0, (Date.now() - new Date(story.published_at).getTime()) / 36e5);
+            const freshness = Math.max(0, 1 - (ageHours / (24 * 7))) * 4;
+            const affinity = (categoryAffinity.get(story.category) || 0) * 6;
+            return calculateRelevanceScore(story) + freshness + affinity;
+        };
+        return score(b) - score(a);
+    });
+}
 
 async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     if (!supabase) {
@@ -45,7 +66,7 @@ async function fetchStories(searchQuery = '', filter = 'trending', page = 1) {
     const { data: stories, error, count } = response;
     if (error) throw new Error(error.message || 'Unable to load the feed');
 
-    const ranked = sortStories(stories || [], filter);
+    const ranked = rankFeedStories(stories || [], filter);
     const start = (page - 1) * STORIES_PER_PAGE;
     return { stories: ranked.slice(start, start + STORIES_PER_PAGE), count: count || 0 };
 }
@@ -82,14 +103,16 @@ async function renderStories(searchQuery = '', filter = 'trending', forceRefresh
     if (!tbody) return;
 
     try {
-        const cacheKey = `stories-${filter}-${page}-${searchQuery}`;
+        const cacheKey = `stories-v10-${filter}-${page}-${searchQuery}`;
         const cached = getCache(cacheKey);
+        const userStatsPromise = loadUserStats();
 
-        await loadUserStats();
-
-        if (cached && !forceRefresh) {
+        const hasUsableCache = cached?.data?.stories?.length > 0;
+        if (hasUsableCache && !forceRefresh) {
             await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
             if (!cached.stale) {
+                await userStatsPromise;
+                await renderHtml(cached.data.stories, cached.data.count, page, filter, searchQuery);
                 if (tbody) tbody.style.opacity = '1';
                 return;
             }
@@ -98,7 +121,10 @@ async function renderStories(searchQuery = '', filter = 'trending', forceRefresh
         if (tbody) tbody.style.opacity = '0.5';
         if (statsSummary) statsSummary.textContent = 'Updating...';
 
-        const storiesResult = await fetchStories(searchQuery, filter, page);
+        const [storiesResult] = await Promise.all([
+            fetchStories(searchQuery, filter, page),
+            userStatsPromise
+        ]);
 
         const { stories, count } = storiesResult;
         setCache(cacheKey, { stories, count });
@@ -118,7 +144,8 @@ async function renderHtml(stories, count, page, filter, searchQuery) {
     tbody.style.opacity = '1';
 
     if (!stories || stories.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">No stories found.</td></tr>';
+        const message = searchQuery ? 'No stories match this search.' : (page > 1 ? 'No more stories.' : 'No published stories yet.');
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center">${message}</td></tr>`;
         if (statsSummary) statsSummary.textContent = '0 results';
         return;
     }
@@ -603,7 +630,12 @@ async function loadUserStats() {
                     localStorage.setItem(key, JSON.stringify(mapping));
                 }
                 setBookmark(storyId, false).then(result => {
-                    if (result.error) showInlineMsg(trigger, result.error);
+                    if (result.error) {
+                        trigger.textContent = 'saved';
+                        trigger.classList.add('saved');
+                        if (!userBookmarks.includes(storyId)) userBookmarks.push(storyId);
+                        showInlineMsg(trigger, result.error);
+                    }
                 }).catch(err => console.error('Failed to unsave:', err));
             } else {
                 trigger.textContent = 'saved';
@@ -623,7 +655,13 @@ async function loadUserStats() {
                 }
 
                 setBookmark(storyId, true).then(result => {
-                    if (result.error) showInlineMsg(trigger, result.error);
+                    if (result.error) {
+                        trigger.textContent = '+';
+                        trigger.classList.remove('saved');
+                        const idx = userBookmarks.indexOf(storyId);
+                        if (idx > -1) userBookmarks.splice(idx, 1);
+                        showInlineMsg(trigger, result.error);
+                    }
                 }).catch(err => console.error('Failed to save:', err));
 
                 if (!menu.querySelector('[data-folder="unsave"]')) {
