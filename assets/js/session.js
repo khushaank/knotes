@@ -105,7 +105,20 @@ function setupInstallPrompt() {
     document.head.appendChild(manifest);
 
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register(APP_ROOT + 'service-worker.js').catch(() => { }));
+        window.addEventListener('load', async () => {
+            let hasReloadedForNewWorker = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (hasReloadedForNewWorker) return;
+                hasReloadedForNewWorker = true;
+                window.location.reload();
+            });
+
+            try {
+                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js');
+                await registration.update();
+            } catch (e) { }
+        });
     }
 
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);

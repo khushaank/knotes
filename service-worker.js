@@ -1,8 +1,8 @@
-const CACHE = 'knotes-v11';
+const CACHE = 'knotes-v12';
 const SHELL = ['/home', '/assets/css/styles.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
     '/', '/home', '/ask', '/show', '/contact', '/faq',
-    '/guidelines', '/legal', '/security', '/search', '/profile', '/dashboard', '/dashboard/', '/dashboard/home'
+    '/guidelines', '/legal', '/security', '/search', '/profile'
 ]);
 const STATIC_ASSET = /^\/assets\/(?:css|img|js)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
 
@@ -12,7 +12,20 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))));
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)));
+
+        // Dashboard markup is authenticated and changes frequently. Keeping it
+        // out of the navigation cache prevents GitHub Pages deploys from
+        // looking "stuck" after a successful publish.
+        const cache = await caches.open(CACHE);
+        await Promise.allSettled([
+            cache.delete('/dashboard'),
+            cache.delete('/dashboard/'),
+            cache.delete('/dashboard/home')
+        ]);
+    })());
     self.clients.claim();
 });
 
@@ -22,6 +35,11 @@ self.addEventListener('fetch', event => {
     if (request.method !== 'GET' || url.origin !== self.location.origin || /(?:runtime-config|env)\.json$/.test(url.pathname)) return;
 
     if (request.mode === 'navigate') {
+        if (url.pathname.startsWith('/dashboard')) {
+            event.respondWith(fetch(request).catch(() => caches.match('/home')));
+            return;
+        }
+
         event.respondWith(fetch(request).then(response => {
             if (response.ok && PUBLIC_PAGES.has(url.pathname) && !url.search) {
                 const copy = response.clone();
