@@ -13,6 +13,18 @@ let userBookmarks = [];
 let userLikes = [];
 let currentSession = null;
 
+function showInlineMsg(target, message) {
+    if (!target || !message) return;
+    target.parentElement?.querySelector('.viewer-inline-message')?.remove();
+    const feedback = document.createElement('span');
+    feedback.className = 'viewer-inline-message';
+    feedback.setAttribute('role', 'status');
+    feedback.style.cssText = 'margin-left:4px;font-size:10px;color:#666;';
+    feedback.textContent = message;
+    target.insertAdjacentElement('afterend', feedback);
+    setTimeout(() => feedback.remove(), 2500);
+}
+
 async function fetchStory() {
     if (!supabase) return null;
 

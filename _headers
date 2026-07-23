@@ -15,5 +15,9 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store
 
+/dashboard/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
+
 /service-worker.js
   Cache-Control: no-cache

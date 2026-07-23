@@ -110,6 +110,16 @@ function createEditIcon() {
     return parseSvgIcon(`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>`);
 }
 
+function createRowAction(label, icon, onClick, danger = false) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `row-action-button${danger ? ' danger' : ''}`;
+    button.setAttribute('aria-label', label);
+    button.append(icon, document.createTextNode(label));
+    button.addEventListener('click', onClick);
+    return button;
+}
+
 let currentUser = null;
 let currentProfile = null;
 let allPosts = [];
@@ -276,20 +286,16 @@ function renderPostsTable(postsList) {
         tdDate.setAttribute('style', 'color:var(--text-secondary); font-size:13px;');
         tdDate.textContent = dateStr;
 
-        // Actions cell — store action data as structured attributes
+        // Visible actions remain discoverable on desktop and mobile.
         const tdActions = document.createElement('td');
         tdActions.className = 'actions-cell';
-        tdActions.setAttribute('style', 'text-align: center;');
-        tdActions.dataset.dropdownType = 'post';
-        tdActions.dataset.itemId = post.id;
-        tdActions.dataset.itemTitle = post.title;
-        tdActions.dataset.itemUrl = relUrl;
-
-        const dotsBtn = createDotsButton();
-        dotsBtn.addEventListener('click', (event) => {
-            window.creatorActions.toggleRowMenu(event);
-        });
-        tdActions.appendChild(dotsBtn);
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'dashboard-row-actions';
+        actionGroup.append(
+            createRowAction('Edit', createEditIcon(), () => window.creatorActions.editPost(post.id)),
+            createRowAction('Delete', createTrashIcon(), () => window.creatorActions.deletePost(post.id), true)
+        );
+        tdActions.appendChild(actionGroup);
 
         tr.appendChild(tdTitle);
         tr.appendChild(tdStatus);
@@ -348,6 +354,17 @@ function renderCommentsTable(commentsList) {
         tdComment.setAttribute('style', 'font-weight:500;');
         tdComment.textContent = `"${limitWords(c.comment_text, 8)}"`;
 
+        const relatedPost = allPosts.find(post => String(post.id) === String(c.blog_id));
+        if (relatedPost?.slug) {
+            const postLink = document.createElement('a');
+            postLink.href = `../pulse/home?s=${encodeURIComponent(relatedPost.slug)}`;
+            postLink.target = '_blank';
+            postLink.rel = 'noopener noreferrer';
+            postLink.className = 'comment-post-link';
+            postLink.textContent = `On: ${limitWords(relatedPost.title, 6)}`;
+            tdComment.appendChild(postLink);
+        }
+
         // User cell
         const tdUser = document.createElement('td');
         tdUser.setAttribute('data-label', 'User');
@@ -363,15 +380,9 @@ function renderCommentsTable(commentsList) {
         // Actions cell
         const tdActions = document.createElement('td');
         tdActions.className = 'actions-cell';
-        tdActions.setAttribute('style', 'text-align: center;');
-        tdActions.dataset.dropdownType = 'comment';
-        tdActions.dataset.itemId = c.id;
-
-        const dotsBtn = createDotsButton();
-        dotsBtn.addEventListener('click', (event) => {
-            window.creatorActions.toggleRowMenu(event);
-        });
-        tdActions.appendChild(dotsBtn);
+        tdActions.appendChild(
+            createRowAction('Delete', createTrashIcon(), () => window.creatorActions.deleteComment(c.id), true)
+        );
 
         tr.appendChild(tdComment);
         tr.appendChild(tdUser);
@@ -431,8 +442,11 @@ function renderMyWrittenCommentsTable(commentsList) {
         commentLink.setAttribute('style', 'color:var(--text-primary); text-decoration:none;');
         commentLink.textContent = `"${limitWords(c.comment_text, 8)}"`;
 
-        const postInfo = document.createElement('div');
-        postInfo.setAttribute('style', 'font-size:11px; color:var(--text-muted); margin-top:4px;');
+        const postInfo = document.createElement('a');
+        postInfo.href = `../pulse/home?s=${encodeURIComponent(postSlug)}`;
+        postInfo.target = '_blank';
+        postInfo.rel = 'noopener noreferrer';
+        postInfo.className = 'comment-post-link';
         postInfo.textContent = `On: ${limitWords(postTitle, 6)}`;
 
         tdComment.appendChild(commentLink);
@@ -447,15 +461,9 @@ function renderMyWrittenCommentsTable(commentsList) {
         // Actions cell
         const tdActions = document.createElement('td');
         tdActions.className = 'actions-cell';
-        tdActions.setAttribute('style', 'text-align: center;');
-        tdActions.dataset.dropdownType = 'my-comment';
-        tdActions.dataset.itemId = c.id;
-
-        const dotsBtn = createDotsButton();
-        dotsBtn.addEventListener('click', (event) => {
-            window.creatorActions.toggleRowMenu(event);
-        });
-        tdActions.appendChild(dotsBtn);
+        tdActions.appendChild(
+            createRowAction('Delete', createTrashIcon(), () => window.creatorActions.deleteMyComment(c.id), true)
+        );
 
         tr.appendChild(tdComment);
         tr.appendChild(tdDate);

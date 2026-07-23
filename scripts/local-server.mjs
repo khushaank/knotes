@@ -22,7 +22,7 @@ const contentTypes = {
 function resolveRoute(pathname) {
     if (pathname === '/' || pathname === '/home') return '/index.html';
     if (pathname === '/admin/home') return '/admin/index.html';
-    if (pathname === '/dashboard' || pathname === '/dashboard/home') return '/dashboard/index.html';
+    if (pathname === '/dashboard' || pathname === '/dashboard/' || pathname === '/dashboard/home') return '/dashboard/index.html';
     if (pathname === '/pulse/home') return '/pulse/index.html';
     if (!extname(pathname)) return `${pathname}.html`;
     return pathname;
