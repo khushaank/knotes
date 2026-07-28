@@ -57,6 +57,7 @@ assert.match(home, /id="membership-form"/, 'landing page needs the membership re
 assert.doesNotMatch(home, /assets\/js\/index\.js|Loading stories/i, 'landing page must not load the private feed');
 assert.doesNotMatch(home, /\b500\+|member-count/i, 'landing page must not display an invented member count');
 assert.doesNotMatch(await read('assets/js/landing.js'), /community_size|from\(['"]blogs['"]\)/i, 'landing script must not query private content or member counts');
+assert.match(await read('assets/js/landing.js'), /serviceWorker\.register\('\/service-worker\.js'/, 'landing page must update an existing service worker');
 assert.ok(feed.indexOf('requireApprovedMember()') < feed.indexOf(".from('blogs')"), 'home feed must authorize before querying blogs');
 assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth');
 assert.match(routeGuard, /rpc\('is_approved_member'\)/, 'route guard must verify approved membership in trusted database state');

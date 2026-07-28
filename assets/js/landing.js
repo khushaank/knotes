@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient.js';
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).catch(() => {});
+}
+
 const form = document.getElementById('membership-form');
 const status = document.getElementById('request-status');
 
