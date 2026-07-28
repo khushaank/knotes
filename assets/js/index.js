@@ -1,5 +1,8 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=10';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
 import { calculateRelevanceScore, sortStories } from './algorithm.js';
+
+await requireApprovedMember();
 
 let currentFilter = 'trending';
 const STORIES_PER_PAGE = 10;

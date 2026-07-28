@@ -1,13 +1,7 @@
 import { supabase } from './supabaseClient.js';
 
-const count = document.getElementById('member-count');
 const form = document.getElementById('membership-form');
 const status = document.getElementById('request-status');
-
-if (supabase) {
-  const { data } = await supabase.rpc('community_size');
-  if (Number.isInteger(data) && data >= 500) count.textContent = `${data}+`;
-}
 
 form.addEventListener('submit', async event => {
   event.preventDefault();

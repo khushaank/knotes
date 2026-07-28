@@ -1,4 +1,5 @@
-import { supabase } from './supabaseClient.js?v=8';
+import { supabase } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
 
 function applyTheme(preference = 'system') {
     const resolved = preference === 'system'
@@ -16,7 +17,7 @@ const INSTALL_PROMPT_KEY = 'kn-install-prompt-seen';
 const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
 const CLEAN_PATH = window.location.pathname.replace(/\/+$/, '');
 const PAGE_NAME = (CLEAN_PATH.split('/').pop()?.replace(/\.html$/i, '') || 'home').toLowerCase();
-const HEADERLESS_PAGES = new Set(['login', 'maintenance']);
+const HEADERLESS_PAGES = new Set(['login']);
 const PRIVATE_PAGE = !HEADERLESS_PAGES.has(PAGE_NAME);
 
 function isCompactHeader() {
@@ -430,6 +431,7 @@ function applyAuthUI(username) {
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
     : (cb) => cb()
 )(async () => {
+    if (PRIVATE_PAGE) await requireApprovedMember();
     setupInstallPrompt();
     enhanceFormAccessibility();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {

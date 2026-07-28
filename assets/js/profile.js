@@ -1,4 +1,7 @@
-import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js?v=8';
+import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
+
+await requireApprovedMember();
 
 const ready = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))

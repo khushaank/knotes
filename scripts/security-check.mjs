@@ -19,7 +19,7 @@ const exists = async path => {
     }
 };
 
-const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, storageMigration, privateCircleMigration, serviceWorker] = await Promise.all([
+const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, privateCircleMigration, removeCountMigration, serviceWorker] = await Promise.all([
     read('assets/js/auth.js'),
     read('assets/js/supabaseClient.js'),
     read('login.html'),
@@ -31,8 +31,13 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
     read('assets/js/session.js'),
     read('assets/css/input.css'),
     read('index.html'),
+    read('assets/js/index.js'),
+    read('assets/js/routeGuard.js'),
+    read('dashboard/js/dashboard.js'),
+    read('cloudflare/worker.js'),
     readOptional('Supabase/migrations/20260723_security_hardening.sql'),
     readOptional('Supabase/migrations/20260728_private_circle.sql'),
+    readOptional('Supabase/migrations/20260728_remove_fake_community_size.sql'),
     read('service-worker.js')
 ]);
 
@@ -49,6 +54,15 @@ assert.match(auth, /getAuthenticatorAssuranceLevel/, 'login must check whether M
 assert.match(auth, /challengeAndVerify/, 'login must verify enrolled MFA factors');
 assert.match(home, /<h1[^>]*>/, 'landing page needs a semantic h1');
 assert.match(home, /id="membership-form"/, 'landing page needs the membership request form');
+assert.doesNotMatch(home, /assets\/js\/index\.js|Loading stories/i, 'landing page must not load the private feed');
+assert.doesNotMatch(home, /\b500\+|member-count/i, 'landing page must not display an invented member count');
+assert.doesNotMatch(await read('assets/js/landing.js'), /community_size|from\(['"]blogs['"]\)/i, 'landing script must not query private content or member counts');
+assert.ok(feed.indexOf('requireApprovedMember()') < feed.indexOf(".from('blogs')"), 'home feed must authorize before querying blogs');
+assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth');
+assert.match(routeGuard, /rpc\('is_approved_member'\)/, 'route guard must verify approved membership in trusted database state');
+assert.equal((client.match(/\bcreateClient\(/g) || []).length, 1, 'canonical client must be constructed once');
+assert.doesNotMatch(dashboard, /createClient\(|@supabase\/supabase-js/, 'dashboard must reuse the canonical Supabase client');
+assert.doesNotMatch((await read('assets/js/index.js')) + session, /supabaseClient\.js\?/, 'module specifiers must not create duplicate Supabase clients');
 assert.match(session, /function enhanceFormAccessibility\(/, 'shared forms need runtime accessibility normalization');
 assert.doesNotMatch(styles, /font-size:\s*7pt/, 'story metadata must remain readable');
 assert.match(styles, /:focus-visible/, 'interactive controls need visible keyboard focus');
@@ -77,6 +91,9 @@ assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration m
 assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
+assert.match(serviceWorker, /knotes-v16/, 'service-worker cache must be bumped after separating landing and feed');
+assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
+assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');
 
 assert.match(storageMigration, /allowed_mime_types/i, 'storage must enforce MIME types server-side');
 assert.match(storageMigration, /file_size_limit/i, 'storage must enforce file-size limits server-side');
@@ -100,5 +117,6 @@ assert.match(privateCircleMigration, /revoke all on public\.blogs[\s\S]+from ano
 assert.match(privateCircleMigration, /security invoker/i, 'search must not bypass private-content RLS');
 assert.match(privateCircleMigration, /update storage\.buckets set public = false where id in \('avatars', 'media'\)/i, 'member storage must be private');
 assert.match(privateCircleMigration, /create or replace function public\.request_membership/i, 'membership requests must use a trusted database function');
+assert.match(removeCountMigration, /drop function if exists public\.community_size\(\)/i, 'fake member-count function must be removed');
 
 console.log('Security and production-readiness checks passed.');

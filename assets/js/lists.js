@@ -1,4 +1,7 @@
 import { supabase, getBookmarkedPosts, calculateTimeAgo } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
+
+await requireApprovedMember();
 
 const DEFAULT_FOLDERS = ['To Learn', 'Inspiration', 'Archive', 'Reading List'];
 

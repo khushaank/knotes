@@ -23,6 +23,8 @@ try {
     assert.equal(home.status, 200);
     assert.equal(home.headers.get('x-origin'), 'preserved', 'upstream headers must survive');
     assert.match(home.headers.get('content-security-policy') || '', /frame-ancestors 'none'/);
+    assert.match(home.headers.get('content-security-policy') || '', /https:\/\/static\.cloudflareinsights\.com/);
+    assert.match(home.headers.get('content-security-policy') || '', /https:\/\/cloudflareinsights\.com/);
     assert.equal(home.headers.get('strict-transport-security'), 'max-age=31536000; includeSubDomains');
     assert.equal(home.headers.get('x-frame-options'), 'DENY');
     assert.equal(home.headers.get('x-content-type-options'), 'nosniff');
@@ -36,6 +38,12 @@ try {
     const dashboard = await worker.fetch(new Request('https://knotes.dpdns.org/dashboard/'));
     assert.equal(dashboard.headers.get('cache-control'), 'private, no-store, max-age=0');
     assert.equal(dashboard.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
+
+    const login = await worker.fetch(new Request('https://knotes.dpdns.org/login'));
+    assert.equal(login.headers.get('cache-control'), 'no-store, max-age=0');
+
+    const index = await worker.fetch(new Request('https://knotes.dpdns.org/index'));
+    assert.equal(index.headers.get('cache-control'), 'public, max-age=300, must-revalidate');
 
     const asset = await worker.fetch(new Request('https://knotes.dpdns.org/assets/app.js'));
     assert.equal(asset.headers.get('cache-control'), 'public, max-age=14400, must-revalidate');

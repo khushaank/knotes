@@ -1,4 +1,7 @@
 import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
+
+await requireApprovedMember();
 
 const RESULTS_PER_PAGE = 10;
 

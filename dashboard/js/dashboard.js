@@ -1,50 +1,7 @@
-let SUPABASE_URL = '';
-let SUPABASE_ANON_KEY = '';
-let createClient = null;
-const SUPABASE_TIMEOUT_MS = 8000;
+import { supabase } from '../../assets/js/supabaseClient.js';
+import { requireApprovedMember } from '../../assets/js/routeGuard.js';
 
-function withTimeout(promise, timeoutMs, label) {
-    let timeoutId;
-    const timeout = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
-    });
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-}
-
-function createTimeoutFetch(timeoutMs = SUPABASE_TIMEOUT_MS) {
-    return async (input, init = {}) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            return await fetch(input, { ...init, signal: controller.signal });
-        } finally {
-            clearTimeout(timeoutId);
-        }
-    };
-}
-
-try {
-    const supabaseModule = await withTimeout(
-        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm'),
-        SUPABASE_TIMEOUT_MS,
-        'Supabase client'
-    );
-    createClient = supabaseModule.createClient;
-} catch (e) {
-    console.warn('Supabase client library could not be loaded.', e);
-}
-
-try {
-    const config = await import('./supabaseConfig.js');
-    SUPABASE_URL = config.SUPABASE_URL;
-    SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
-} catch (e) {
-    console.warn('dashboard/js/supabaseConfig.js not found or failed to load.', e);
-}
-
-const supabase = (createClient && SUPABASE_URL)
-    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { fetch: createTimeoutFetch() } })
-    : null;
+await requireApprovedMember();
 
 // Limit words helper
 function limitWords(str, maxWords = 5) {

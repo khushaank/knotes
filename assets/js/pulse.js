@@ -1,5 +1,8 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=10';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
 import { renderMarkdown } from './contentRenderer.js?v=8';
+
+await requireApprovedMember();
 
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get('id');

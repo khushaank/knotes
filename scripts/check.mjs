@@ -7,6 +7,7 @@ const root = new URL('../', import.meta.url);
 const rootPath = fileURLToPath(root);
 const failures = [];
 const sourceFiles = [];
+const supabaseClientConstructors = [];
 
 async function walk(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -29,6 +30,12 @@ for (const file of sourceFiles) {
     if (!name.startsWith('assets/vendor/') && /DOMPurify[^\n]+\?[^\n]+:[^\n]+\.value/.test(source)) {
         failures.push(`${name}: unsafe raw-HTML sanitizer fallback`);
     }
+    if (extname(file) === '.js' && /\bcreateClient\(/.test(source)) {
+        supabaseClientConstructors.push(name);
+    }
+    if (extname(file) === '.js' && /supabaseClient\.js\?/.test(source)) {
+        failures.push(`${name}: versioned Supabase singleton import creates a duplicate auth client`);
+    }
     if (extname(file) === '.js' && !file.endsWith('check.mjs')) {
         const syntax = spawnSync(process.execPath, [
             '--experimental-vm-modules',
@@ -38,6 +45,10 @@ for (const file of sourceFiles) {
         ], { encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } });
         if (syntax.status !== 0) failures.push(`${name}: ${syntax.stderr.trim()}`);
     }
+}
+
+if (supabaseClientConstructors.length !== 1 || supabaseClientConstructors[0] !== 'assets/js/supabaseClient.js') {
+    failures.push(`Supabase client must be constructed only in assets/js/supabaseClient.js; found: ${supabaseClientConstructors.join(', ') || 'none'}`);
 }
 
 if (failures.length) {

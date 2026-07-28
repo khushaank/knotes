@@ -1,10 +1,15 @@
 import { supabase } from './supabaseClient.js';
+import { safeReturnPath } from './routeGuard.js';
 
 const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_MIN_LENGTH = 12;
 let pendingMfaFactorId = null;
+
+function loginDestination() {
+    return safeReturnPath(new URLSearchParams(window.location.search).get('returnTo') || '/home');
+}
 
 function getLoginAttempts() {
     try {
@@ -95,7 +100,7 @@ function clearFailedLogins() {
                 const needsMfa = await prepareMfaChallenge(showMessage);
                 if (!needsMfa) {
                     showMessage('Logged in successfully! Redirecting...', false);
-                    window.location.href = 'home';
+                    window.location.href = loginDestination();
                 }
             }
         });
@@ -116,7 +121,7 @@ function clearFailedLogins() {
                 showMessage('That authentication code was not accepted. Try a new code.', true);
             } else {
                 showMessage('Verified. Redirecting...', false);
-                window.location.href = 'home';
+                window.location.href = loginDestination();
             }
         });
     }
@@ -162,6 +167,9 @@ function clearFailedLogins() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status') === 'restricted') {
+        showMessage('This account does not currently have access.', true);
+    }
     if (urlParams.get('type') === 'recovery') {
         showResetPasswordForm();
     }
@@ -170,7 +178,7 @@ function clearFailedLogins() {
         supabase?.auth.getSession().then(async ({ data }) => {
             if (!data.session) return;
             const needsMfa = await prepareMfaChallenge(showMessage);
-            if (!needsMfa) window.location.href = 'home';
+            if (!needsMfa) window.location.href = loginDestination();
         });
     }
 });
