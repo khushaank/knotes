@@ -1,4 +1,4 @@
-const CACHE = 'knotes-v16';
+const CACHE = 'knotes-v17';
 const SHELL = ['/', '/assets/css/landing.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
     '/', '/login'
@@ -56,7 +56,7 @@ self.addEventListener('fetch', event => {
 
     if (/\.(?:css|js)$/i.test(url.pathname)) {
         // Do not let a stale stylesheet keep an old header layout after deploy.
-        event.respondWith(fetch(request).then(response => {
+        event.respondWith(fetch(new Request(request, { cache: 'reload' })).then(response => {
             if (response.ok) {
                 const copy = response.clone();
                 event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
