@@ -17,6 +17,7 @@ const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
 const CLEAN_PATH = window.location.pathname.replace(/\/+$/, '');
 const PAGE_NAME = (CLEAN_PATH.split('/').pop()?.replace(/\.html$/i, '') || 'home').toLowerCase();
 const HEADERLESS_PAGES = new Set(['login', 'maintenance']);
+const PRIVATE_PAGE = !HEADERLESS_PAGES.has(PAGE_NAME);
 
 function isCompactHeader() {
     return window.matchMedia('(max-width: 639px)').matches;
@@ -437,7 +438,8 @@ function applyAuthUI(username) {
     }
     document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
-        document.body.style.visibility = 'visible';
+        if (PRIVATE_PAGE) window.location.replace(APP_ROOT + 'login');
+        else document.body.style.visibility = 'visible';
         return;
     }
 
@@ -467,6 +469,26 @@ function applyAuthUI(username) {
         const isMaintPage = path.includes('maintenance');
         const isLoginPage = path.includes('login');
         const isAdminPage = path.includes('/admin/');
+
+        if (!session && PRIVATE_PAGE) {
+            clearCachedAuth();
+            window.location.replace(APP_ROOT + 'login');
+            return;
+        }
+
+        if (session?.user && PRIVATE_PAGE) {
+            const { data: membership } = await supabase
+                .from('profiles')
+                .select('membership_status')
+                .eq('id', session.user.id)
+                .single();
+            if (membership?.membership_status !== 'approved') {
+                clearCachedAuth();
+                await supabase.auth.signOut();
+                window.location.replace('/?access=review');
+                return;
+            }
+        }
 
         if (session && session.user) {
             if (!cached || !cached.username) {

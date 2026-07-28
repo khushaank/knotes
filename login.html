@@ -22,8 +22,7 @@
         content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Login - K. Notes</title>
-    <meta name="description"
-        content="Sign in to K. Notes or create an account to join technology discussions and save your activity." />
+    <meta name="description" content="Sign in to the private K. Notes community." />
     <meta name="robots" content="noindex, follow" />
     <link href="assets/css/styles.css?v=8" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -47,11 +46,13 @@
                     <tr>
                         <td class="py-1 pr-2"><label for="login-password">password:</label></td>
                         <td class="py-1 relative">
-                            <input type="password" id="login-password" name="password" autocomplete="current-password" required
+                            <input type="password" id="login-password" name="password" autocomplete="current-password"
+                                required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword(event, 'login-password')" aria-label="Show or hide login password">
+                                onclick="togglePassword(event, 'login-password')"
+                                aria-label="Show or hide login password">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
                         </td>
@@ -70,34 +71,23 @@
         </div>
     </div>
 
-    <div class="mb-4">
-        <b class="text-[13px] text-black">Create Account</b>
-        <form id="signup-form" class="mt-2 text-[13px]">
+    <div id="mfa-section" class="mb-4 hidden">
+        <b class="text-[13px] text-black">Two-factor authentication</b>
+        <form id="mfa-form" class="mt-2 text-[13px]">
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2"><label for="signup-email">email:</label></td>
-                        <td class="py-1"><input type="email" id="signup-email" name="email" autocomplete="email" required
+                        <td class="py-1 pr-2"><label for="mfa-code">code:</label></td>
+                        <td class="py-1"><input id="mfa-code" name="code" inputmode="numeric"
+                                autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="py-1 pr-2"><label for="signup-password">password:</label></td>
-                        <td class="py-1 relative">
-                            <input type="password" id="signup-password" name="password" autocomplete="new-password" minlength="12" required
-                                class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
-                            <button type="button"
-                                class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword(event, 'signup-password')" aria-label="Show or hide signup password">
-                                <span class="material-symbols-outlined text-[16px]">visibility</span>
-                            </button>
                         </td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="py-2"><button type="submit"
-                                class="bg-gray-200 border border-gray-400 px-2 py-0.5 hover:bg-gray-300 text-black cursor-pointer">create
-                                account</button></td>
+                                class="bg-gray-200 border border-gray-400 px-2 py-0.5 hover:bg-gray-300 text-black cursor-pointer">verify</button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -115,19 +105,6 @@
                 icon.textContent = 'visibility';
             }
         }
-    </script>
-    <script type="module">
-        import { supabase } from './assets/js/supabaseClient.js';
-
-        // Redirect if already logged in
-        async function checkSession() {
-            if (!supabase) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                window.location.href = 'home';
-            }
-        }
-        checkSession();
     </script>
     <script type="module" src="assets/js/auth.js"></script>
     <script type="module" src="assets/js/session.js?v=7"></script>

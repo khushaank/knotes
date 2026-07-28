@@ -4,6 +4,7 @@ const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_MIN_LENGTH = 12;
+let pendingMfaFactorId = null;
 
 function getLoginAttempts() {
     try {
@@ -38,7 +39,7 @@ function clearFailedLogins() {
 
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
+    const mfaForm = document.getElementById('mfa-form');
     const messageContainer = document.getElementById('message-container');
 
     function showMessage(msg, isError = false) {
@@ -79,7 +80,7 @@ function clearFailedLogins() {
             loginBtn.disabled = true;
             loginBtn.textContent = 'logging in...';
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -91,55 +92,31 @@ function clearFailedLogins() {
                 loginBtn.textContent = 'login';
             } else {
                 clearFailedLogins();
-                showMessage('Logged in successfully! Redirecting...', false);
-                setTimeout(() => {
+                const needsMfa = await prepareMfaChallenge(showMessage);
+                if (!needsMfa) {
+                    showMessage('Logged in successfully! Redirecting...', false);
                     window.location.href = 'home';
-                }, 1000);
+                }
             }
         });
     }
 
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
+    if (mfaForm) {
+        mfaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!supabase) {
-                showMessage('Authentication service is currently unavailable.', true);
-                return;
-            }
-
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-
-            if (!email || !password) {
-                showMessage('Please enter both username/email and password.', true);
-                return;
-            }
-
-            if (password.length < PASSWORD_MIN_LENGTH) {
-                showMessage(`Password must be at least ${PASSWORD_MIN_LENGTH} characters.`, true);
-                return;
-            }
-
-            const signupBtn = signupForm.querySelector('button[type="submit"]');
-            signupBtn.disabled = true;
-            signupBtn.textContent = 'creating...';
-
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
+            const button = mfaForm.querySelector('button');
+            const code = mfaForm.elements.code.value.trim();
+            button.disabled = true;
+            const { error } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: pendingMfaFactorId,
+                code
             });
-
+            button.disabled = false;
             if (error) {
-                showMessage('Account creation failed. Check your details or try again later.', true);
-                signupBtn.disabled = false;
-                signupBtn.textContent = 'create account';
+                showMessage('That authentication code was not accepted. Try a new code.', true);
             } else {
-                showMessage(data.session
-                    ? 'Account created successfully.'
-                    : 'Account created. Check your email to confirm it, then login.', false);
-                signupBtn.disabled = false;
-                signupBtn.textContent = 'create account';
-                document.getElementById('login-email')?.focus();
+                showMessage('Verified. Redirecting...', false);
+                window.location.href = 'home';
             }
         });
     }
@@ -188,14 +165,43 @@ function clearFailedLogins() {
     if (urlParams.get('type') === 'recovery') {
         showResetPasswordForm();
     }
+
+    if (!hash.includes('type=recovery') && urlParams.get('type') !== 'recovery') {
+        supabase?.auth.getSession().then(async ({ data }) => {
+            if (!data.session) return;
+            const needsMfa = await prepareMfaChallenge(showMessage);
+            if (!needsMfa) window.location.href = 'home';
+        });
+    }
 });
+
+async function prepareMfaChallenge(showMessage) {
+    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) {
+        showMessage('Two-factor authentication could not be checked. Please try again.', true);
+        return true;
+    }
+    if (assurance.currentLevel !== 'aal1' || assurance.nextLevel !== 'aal2') return false;
+
+    const { data: factors, error: factorError } = await supabase.auth.mfa.listFactors();
+    pendingMfaFactorId = factors?.totp?.find(factor => factor.status === 'verified')?.id || null;
+    if (factorError || !pendingMfaFactorId) {
+        showMessage('Two-factor authentication is unavailable. Please contact support.', true);
+        return true;
+    }
+    document.getElementById('login-form')?.parentElement?.classList.add('hidden');
+    document.getElementById('mfa-section')?.classList.remove('hidden');
+    document.getElementById('mfa-code')?.focus();
+    showMessage('Enter the code from your authenticator app.', false);
+    return true;
+}
 
 function showResetPasswordForm() {
     const main = document.querySelector('body');
     const messageContainer = document.getElementById('message-container');
 
     document.getElementById('login-form')?.parentElement?.classList.add('hidden');
-    document.getElementById('signup-form')?.parentElement?.classList.add('hidden');
+    document.getElementById('mfa-section')?.classList.add('hidden');
 
     const resetDiv = document.createElement('div');
     resetDiv.className = 'mb-8';
