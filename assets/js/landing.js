@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js';
-import { redirectApprovedMember } from './routeGuard.js';
+import { redirectApprovedMember } from './routeGuard.js?v=2';
 
 await redirectApprovedMember();
 

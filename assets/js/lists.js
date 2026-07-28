@@ -1,5 +1,5 @@
 import { supabase, getBookmarkedPosts, calculateTimeAgo } from './supabaseClient.js';
-import { requireApprovedMember } from './routeGuard.js';
+import { requireApprovedMember } from './routeGuard.js?v=2';
 
 await requireApprovedMember();
 

@@ -1,5 +1,5 @@
 import { supabase } from '../../assets/js/supabaseClient.js';
-import { requireApprovedMember } from '../../assets/js/routeGuard.js';
+import { requireApprovedMember } from '../../assets/js/routeGuard.js?v=2';
 
 await requireApprovedMember();
 

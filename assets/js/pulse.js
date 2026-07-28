@@ -1,5 +1,5 @@
 import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js';
-import { requireApprovedMember } from './routeGuard.js';
+import { requireApprovedMember } from './routeGuard.js?v=2';
 import { renderMarkdown } from './contentRenderer.js?v=8';
 
 await requireApprovedMember();
