@@ -58,9 +58,12 @@ assert.doesNotMatch(home, /assets\/js\/index\.js|Loading stories/i, 'landing pag
 assert.doesNotMatch(home, /\b500\+|member-count/i, 'landing page must not display an invented member count');
 assert.doesNotMatch(await read('assets/js/landing.js'), /community_size|from\(['"]blogs['"]\)/i, 'landing script must not query private content or member counts');
 assert.match(await read('assets/js/landing.js'), /serviceWorker\.register\('\/service-worker\.js'/, 'landing page must update an existing service worker');
+assert.match(await read('assets/js/landing.js'), /redirectApprovedMember\(\)/, 'approved members must skip the public landing page');
 assert.ok(feed.indexOf('requireApprovedMember()') < feed.indexOf(".from('blogs')"), 'home feed must authorize before querying blogs');
 assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth');
 assert.match(routeGuard, /rpc\('is_approved_member'\)/, 'route guard must verify approved membership in trusted database state');
+assert.match(routeGuard, /location\.replace\('\/'\)/, 'private pages must send non-members to the public landing page');
+assert.match(auth, /return '\/home';/, 'successful login must always open the private feed');
 assert.equal((client.match(/\bcreateClient\(/g) || []).length, 1, 'canonical client must be constructed once');
 assert.doesNotMatch(dashboard, /createClient\(|@supabase\/supabase-js/, 'dashboard must reuse the canonical Supabase client');
 assert.doesNotMatch((await read('assets/js/index.js')) + session, /supabaseClient\.js\?/, 'module specifiers must not create duplicate Supabase clients');

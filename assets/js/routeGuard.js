@@ -9,17 +9,6 @@ function clearPrivateCache() {
         .forEach(key => localStorage.removeItem(key));
 }
 
-export function safeReturnPath(value = window.location.pathname + window.location.search) {
-    try {
-        const url = new URL(value, window.location.origin);
-        return url.origin === window.location.origin && url.pathname.startsWith('/')
-            ? url.pathname + url.search
-            : '/home';
-    } catch {
-        return '/home';
-    }
-}
-
 export function getMembershipState() {
     if (!membershipStatePromise) {
         membershipStatePromise = (async () => {
@@ -35,6 +24,13 @@ export function getMembershipState() {
     return membershipStatePromise;
 }
 
+export async function redirectApprovedMember() {
+    if (await getMembershipState() === 'approved') {
+        window.location.replace('/home');
+        return new Promise(() => {});
+    }
+}
+
 export async function requireApprovedMember() {
     document.documentElement.style.visibility = 'hidden';
     const state = await getMembershipState();
@@ -45,8 +41,6 @@ export async function requireApprovedMember() {
 
     clearPrivateCache();
     if (state === 'restricted') await supabase?.auth.signOut();
-    const returnTo = encodeURIComponent(safeReturnPath());
-    const status = state === 'restricted' ? '&status=restricted' : '';
-    window.location.replace(`/login?returnTo=${returnTo}${status}`);
+    window.location.replace('/');
     return new Promise(() => {});
 }
