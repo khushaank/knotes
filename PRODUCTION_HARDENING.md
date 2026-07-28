@@ -9,7 +9,7 @@ Cloudflare deployment, Supabase schema/storage changes, credential rotation, DNS
 ## 1. Supabase staging
 
 1. Create or refresh an isolated staging project and take a database backup.
-2. Compare the staging schema, existing RLS policies, grants, storage buckets, and feedback columns with `Supabase/migrations/20260723_security_hardening.sql`.
+2. Compare the staging schema, existing RLS policies, grants, storage buckets, and feedback columns with `Supabase/migrations/20260723_security_hardening.sql` and `Supabase/migrations/20260728_private_circle.sql`.
 3. Check legacy feedback rows for null `name`, `type`, `message`, or `created_at`. The migration deliberately fails closed when those rows need operator-reviewed cleanup.
 4. Apply the migration to staging only.
 5. Verify:
@@ -23,8 +23,10 @@ Cloudflare deployment, Supabase schema/storage changes, credential rotation, DNS
    - public media accepts only the documented types up to 10 MiB.
 6. Validate the four `NOT VALID` feedback constraints after reviewing historical rows.
 7. Configure Supabase Auth with a 12-character password minimum, leaked-password protection, appropriate email verification, and server-side Auth rate limits.
-8. Add edge-verified Cloudflare Turnstile to signup, login, password reset, and feedback if abuse risk warrants it. Never trust a browser-only CAPTCHA result.
-9. Review all existing keys. Rotate any exposed non-publishable credential and update it only in the appropriate secret store.
+8. In Authentication settings, disable public new-user signups. Create accounts only with the server-side admin invitation flow. Enable TOTP enrollment and verification.
+9. Review every existing non-admin profile and explicitly set `membership_status = 'approved'` only for members who should retain access. The private-circle migration deliberately leaves them pending.
+10. Add edge-verified Cloudflare Turnstile to login, password reset, and membership requests if abuse risk warrants it. Never trust a browser-only CAPTCHA result.
+11. Review all existing keys. Rotate any exposed non-publishable credential and update it only in the appropriate secret store.
 
 After staging passes and both production approvals are recorded, back up production, apply the migration during a monitored window, and repeat the checks. A migration error rolls back its transaction; restoration from the pre-change backup is the recovery path for problems discovered after commit.
 
@@ -57,7 +59,7 @@ Use the working contact published in `/.well-known/security.txt`. If a branded s
 - HTTP redirects to HTTPS and TLS is valid.
 - Live response headers match the Worker policy.
 - No unexpected CSP violations occur.
-- Signup, login, logout, reset, and session expiry work.
+- Invitation, login, MFA, logout, reset, and session expiry work.
 - Password and rate-limit policies are enforced server-side.
 - Upload limits and private avatar access work.
 - Feedback ownership and concurrent rate limiting work.

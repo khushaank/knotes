@@ -19,7 +19,7 @@ const exists = async path => {
     }
 };
 
-const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, storageMigration] = await Promise.all([
+const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, storageMigration, privateCircleMigration, serviceWorker] = await Promise.all([
     read('assets/js/auth.js'),
     read('assets/js/supabaseClient.js'),
     read('login.html'),
@@ -31,7 +31,9 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
     read('assets/js/session.js'),
     read('assets/css/input.css'),
     read('index.html'),
-    readOptional('Supabase/migrations/20260723_security_hardening.sql')
+    readOptional('Supabase/migrations/20260723_security_hardening.sql'),
+    readOptional('Supabase/migrations/20260728_private_circle.sql'),
+    read('service-worker.js')
 ]);
 
 const pkg = JSON.parse(packageJson);
@@ -40,10 +42,13 @@ const pwa = JSON.parse(manifest);
 assert.doesNotMatch(auth, /length\s*<\s*(?:6|7|8|9|10|11)\b/, 'all password flows must require at least 12 characters');
 assert.match(auth, /PASSWORD_MIN_LENGTH\s*=\s*12/, 'password policy must be centralized at 12 characters');
 assert.match(login, /autocomplete="current-password"/, 'login password must declare current-password autocomplete');
-assert.match(login, /autocomplete="new-password"/, 'signup password must declare new-password autocomplete');
 assert.match(login, /<label[^>]+for="login-email"/, 'login email needs an associated label');
-assert.match(login, /<label[^>]+for="signup-password"/, 'signup password needs an associated label');
-assert.match(home, /<h1[^>]+class="[^"]*sr-only/, 'homepage needs a semantic h1');
+assert.doesNotMatch(login, /signup-form|Create Account/i, 'public account creation must not be offered');
+assert.doesNotMatch(auth, /\.auth\.signUp\(/, 'browser signup must be removed');
+assert.match(auth, /getAuthenticatorAssuranceLevel/, 'login must check whether MFA is required');
+assert.match(auth, /challengeAndVerify/, 'login must verify enrolled MFA factors');
+assert.match(home, /<h1[^>]*>/, 'landing page needs a semantic h1');
+assert.match(home, /id="membership-form"/, 'landing page needs the membership request form');
 assert.match(session, /function enhanceFormAccessibility\(/, 'shared forms need runtime accessibility normalization');
 assert.doesNotMatch(styles, /font-size:\s*7pt/, 'story metadata must remain readable');
 assert.match(styles, /:focus-visible/, 'interactive controls need visible keyboard focus');
@@ -69,6 +74,9 @@ assert.doesNotMatch(interceptor, /window\.location\.href\s*=\s*exitUrl/, 'ordina
 assert.match(interceptor, /relList\.add\('noopener'\)/, 'external links must receive noopener');
 assert.doesNotMatch(interceptor, /\bexport\s+\{/, 'classic interceptor script must not use ES module exports');
 assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration must bypass HTTP cache');
+assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
+assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
+assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
 
 assert.match(storageMigration, /allowed_mime_types/i, 'storage must enforce MIME types server-side');
 assert.match(storageMigration, /file_size_limit/i, 'storage must enforce file-size limits server-side');
@@ -87,5 +95,10 @@ assert.match(client, /update\(\{ avatar_url: filePath \}\)/, 'profiles must stor
 assert.doesNotMatch(client, /file\.type === 'application\/octet-stream'[\s\S]{0,80}return null/, 'generic binary MIME must not bypass upload checks');
 assert.equal(await exists('cloudflare/worker.js'), true, 'Cloudflare security-header worker must be provided');
 assert.equal(await exists('cloudflare/wrangler.toml.example'), true, 'Cloudflare deployment template must be provided');
+assert.match(privateCircleMigration, /create or replace function public\.is_approved_member\(\)/i, 'membership authorization must be database-backed');
+assert.match(privateCircleMigration, /revoke all on public\.blogs[\s\S]+from anon/i, 'anonymous private-content grants must be removed');
+assert.match(privateCircleMigration, /security invoker/i, 'search must not bypass private-content RLS');
+assert.match(privateCircleMigration, /update storage\.buckets set public = false where id in \('avatars', 'media'\)/i, 'member storage must be private');
+assert.match(privateCircleMigration, /create or replace function public\.request_membership/i, 'membership requests must use a trusted database function');
 
 console.log('Security and production-readiness checks passed.');
