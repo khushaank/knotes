@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; form-action 'self'; upgrade-insecure-requests;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com; form-action 'self'; upgrade-insecure-requests;">
     <title>Account - K. Notes</title>
     <link href="assets/css/styles.css?v=8" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/img/logo.png">
@@ -78,6 +78,23 @@
                         <p id="password-status" class="account-message" role="status" aria-live="polite"></p>
                         <button type="submit" id="password-save" class="account-button account-button-primary">Update password</button>
                     </form>
+                </section>
+
+                <section class="account-panel" aria-labelledby="mfa-title">
+                    <h2 id="mfa-title">Two-factor authentication</h2>
+                    <p class="account-help">Protect this account with a six-digit code from an authenticator app.</p>
+                    <button type="button" id="mfa-start" class="account-button account-button-primary">Enable 2FA</button>
+                    <div id="mfa-enrollment" hidden>
+                        <img id="mfa-qr" width="180" height="180" alt="Authenticator setup QR code">
+                        <p class="account-help">If you cannot scan the code, enter this secret: <code id="mfa-secret"></code></p>
+                        <form id="mfa-enrollment-form" class="password-form">
+                            <label for="mfa-enrollment-code">Authenticator code</label>
+                            <input id="mfa-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code"
+                                pattern="[0-9]{6}" maxlength="6" required>
+                            <button type="submit" class="account-button account-button-primary">Verify and enable</button>
+                        </form>
+                    </div>
+                    <p id="mfa-status" class="account-message" role="status" aria-live="polite"></p>
                 </section>
 
                 <section class="account-panel account-hidden-panel" aria-labelledby="hidden-items-title">

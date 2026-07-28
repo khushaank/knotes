@@ -1,8 +1,15 @@
 import { supabase } from './supabaseClient.js';
+import { safeReturnPath } from './routeGuard.js';
 
 const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_MIN_LENGTH = 12;
+let pendingMfaFactorId = null;
+
+function loginDestination() {
+    return safeReturnPath(new URLSearchParams(window.location.search).get('returnTo') || '/home');
+}
 
 function getLoginAttempts() {
     try {
@@ -37,7 +44,7 @@ function clearFailedLogins() {
 
 (document.readyState === 'loading' ? document.addEventListener.bind(document, 'DOMContentLoaded') : (callback) => callback())(() => {
     const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
+    const mfaForm = document.getElementById('mfa-form');
     const messageContainer = document.getElementById('message-container');
 
     function showMessage(msg, isError = false) {
@@ -78,67 +85,43 @@ function clearFailedLogins() {
             loginBtn.disabled = true;
             loginBtn.textContent = 'logging in...';
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
 
             if (error) {
                 recordFailedLogin();
-                showMessage(error.message, true);
+                showMessage('Login failed. Check your credentials and try again.', true);
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'login';
             } else {
                 clearFailedLogins();
-                showMessage('Logged in successfully! Redirecting...', false);
-                setTimeout(() => {
-                    window.location.href = 'home';
-                }, 1000);
+                const needsMfa = await prepareMfaChallenge(showMessage);
+                if (!needsMfa) {
+                    showMessage('Logged in successfully! Redirecting...', false);
+                    window.location.href = loginDestination();
+                }
             }
         });
     }
 
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
+    if (mfaForm) {
+        mfaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!supabase) {
-                showMessage('Authentication service is currently unavailable.', true);
-                return;
-            }
-
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-
-            if (!email || !password) {
-                showMessage('Please enter both username/email and password.', true);
-                return;
-            }
-
-            if (password.length < 6) {
-                showMessage('Password must be at least 6 characters.', true);
-                return;
-            }
-
-            const signupBtn = signupForm.querySelector('button[type="submit"]');
-            signupBtn.disabled = true;
-            signupBtn.textContent = 'creating...';
-
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
+            const button = mfaForm.querySelector('button');
+            const code = mfaForm.elements.code.value.trim();
+            button.disabled = true;
+            const { error } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: pendingMfaFactorId,
+                code
             });
-
+            button.disabled = false;
             if (error) {
-                showMessage(error.message, true);
-                signupBtn.disabled = false;
-                signupBtn.textContent = 'create account';
+                showMessage('That authentication code was not accepted. Try a new code.', true);
             } else {
-                showMessage(data.session
-                    ? 'Account created successfully.'
-                    : 'Account created. Check your email to confirm it, then login.', false);
-                signupBtn.disabled = false;
-                signupBtn.textContent = 'create account';
-                document.getElementById('login-email')?.focus();
+                showMessage('Verified. Redirecting...', false);
+                window.location.href = loginDestination();
             }
         });
     }
@@ -171,7 +154,7 @@ function clearFailedLogins() {
             forgotLink.style.pointerEvents = '';
 
             if (error) {
-                showMessage(error.message, true);
+                showMessage('Password reset could not be started. Please try again later.', true);
             } else {
                 showMessage('Password reset email sent! Check your inbox.', false);
             }
@@ -184,17 +167,49 @@ function clearFailedLogins() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status') === 'restricted') {
+        showMessage('This account does not currently have access.', true);
+    }
     if (urlParams.get('type') === 'recovery') {
         showResetPasswordForm();
     }
+
+    if (!hash.includes('type=recovery') && urlParams.get('type') !== 'recovery') {
+        supabase?.auth.getSession().then(async ({ data }) => {
+            if (!data.session) return;
+            const needsMfa = await prepareMfaChallenge(showMessage);
+            if (!needsMfa) window.location.href = loginDestination();
+        });
+    }
 });
+
+async function prepareMfaChallenge(showMessage) {
+    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) {
+        showMessage('Two-factor authentication could not be checked. Please try again.', true);
+        return true;
+    }
+    if (assurance.currentLevel !== 'aal1' || assurance.nextLevel !== 'aal2') return false;
+
+    const { data: factors, error: factorError } = await supabase.auth.mfa.listFactors();
+    pendingMfaFactorId = factors?.totp?.find(factor => factor.status === 'verified')?.id || null;
+    if (factorError || !pendingMfaFactorId) {
+        showMessage('Two-factor authentication is unavailable. Please contact support.', true);
+        return true;
+    }
+    document.getElementById('login-form')?.parentElement?.classList.add('hidden');
+    document.getElementById('mfa-section')?.classList.remove('hidden');
+    document.getElementById('mfa-code')?.focus();
+    showMessage('Enter the code from your authenticator app.', false);
+    return true;
+}
 
 function showResetPasswordForm() {
     const main = document.querySelector('body');
     const messageContainer = document.getElementById('message-container');
 
     document.getElementById('login-form')?.parentElement?.classList.add('hidden');
-    document.getElementById('signup-form')?.parentElement?.classList.add('hidden');
+    document.getElementById('mfa-section')?.classList.add('hidden');
 
     const resetDiv = document.createElement('div');
     resetDiv.className = 'mb-8';
@@ -204,13 +219,13 @@ function showResetPasswordForm() {
             <table class="border-spacing-0 border-collapse">
                 <tbody>
                     <tr>
-                        <td class="py-1 pr-2">new password:</td>
-                        <td class="py-1"><input type="password" id="new-password"
+                        <td class="py-1 pr-2"><label for="new-password">new password:</label></td>
+                        <td class="py-1"><input type="password" id="new-password" name="new-password" minlength="12" autocomplete="new-password" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]"></td>
                     </tr>
                     <tr>
-                        <td class="py-1 pr-2">confirm:</td>
-                        <td class="py-1"><input type="password" id="confirm-password"
+                        <td class="py-1 pr-2"><label for="confirm-password">confirm:</label></td>
+                        <td class="py-1"><input type="password" id="confirm-password" name="confirm-password" minlength="12" autocomplete="new-password" required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]"></td>
                     </tr>
                     <tr>
@@ -230,8 +245,8 @@ function showResetPasswordForm() {
         const newPass = document.getElementById('new-password').value;
         const confirmPass = document.getElementById('confirm-password').value;
 
-        if (!newPass || newPass.length < 6) {
-            messageContainer.textContent = 'Password must be at least 6 characters.';
+        if (!newPass || newPass.length < PASSWORD_MIN_LENGTH) {
+            messageContainer.textContent = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
             messageContainer.classList.remove('hidden');
             messageContainer.classList.add('text-red-600');
             return;
@@ -263,7 +278,7 @@ function showResetPasswordForm() {
         const { error } = await supabase.auth.updateUser({ password: newPass });
 
         if (error) {
-            messageContainer.textContent = error.message;
+            messageContainer.textContent = 'Password update failed. Request a new recovery link and try again.';
             messageContainer.classList.remove('hidden');
             messageContainer.classList.add('text-red-600');
         } else {

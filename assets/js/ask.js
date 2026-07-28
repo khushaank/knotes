@@ -1,5 +1,8 @@
-import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=10';
+import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
 import { sortStories } from './algorithm.js';
+
+await requireApprovedMember();
 
 const STORIES_PER_PAGE = 10;
 let userBookmarks = [];

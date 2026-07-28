@@ -1,8 +1,7 @@
-const CACHE = 'knotes-v14';
-const SHELL = ['/home', '/assets/css/styles.css', '/assets/img/logo.png'];
+const CACHE = 'knotes-v16';
+const SHELL = ['/', '/assets/css/landing.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
-    '/', '/home', '/ask', '/show', '/contact', '/faq',
-    '/guidelines', '/legal', '/security', '/search', '/profile'
+    '/', '/login'
 ]);
 const STATIC_ASSET = /^\/assets\/(?:css|img|js)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
 
@@ -36,7 +35,7 @@ self.addEventListener('fetch', event => {
 
     if (request.mode === 'navigate') {
         if (url.pathname.startsWith('/dashboard')) {
-            event.respondWith(fetch(request).catch(() => caches.match('/home')));
+            event.respondWith(fetch(request));
             return;
         }
 
@@ -47,8 +46,8 @@ self.addEventListener('fetch', event => {
             }
             return response;
         }).catch(() => {
-            if (!PUBLIC_PAGES.has(url.pathname)) return caches.match('/home');
-            return caches.match(url.pathname).then(response => response || caches.match('/home'));
+            if (!PUBLIC_PAGES.has(url.pathname)) return Response.error();
+            return caches.match(url.pathname).then(response => response || caches.match('/'));
         }));
         return;
     }

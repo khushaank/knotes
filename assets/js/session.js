@@ -1,4 +1,5 @@
-import { supabase } from './supabaseClient.js?v=8';
+import { supabase } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
 
 function applyTheme(preference = 'system') {
     const resolved = preference === 'system'
@@ -16,7 +17,8 @@ const INSTALL_PROMPT_KEY = 'kn-install-prompt-seen';
 const APP_ROOT = window.location.pathname.includes('/pulse/') ? '../' : '';
 const CLEAN_PATH = window.location.pathname.replace(/\/+$/, '');
 const PAGE_NAME = (CLEAN_PATH.split('/').pop()?.replace(/\.html$/i, '') || 'home').toLowerCase();
-const HEADERLESS_PAGES = new Set(['login', 'maintenance']);
+const HEADERLESS_PAGES = new Set(['login']);
+const PRIVATE_PAGE = !HEADERLESS_PAGES.has(PAGE_NAME);
 
 function isCompactHeader() {
     return window.matchMedia('(max-width: 639px)').matches;
@@ -36,6 +38,24 @@ function syncHeaderLabels() {
 }
 
 window.addEventListener('resize', syncHeaderLabels);
+
+function enhanceFormAccessibility() {
+    document.querySelectorAll('input, textarea, select').forEach(field => {
+        if (!field.name && field.id) field.name = field.id;
+
+        const hasLabel = field.id && document.querySelector(`label[for="${CSS.escape(field.id)}"]`);
+        if (!hasLabel && !field.hasAttribute('aria-label')) {
+            const fallback = field.placeholder || field.title || field.id?.replace(/[-_]+/g, ' ');
+            if (fallback) field.setAttribute('aria-label', fallback);
+        }
+    });
+
+    document.querySelectorAll('[id*="search-input"]').forEach(input => {
+        input.name = 'search';
+        input.setAttribute('aria-label', 'Search');
+        input.setAttribute('autocomplete', 'off');
+    });
+}
 
 function getCachedAuth() {
     try {
@@ -115,7 +135,9 @@ function setupInstallPrompt() {
             });
 
             try {
-                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js');
+                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js', {
+                    updateViaCache: 'none'
+                });
                 await registration.update();
             } catch (e) { }
         });
@@ -409,14 +431,17 @@ function applyAuthUI(username) {
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
     : (cb) => cb()
 )(async () => {
+    if (PRIVATE_PAGE) await requireApprovedMember();
     setupInstallPrompt();
+    enhanceFormAccessibility();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
         renderSharedHeader();
         syncHeaderLabels();
     }
     document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
-        document.body.style.visibility = 'visible';
+        if (PRIVATE_PAGE) window.location.replace(APP_ROOT + 'login');
+        else document.body.style.visibility = 'visible';
         return;
     }
 
@@ -446,6 +471,26 @@ function applyAuthUI(username) {
         const isMaintPage = path.includes('maintenance');
         const isLoginPage = path.includes('login');
         const isAdminPage = path.includes('/admin/');
+
+        if (!session && PRIVATE_PAGE) {
+            clearCachedAuth();
+            window.location.replace(APP_ROOT + 'login');
+            return;
+        }
+
+        if (session?.user && PRIVATE_PAGE) {
+            const { data: membership } = await supabase
+                .from('profiles')
+                .select('membership_status')
+                .eq('id', session.user.id)
+                .single();
+            if (membership?.membership_status !== 'approved') {
+                clearCachedAuth();
+                await supabase.auth.signOut();
+                window.location.replace('/?access=review');
+                return;
+            }
+        }
 
         if (session && session.user) {
             if (!cached || !cached.username) {

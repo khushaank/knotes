@@ -1,4 +1,7 @@
-import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js?v=8';
+import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js';
+import { requireApprovedMember } from './routeGuard.js';
+
+await requireApprovedMember();
 
 const ready = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))
@@ -12,6 +15,43 @@ const form = document.getElementById('password-form');
 const status = document.getElementById('password-status');
 const save = document.getElementById('password-save');
 const passwordFields = [...form.querySelectorAll('input[type="password"]')];
+let mfaFactorId = null;
+
+async function loadMfaStatus() {
+    const button = document.getElementById('mfa-start');
+    const status = document.getElementById('mfa-status');
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) {
+        status.textContent = 'Unable to check two-factor authentication.';
+        button.disabled = true;
+        return;
+    }
+    if (data.totp.some(factor => factor.status === 'verified')) {
+        status.textContent = 'Two-factor authentication is enabled.';
+        button.hidden = true;
+    }
+}
+
+async function startMfaEnrollment() {
+    const button = document.getElementById('mfa-start');
+    const status = document.getElementById('mfa-status');
+    button.disabled = true;
+    status.textContent = 'Preparing authenticator setup…';
+    const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'K. Notes'
+    });
+    if (error) {
+        status.textContent = 'Two-factor setup could not be started.';
+        button.disabled = false;
+        return;
+    }
+    mfaFactorId = data.id;
+    document.getElementById('mfa-qr').src = data.totp.qr_code;
+    document.getElementById('mfa-secret').textContent = data.totp.secret;
+    document.getElementById('mfa-enrollment').hidden = false;
+    status.textContent = 'Scan the code, then enter the six-digit number.';
+}
 
 async function renderHiddenItems() {
     const container = document.getElementById('hidden-items-list');
@@ -83,6 +123,26 @@ if (!supabase) {
         loading.remove();
         page.hidden = false;
         await renderHiddenItems();
+        await loadMfaStatus();
+
+        document.getElementById('mfa-start').addEventListener('click', startMfaEnrollment);
+        document.getElementById('mfa-enrollment-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!event.currentTarget.reportValidity() || !mfaFactorId) return;
+            const mfaStatus = document.getElementById('mfa-status');
+            const code = event.currentTarget.elements.code.value.trim();
+            const { error } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: mfaFactorId,
+                code
+            });
+            mfaStatus.textContent = error
+                ? 'That code was not accepted. Wait for a new code and try again.'
+                : 'Two-factor authentication is enabled.';
+            if (!error) {
+                document.getElementById('mfa-enrollment').hidden = true;
+                document.getElementById('mfa-start').hidden = true;
+            }
+        });
 
         document.getElementById('show-passwords').addEventListener('change', event => {
             passwordFields.forEach(input => { input.type = event.target.checked ? 'text' : 'password'; });
@@ -125,7 +185,7 @@ if (!supabase) {
             event.currentTarget.disabled = true;
             sessionStorage.removeItem('kn-auth-cache');
             await supabase.auth.signOut();
-            window.location.replace('home');
+            window.location.replace('/');
         });
 
         document.getElementById('theme-form').addEventListener('change', async () => {

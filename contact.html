@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <title>Feedback - K. Notes</title>
     <meta name="description" content="Send feedback, report an issue, or contact the K. Notes team about the technology news and discussion community." />
@@ -32,7 +32,7 @@
             </div>
         </header>
         <main class="bg-[#f6f6ef] p-8 min-h-[50vh] text-[14px] text-gray-800 leading-relaxed">
-            <b class="text-black text-lg block mb-4">Contact & Feedback</b>
+            <h1 class="text-black text-lg font-bold block mb-4">Contact & Feedback</h1>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div>
@@ -48,17 +48,18 @@
 
                 <div class="bg-white p-6 border border-gray-200 shadow-sm rounded-sm">
                     <b class="text-black block mb-4">Report a Bug / Leave Feedback</b>
+                    <p class="mb-4 text-xs">Please sign in to send feedback. This prevents automated spam.</p>
                     <form id="feedback-form" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Your Name
+                            <label for="fb-name" class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Your Name
                                 (Optional)</label>
-                            <input type="text" id="fb-name"
+                            <input type="text" id="fb-name" name="name" maxlength="120" autocomplete="name"
                                 class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Feedback
+                            <label for="fb-type" class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Feedback
                                 Type</label>
-                            <select id="fb-type"
+                            <select id="fb-type" name="type"
                                 class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm bg-white">
                                 <option value="bug">Bug Report</option>
                                 <option value="feature">Feature Request</option>
@@ -67,9 +68,9 @@
                             </select>
                         </div>
                         <div>
-                            <label
+                            <label for="fb-message"
                                 class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Message</label>
-                            <textarea id="fb-message" required rows="4"
+                            <textarea id="fb-message" name="message" required minlength="10" maxlength="2000" rows="4"
                                 class="w-full border border-gray-300 px-3 py-2 text-sm focus:border-[#ff6600] outline-none rounded-sm resize-y"></textarea>
                         </div>
                         <button type="submit"
@@ -77,7 +78,7 @@
                             Submit Feedback
                         </button>
                     </form>
-                    <div id="fb-status" class="mt-4 text-sm hidden"></div>
+                    <div id="fb-status" class="mt-4 text-sm hidden" role="status" aria-live="polite"></div>
                 </div>
             </div>
 
@@ -96,9 +97,9 @@
             if (form) {
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const name = document.getElementById('fb-name').value;
+                    const name = document.getElementById('fb-name').value.trim();
                     const type = document.getElementById('fb-type').value;
-                    const message = document.getElementById('fb-message').value;
+                    const message = document.getElementById('fb-message').value.trim();
 
                     status.textContent = 'Sending...';
                     status.classList.remove('hidden', 'text-red-600', 'text-green-600');
@@ -110,7 +111,15 @@
                         return;
                     }
 
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                        status.textContent = 'Please sign in to send feedback.';
+                        status.classList.add('text-red-600');
+                        return;
+                    }
+
                     const { error } = await supabase.from('feedback').insert([{
+                        user_id: session.user.id,
                         name: name || 'Anonymous',
                         type: type,
                         message: message,
@@ -118,7 +127,7 @@
                     }]);
 
                     if (error) {
-                        status.textContent = 'Error: ' + error.message;
+                        status.textContent = 'Feedback could not be sent. Please wait and try again.';
                         status.classList.add('text-red-600');
                     } else {
                         status.textContent = 'Thank you! Your feedback has been received.';
@@ -139,8 +148,8 @@
             </div>
             <form id="footer-search-form" class="flex items-center gap-2"
                 onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-                <span class="text-gray-500 text-xs">Search:</span>
-                <input type="text" id="footer-search-input"
+                <label for="footer-search-input" class="text-gray-500 text-xs">Search:</label>
+                <input type="text" id="footer-search-input" name="search" autocomplete="off" aria-label="Search"
                     class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
             </form>
         </footer>
