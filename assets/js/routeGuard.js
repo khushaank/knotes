@@ -32,10 +32,9 @@ export async function redirectApprovedMember() {
 }
 
 export async function requireApprovedMember() {
-    document.documentElement.style.visibility = 'hidden';
     const state = await getMembershipState();
     if (state === 'approved') {
-        document.documentElement.style.visibility = '';
+        document.documentElement.classList.add('access-ready');
         return;
     }
 
