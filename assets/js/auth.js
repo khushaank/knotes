@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient.js';
-import { safeReturnPath } from './routeGuard.js';
 
 const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;
@@ -8,7 +7,7 @@ const PASSWORD_MIN_LENGTH = 12;
 let pendingMfaFactorId = null;
 
 function loginDestination() {
-    return safeReturnPath(new URLSearchParams(window.location.search).get('returnTo') || '/home');
+    return '/home';
 }
 
 function getLoginAttempts() {

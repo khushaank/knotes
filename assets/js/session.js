@@ -440,7 +440,7 @@ function applyAuthUI(username) {
     }
     document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
     if (!supabase) {
-        if (PRIVATE_PAGE) window.location.replace(APP_ROOT + 'login');
+        if (PRIVATE_PAGE) window.location.replace(APP_ROOT);
         else document.body.style.visibility = 'visible';
         return;
     }
@@ -474,7 +474,7 @@ function applyAuthUI(username) {
 
         if (!session && PRIVATE_PAGE) {
             clearCachedAuth();
-            window.location.replace(APP_ROOT + 'login');
+            window.location.replace(APP_ROOT);
             return;
         }
 
