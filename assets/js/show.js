@@ -1,5 +1,5 @@
 import { supabase, calculateTimeAgo, upvoteStory, sanitize, setBookmark, getUserBookmarks, getUserLikes, getHiddenStoryIds, hideStory } from './supabaseClient.js';
-import { requireApprovedMember } from './routeGuard.js';
+import { requireApprovedMember } from './routeGuard.js?v=2';
 import { sortStories } from './algorithm.js';
 
 await requireApprovedMember();

@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js';
-import { requireApprovedMember } from './routeGuard.js';
+import { requireApprovedMember } from './routeGuard.js?v=2';
 
 function applyTheme(preference = 'system') {
     const resolved = preference === 'system'
