@@ -63,6 +63,7 @@ assert.ok(feed.indexOf('requireApprovedMember()') < feed.indexOf(".from('blogs')
 assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth');
 assert.match(routeGuard, /rpc\('is_approved_member'\)/, 'route guard must verify approved membership in trusted database state');
 assert.match(routeGuard, /location\.replace\('\/'\)/, 'private pages must send non-members to the public landing page');
+assert.match(routeGuard, /classList\.add\('access-ready'\)/, 'private pages must only reveal after approval');
 assert.match(auth, /return '\/home';/, 'successful login must always open the private feed');
 assert.equal((client.match(/\bcreateClient\(/g) || []).length, 1, 'canonical client must be constructed once');
 assert.doesNotMatch(dashboard, /createClient\(|@supabase\/supabase-js/, 'dashboard must reuse the canonical Supabase client');

@@ -432,6 +432,7 @@ function applyAuthUI(username) {
     : (cb) => cb()
 )(async () => {
     if (PRIVATE_PAGE) await requireApprovedMember();
+    else document.documentElement.classList.add('access-ready');
     setupInstallPrompt();
     enhanceFormAccessibility();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
