@@ -1,432 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <script>        (function () { try { var theme = localStorage.getItem('kn-theme') || 'light'; if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); document.documentElement.classList.add('dark'); } else { document.documentElement.setAttribute('data-theme', 'light'); document.documentElement.classList.remove('dark'); } } catch (e) { } })();    </script>
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com; form-action 'self'; upgrade-insecure-requests;" />
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>K. Notes - High-Signal Tech News & Discussion</title>
-  <meta name="description"
-    content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="K. Notes - High-Signal Tech News & Discussion" />
-  <meta property="og:description"
-    content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
-  <meta property="og:image" content="https://knotes.dpdns.org/assets/img/logo.png" />
-  <meta property="og:url" content="https://knotes.dpdns.org/" />
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:title" content="K. Notes - High-Signal Tech News & Discussion" />
-  <meta property="twitter:description"
-    content="K. Notes is a community-driven news aggregator and discussion forum for technology, science, and intellectual curiosity. Inspired by Hacker News." />
-  <meta property="twitter:image" content="https://knotes.dpdns.org/assets/img/logo.png" />
-  <link rel="canonical" href="https://knotes.dpdns.org/" />
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "K. Notes",
-      "url": "https://knotes.dpdns.org/",
-      "description": "A community-driven technology news aggregator and discussion forum.",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://knotes.dpdns.org/search?search={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-  </script>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="preconnect" href="https://tixugcvwvvtbgcaryjvu.supabase.co" crossorigin />
-  <style>
-    *,
-    ::before,
-    ::after {
-      box-sizing: border-box
-    }
-
-    body {
-      margin: 0;
-      background: #f6f6ef;
-      color: #261812;
-      font: 12px/16px Verdana, Geneva, sans-serif
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none
-    }
-
-    a:hover {
-      text-decoration: underline
-    }
-
-    button,
-    input {
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit
-    }
-
-    .hidden {
-      display: none !important
-    }
-
-    .flex-col {
-      flex-direction: column
-    }
-
-    .flex-wrap {
-      flex-wrap: wrap
-    }
-
-    .items-center {
-      align-items: center
-    }
-
-    .justify-center {
-      justify-content: center
-    }
-
-    .ml-auto {
-      margin-left: auto
-    }
-
-    .mx-auto {
-      margin-right: auto;
-      margin-left: auto
-    }
-
-    .w-full {
-      width: 100%
-    }
-
-    .gap-1 {
-      gap: 4px
-    }
-
-    .gap-2 {
-      gap: 8px
-    }
-
-    .text-right {
-      text-align: right
-    }
-
-    .text-center {
-      text-align: center
-    }
-
-    .align-top {
-      vertical-align: top
-    }
-
-    .font-bold {
-      font-weight: 700
-    }
-
-    .w-4 {
-      width: 16px
-    }
-
-    .w-5 {
-      width: 20px
-    }
-
-    .pr-1 {
-      padding-right: 4px
-    }
-
-    .pt-\[2px\] {
-      padding-top: 2px
-    }
-
-    .h-\[2px\] {
-      height: 2px
-    }
-
-    body>div:first-of-type {
-      max-width: 85%;
-      margin: 8px auto 0;
-      background: #f6f6ef;
-      padding-bottom: 32px
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      padding: 2px 8px;
-      background: #f60;
-      color: #000;
-      font-size: 14px
-    }
-
-    header>div {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      gap: 4px
-    }
-
-    header a:first-child {
-      margin-right: 8px;
-      padding: 0 4px;
-      font-weight: 700
-    }
-
-    #broadcast-banner {
-      padding: 8px 16px;
-      border-bottom: 1px solid #fde68a;
-      background: #fff9c4;
-      color: #713f12;
-      text-align: center;
-      font-size: 12px
-    }
-
-    #feed-controls {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 8px;
-      border-bottom: 1px solid #d1d5db;
-      background: #f6f6ef;
-      color: #4b5563;
-      font-size: 12px
-    }
-
-    main {
-      min-height: 100vh;
-      padding: 8px 8px 16px;
-      background: #f6f6ef
-    }
-
-    main table {
-      border-collapse: collapse
-    }
-
-    .story-title {
-      color: #000;
-      font-size: 10pt;
-      line-height: 1.2
-    }
-
-    .story-meta {
-      padding-top: 1px;
-      color: #5f5f5f;
-      font-size: 11px
-    }
-
-    .story-meta a,
-    .domain-text,
-    .domain-text a,
-    .text-hn-grey {
-      color: #5f5f5f
-    }
-
-    .domain-text {
-      font-size: 8pt
-    }
-
-    .knotes-upvote-triangle {
-      display: inline-block;
-      width: 0;
-      height: 0;
-      border-right: 4px solid transparent;
-      border-bottom: 7px solid #828282;
-      border-left: 4px solid transparent;
-      vertical-align: middle
-    }
-
-    .knotes-dropdown {
-      position: relative;
-      display: inline-block
-    }
-
-    .knotes-dropdown-trigger {
-      padding: 0 2px;
-      color: #5f5f5f;
-      cursor: pointer
-    }
-
-    .knotes-dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      z-index: 1000;
-      min-width: 140px;
-      margin-top: 6px;
-      padding: 6px 0;
-      border: 1px solid #d1d1d1;
-      border-radius: 6px;
-      background: #fff
-    }
-
-    .dropdown-item {
-      padding: 6px 12px;
-      color: #333;
-      white-space: nowrap;
-      cursor: pointer
-    }
-
-    footer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      max-width: 100%;
-      margin-top: 16px;
-      padding: 32px 16px;
-      border-top: 2px solid #f60;
-      background: #f6f6ef;
-      color: #4b5563;
-      font-size: 12px
-    }
-
-    footer input {
-      width: 192px;
-      padding: 2px 8px;
-      border: 1px solid #9ca3af;
-      background: #fff;
-      color: #000
-    }
-
-    html.dark body,
-    html.dark body>div:first-of-type,
-    html.dark main,
-    html.dark #feed-controls,
-    html.dark footer {
-      background: #1c1917;
-      color: #e5e7eb
-    }
-
-    html.dark .story-title {
-      color: #f3f4f6
-    }
-
-    html.dark .story-meta,
-    html.dark .story-meta a,
-    html.dark .domain-text,
-    html.dark .domain-text a,
-    html.dark .text-hn-grey {
-      color: #9ca3af
-    }
-
-    @media(max-width:639px) {
-      body>div:first-of-type {
-        max-width: 100%;
-        margin: 4px 0 0
-      }
-
-      .kn-theme-separator {
-        display: none
-      }
-
-      .kn-theme-toggle {
-        position: absolute;
-        top: 6px;
-        right: 8px
-      }
-
-      #feed-controls {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-        padding: 8px
-      }
-
-      main {
-        padding-right: 6px;
-        padding-left: 6px
-      }
-
-      main table {
-        width: 100%
-      }
-
-      .story-title {
-        line-height: 1.35
-      }
-
-      .story-meta {
-        line-height: 1.5
-      }
-
-      footer input {
-        max-width: 240px;
-        width: 100%
-      }
-    }
-  </style>
-  <link href="assets/css/styles.css?v=8" rel="stylesheet" />
-  <link rel="icon" type="image/png" href="assets/img/logo.png" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="K. Notes is a private, invitation-only circle for original thinking, useful knowledge, and high-signal discussion.">
+  <meta property="og:title" content="K. Notes — a clearer corner of the internet">
+  <meta property="og:description" content="A private, invitation-only circle for thoughtful people.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#ff6600">
+  <title>K. Notes — A clearer corner of the internet</title>
+  <link rel="icon" href="assets/img/logo.png">
+  <link rel="stylesheet" href="assets/css/landing.css?v=1">
 </head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="K. Notes home">
+      <img src="assets/img/logo.png" alt="" width="28" height="28">
+      <span>K. Notes</span>
+    </a>
+    <nav aria-label="Public navigation">
+      <a href="#principles">Principles</a>
+      <a href="#request-access">Request access</a>
+      <a class="sign-in" href="login">Sign in</a>
+    </nav>
+  </header>
 
-<body class="font-body-md text-body-md text-on-surface">
-  <div class="max-w-[85%] mx-auto bg-surface-bright pb-8 mt-2">
-    <header class="bg-[#ff6600] text-black text-sm rounded-none w-full flat no shadows flex items-center px-2 py-0.5"
-      style="max-width: 100%;">
-      <div class="flex items-center gap-1 w-full text-[13px]">
-        <a href="home" class="font-bold text-black px-1 mr-2 hover:underline" title="K.Notes">K. Notes</a>
-        <div class="flex flex-wrap items-center gap-1 text-black">
-          <a class="hover:underline font-bold" href="home">feed</a> |
-          <a class="hover:underline" href="ask">ask</a> |
-          <a class="hover:underline" href="show">show</a> |
-          <a class="hover:underline" href="submit">submit</a>
-        </div>
-        <div class="ml-auto text-black flex items-center gap-4">
-          <a class="hover:underline text-black" href="login">login</a>
-        </div>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">Invitation only · Membership reviewed</p>
+      <h1 id="hero-title">A clearer internet starts with a smaller room.</h1>
+      <p class="hero-copy">
+        K. Notes is a private circle for people who value original thinking,
+        useful knowledge, and high-signal discussion. Built for free people,
+        not feeds engineered to keep them scrolling.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="#request-access">Request an invitation</a>
+        <a class="button secondary" href="login">Member sign in</a>
       </div>
-    </header>
-    <div id="broadcast-banner"
-      class="hidden bg-[#fff9c4] border-b border-yellow-200 px-4 py-2 text-xs text-yellow-900 text-center"></div>
-    <div id="feed-controls"
-      class="bg-[#f6f6ef] px-2 py-1 border-b border-gray-300 flex items-center justify-between text-xs text-gray-600 max-w-[100%]">
-      <div class="flex gap-2"> <a href="#" class="filter-link font-bold text-black" data-filter="trending">trending</a>
-        | <a href="#" class="filter-link" data-filter="relevant">relevant</a> | <a href="#" class="filter-link"
-          data-filter="new">new</a> </div>
-      <div class="flex items-center gap-2"> <span id="stats-summary"
-          class="hidden sm:inline text-[10px] text-gray-700"></span> <button id="refresh-trending"
-          class="flex-shrink-0 hover:text-black flex items-center gap-1 focus:outline-none"> <span aria-hidden="true"
-            class="text-sm">↻</span> refresh </button> </div>
-    </div>
-    <main class="bg-[#f6f6ef] pt-2 pb-4" style="min-height:100vh">
-      <h1 class="sr-only">K. Notes technology news and discussions</h1>
-      <table class="border-spacing-0 border-collapse">
-        <tbody>
-          <tr>
-            <td colspan="3" class="p-4 text-center">Loading stories…</td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
-    <footer
-      class="bg-[#f6f6ef] dark:bg-stone-900 text-[#ff6600]  text-xs text-gray-600 rounded-none border-t-2 border-[#ff6600] mt-4 flat no shadows flex flex-col items-center gap-2 py-8 w-full max-w-[85%] mx-auto"
-      style="max-width: 100%;">
-      <div class="flex flex-wrap justify-center gap-2 text-gray-600 mb-4">
-        <a class="hover:underline text-gray-600" href="guidelines">Guidelines</a> |
-        <a class="hover:underline text-gray-600" href="faq">FAQ</a> |
-        <a class="hover:underline text-gray-600" href="lists">Lists</a> | <a class="hover:underline text-gray-600"
-          href="security">Security</a> |
-        <a class="hover:underline text-gray-600" href="legal">Legal</a> | <a class="hover:underline text-gray-600"
-          href="contact">Feedback</a>
+      <p class="member-note"><strong id="member-count">500+</strong> people are already part of the circle.</p>
+    </section>
+
+    <section class="manifesto" id="principles" aria-labelledby="principles-title">
+      <div>
+        <p class="section-label">Why K. Notes</p>
+        <h2 id="principles-title">The internet should serve people.</h2>
       </div>
-      <form id="footer-search-form" class="flex items-center gap-2"
-        onsubmit="event.preventDefault(); window.location.href='search?search='+document.getElementById('footer-search-input').value;">
-        <label for="footer-search-input" class="text-gray-500 text-xs">Search:</label>
-        <input type="text" id="footer-search-input" name="search" autocomplete="off" aria-label="Search"
-          class="border border-gray-400 px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:border-[#ff6600] text-black w-48">
+      <div class="principle-list">
+        <article>
+          <span>01</span>
+          <h3>Signal over noise</h3>
+          <p>Ideas earn attention through usefulness and care, not outrage or reach.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Privacy by default</h3>
+          <p>Member profiles, conversations, and activity stay inside the circle.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>People over metrics</h3>
+          <p>No public member directory. No attention marketplace. No engagement theatre.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="standards" aria-labelledby="standards-title">
+      <p class="section-label">Community standard</p>
+      <h2 id="standards-title">Bring something worth passing on.</h2>
+      <p>
+        Be curious. Make claims carefully. Disagree with the idea, never the person.
+        Respect confidence and context. Membership can be paused when trust is broken.
+      </p>
+    </section>
+
+    <section class="request" id="request-access" aria-labelledby="request-title">
+      <div class="request-copy">
+        <p class="section-label">Request access</p>
+        <h2 id="request-title">Tell us what you want to add to the circle.</h2>
+        <p>Every request is read by a person. An invitation is not automatic, and we may take a little time.</p>
+      </div>
+      <form id="membership-form">
+        <label for="request-name">Name</label>
+        <input id="request-name" name="name" autocomplete="name" maxlength="80" required>
+
+        <label for="request-email">Email</label>
+        <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+
+        <label for="request-note">Why do you want to join, and what would you contribute?</label>
+        <textarea id="request-note" name="note" rows="5" minlength="20" maxlength="1200" required></textarea>
+
+        <div class="honey" aria-hidden="true">
+          <label for="request-company">Company website</label>
+          <input id="request-company" name="company" tabindex="-1" autocomplete="off">
+        </div>
+
+        <button class="button primary" type="submit">Send request</button>
+        <p id="request-status" role="status" aria-live="polite"></p>
       </form>
-    </footer>
-  </div>
-  <div id="toast-container"></div>
-  <script defer src="assets/js/exit-interceptor.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.12/dist/purify.min.js"></script>
-  <script type="module" src="assets/js/index.js"></script>
-  <script type="module" src="assets/js/session.js?v=7"></script>
-</body>
+    </section>
+  </main>
 
+  <footer>
+    <div>
+      <strong>K. Notes</strong>
+      <p>A private circle for a more thoughtful internet.</p>
+    </div>
+    <div class="footer-links">
+      <a href="mailto:uniquevara@wdi.com">uniquevara@wdi.com</a>
+      <a href="login">Member sign in</a>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/landing.js"></script>
+</body>
 </html>

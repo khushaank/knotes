@@ -28,11 +28,11 @@ function cachePolicy(pathname) {
   if (pathname === '/service-worker.js' || pathname === '/runtime-config.json') {
     return 'no-store, max-age=0';
   }
-  if (pathname.startsWith('/dashboard')) return 'private, no-store, max-age=0';
   if (/\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$/i.test(pathname)) {
     return 'public, max-age=14400, must-revalidate';
   }
-  return 'public, max-age=600, must-revalidate';
+  if (pathname === '/' || pathname === '/login') return 'public, max-age=300, must-revalidate';
+  return 'private, no-store, max-age=0';
 }
 
 export default {
@@ -42,7 +42,8 @@ export default {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
     headers.set('Cache-Control', cachePolicy(new URL(request.url).pathname));
 
-    if (new URL(request.url).pathname.startsWith('/dashboard')) {
+    const pathname = new URL(request.url).pathname;
+    if (pathname !== '/' && pathname !== '/login' && !pathname.startsWith('/assets/')) {
       headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 
