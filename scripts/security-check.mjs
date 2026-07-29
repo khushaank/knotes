@@ -19,7 +19,7 @@ const exists = async path => {
     }
 };
 
-const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, coreMigration, privateCircleMigration, removeCountMigration, invitationMigration, invitations, profile, serviceWorker] = await Promise.all([
+const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, coreMigration, privateCircleMigration, removeCountMigration, invitationMigration, invitations, profile, serviceWorker, supabaseVendor] = await Promise.all([
     read('assets/js/auth.js'),
     read('assets/js/supabaseClient.js'),
     read('login.html'),
@@ -42,7 +42,8 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
     readOptional('Supabase/migrations/20260729_secure_invitations.sql'),
     read('assets/js/invitations.js'),
     read('assets/js/profile.js'),
-    read('service-worker.js')
+    read('service-worker.js'),
+    read('assets/vendor/supabase.js')
 ]);
 
 const pkg = JSON.parse(packageJson);
@@ -106,6 +107,7 @@ assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
 assert.match(serviceWorker, /knotes-v21/, 'service-worker cache must be bumped after changing route delivery');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
+assert.match(supabaseVendor, /globalThis\.supabase\s*=\s*supabase/, 'vendored Supabase UMD build must expose its browser global after module loading');
 assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
 assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');
 

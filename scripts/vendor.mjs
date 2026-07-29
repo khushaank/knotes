@@ -1,4 +1,4 @@
-import { copyFile, mkdir } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir } from 'node:fs/promises';
 
 await mkdir(new URL('../assets/vendor/', import.meta.url), { recursive: true });
 await Promise.all([
@@ -12,3 +12,8 @@ await Promise.all([
         new URL(`../assets/vendor/${target}`, import.meta.url)
     );
 }));
+
+await appendFile(
+    new URL('../assets/vendor/supabase.js', import.meta.url),
+    '\nglobalThis.supabase = supabase;\n'
+);
