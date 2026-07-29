@@ -5,6 +5,7 @@
 /show /show.html 200
 /submit /submit.html 200
 /login /login.html 200
+/invitations /invitations.html 200
 /guidelines /guidelines.html 200
 /faq /faq.html 200
 /lists /lists.html 200

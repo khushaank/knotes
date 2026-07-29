@@ -23,10 +23,11 @@ Cloudflare deployment, Supabase schema/storage changes, credential rotation, DNS
    - public media accepts only the documented types up to 10 MiB.
 6. Validate the four `NOT VALID` feedback constraints after reviewing historical rows.
 7. Configure Supabase Auth with a 12-character password minimum, leaked-password protection, appropriate email verification, and server-side Auth rate limits.
-8. In Authentication settings, disable public new-user signups. Create accounts only with the server-side admin invitation flow. Enable TOTP enrollment and verification.
-9. Review every existing non-admin profile and explicitly set `membership_status = 'approved'` only for members who should retain access. The private-circle migration deliberately leaves them pending.
-10. Add edge-verified Cloudflare Turnstile to login, password reset, and membership requests if abuse risk warrants it. Never trust a browser-only CAPTCHA result.
-11. Review all existing keys. Rotate any exposed non-publishable credential and update it only in the appropriate secret store.
+8. Apply `Supabase/migrations/20260729_secure_invitations.sql`, then enable email signups in Supabase Auth. The database trigger rejects every signup without a valid, email-bound, unexpired invitation claim; do not enable signups before this migration succeeds. Create codes only in the Supabase SQL editor with `select private.create_invitation('person@example.com', 7);` and send the returned code once through a trusted channel.
+9. Enable TOTP enrollment and verification in Supabase Auth, then verify enrollment, challenged login, and factor removal from the profile page.
+10. Review every existing non-admin profile and explicitly set `membership_status = 'approved'` only for members who should retain access. The private-circle migration deliberately leaves them pending.
+11. Add edge-verified Cloudflare Turnstile to login, password reset, and membership requests if abuse risk warrants it. Never trust a browser-only CAPTCHA result.
+12. Review all existing keys. Rotate any exposed non-publishable credential and update it only in the appropriate secret store.
 
 After staging passes and both production approvals are recorded, back up production, apply the migration during a monitored window, and repeat the checks. A migration error rolls back its transaction; restoration from the pre-change backup is the recovery path for problems discovered after commit.
 

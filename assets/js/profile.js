@@ -19,6 +19,7 @@ let mfaFactorId = null;
 
 async function loadMfaStatus() {
     const button = document.getElementById('mfa-start');
+    const disableButton = document.getElementById('mfa-disable');
     const status = document.getElementById('mfa-status');
     const { data, error } = await supabase.auth.mfa.listFactors();
     if (error) {
@@ -26,9 +27,17 @@ async function loadMfaStatus() {
         button.disabled = true;
         return;
     }
-    if (data.totp.some(factor => factor.status === 'verified')) {
+    const verifiedFactor = data.totp.find(factor => factor.status === 'verified');
+    if (verifiedFactor) {
+        mfaFactorId = verifiedFactor.id;
         status.textContent = 'Two-factor authentication is enabled.';
         button.hidden = true;
+        disableButton.hidden = false;
+    } else {
+        mfaFactorId = null;
+        status.textContent = 'Two-factor authentication is not enabled.';
+        button.hidden = false;
+        disableButton.hidden = true;
     }
 }
 
@@ -126,6 +135,20 @@ if (!supabase) {
         await loadMfaStatus();
 
         document.getElementById('mfa-start').addEventListener('click', startMfaEnrollment);
+        document.getElementById('mfa-disable').addEventListener('click', async event => {
+            if (!mfaFactorId || !window.confirm('Disable two-factor authentication for this account?')) return;
+            event.currentTarget.disabled = true;
+            const mfaStatus = document.getElementById('mfa-status');
+            mfaStatus.textContent = 'Disabling two-factor authentication…';
+            const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+            if (error) {
+                mfaStatus.textContent = 'Two-factor authentication could not be disabled.';
+                event.currentTarget.disabled = false;
+                return;
+            }
+            await loadMfaStatus();
+            event.currentTarget.disabled = false;
+        });
         document.getElementById('mfa-enrollment-form').addEventListener('submit', async event => {
             event.preventDefault();
             if (!event.currentTarget.reportValidity() || !mfaFactorId) return;

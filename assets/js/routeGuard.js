@@ -24,22 +24,22 @@ export function getMembershipState() {
     return membershipStatePromise;
 }
 
-export async function redirectApprovedMember() {
-    if (await getMembershipState() === 'approved') {
-        window.location.replace('/home');
+export async function requireApprovedMember() {
+    // `getSession` reads the locally stored, expiry-checked token. It lets a
+    // returning member start immediately; RLS still protects every data query
+    // while the trusted user + membership check finishes in the background.
+    const { data: { session } = {} } = await supabase?.auth.getSession() || {};
+    if (!session) {
+        clearPrivateCache();
+        window.location.replace('/');
         return new Promise(() => {});
     }
-}
 
-export async function requireApprovedMember() {
-    const state = await getMembershipState();
-    if (state === 'approved') {
-        document.documentElement.classList.add('access-ready');
-        return;
-    }
-
-    clearPrivateCache();
-    if (state === 'restricted') await supabase?.auth.signOut();
-    window.location.replace('/');
-    return new Promise(() => {});
+    document.documentElement.classList.add('access-ready');
+    void getMembershipState().then(async state => {
+        if (state === 'approved') return;
+        clearPrivateCache();
+        if (state === 'restricted') await supabase?.auth.signOut();
+        window.location.replace('/');
+    });
 }

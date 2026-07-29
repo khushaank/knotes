@@ -19,7 +19,7 @@ const exists = async path => {
     }
 };
 
-const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, privateCircleMigration, removeCountMigration, serviceWorker] = await Promise.all([
+const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, privateCircleMigration, removeCountMigration, invitationMigration, invitations, profile, serviceWorker] = await Promise.all([
     read('assets/js/auth.js'),
     read('assets/js/supabaseClient.js'),
     read('login.html'),
@@ -38,6 +38,9 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
     readOptional('Supabase/migrations/20260723_security_hardening.sql'),
     readOptional('Supabase/migrations/20260728_private_circle.sql'),
     readOptional('Supabase/migrations/20260728_remove_fake_community_size.sql'),
+    readOptional('Supabase/migrations/20260729_secure_invitations.sql'),
+    read('assets/js/invitations.js'),
+    read('assets/js/profile.js'),
     read('service-worker.js')
 ]);
 
@@ -50,6 +53,7 @@ assert.match(login, /autocomplete="current-password"/, 'login password must decl
 assert.match(login, /<label[^>]+for="login-email"/, 'login email needs an associated label');
 assert.doesNotMatch(login, /signup-form|Create Account/i, 'public account creation must not be offered');
 assert.doesNotMatch(auth, /\.auth\.signUp\(/, 'browser signup must be removed');
+assert.match(invitations, /\.auth\.signUp\(/, 'invitation redemption must create the invited account');
 assert.match(auth, /getAuthenticatorAssuranceLevel/, 'login must check whether MFA is required');
 assert.match(auth, /challengeAndVerify/, 'login must verify enrolled MFA factors');
 assert.match(home, /<h1[^>]*>/, 'landing page needs a semantic h1');
@@ -58,9 +62,10 @@ assert.doesNotMatch(home, /assets\/js\/index\.js|Loading stories/i, 'landing pag
 assert.doesNotMatch(home, /\b500\+|member-count/i, 'landing page must not display an invented member count');
 assert.doesNotMatch(await read('assets/js/landing.js'), /community_size|from\(['"]blogs['"]\)/i, 'landing script must not query private content or member counts');
 assert.match(await read('assets/js/landing.js'), /serviceWorker\.register\('\/service-worker\.js'/, 'landing page must update an existing service worker');
-assert.match(await read('assets/js/landing.js'), /redirectApprovedMember\(\)/, 'approved members must skip the public landing page');
+assert.doesNotMatch(await read('assets/js/landing.js'), /redirectApprovedMember\(/, 'the public landing page must not redirect signed-in members');
 assert.ok(feed.indexOf('requireApprovedMember()') < feed.indexOf(".from('blogs')"), 'home feed must authorize before querying blogs');
-assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth');
+assert.match(routeGuard, /auth\.getSession\(\)/, 'route guard must immediately reject visitors without a local session');
+assert.match(routeGuard, /auth\.getUser\(\)/, 'route guard must verify the user with Supabase Auth in the background');
 assert.match(routeGuard, /rpc\('is_approved_member'\)/, 'route guard must verify approved membership in trusted database state');
 assert.match(routeGuard, /location\.replace\('\/'\)/, 'private pages must send non-members to the public landing page');
 assert.match(routeGuard, /classList\.add\('access-ready'\)/, 'private pages must only reveal after approval');
@@ -71,6 +76,7 @@ assert.doesNotMatch((await read('assets/js/index.js')) + session, /supabaseClien
 assert.match(session, /function enhanceFormAccessibility\(/, 'shared forms need runtime accessibility normalization');
 assert.doesNotMatch(styles, /font-size:\s*7pt/, 'story metadata must remain readable');
 assert.match(styles, /:focus-visible/, 'interactive controls need visible keyboard focus');
+assert.doesNotMatch(styles, /Checking access/i, 'private pages must not show a blocking access-check overlay');
 
 assert.doesNotMatch(security, /security@knotes\.com/i, 'security page must not publish the non-working knotes.com mailbox');
 assert.match(security, /\.well-known\/security\.txt/, 'security page must link to security.txt');
@@ -96,7 +102,7 @@ assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration m
 assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
-assert.match(serviceWorker, /knotes-v17/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /knotes-v19/, 'service-worker cache must be bumped after changing route delivery');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
 assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
 assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');
@@ -124,5 +130,18 @@ assert.match(privateCircleMigration, /security invoker/i, 'search must not bypas
 assert.match(privateCircleMigration, /update storage\.buckets set public = false where id in \('avatars', 'media'\)/i, 'member storage must be private');
 assert.match(privateCircleMigration, /create or replace function public\.request_membership/i, 'membership requests must use a trusted database function');
 assert.match(removeCountMigration, /drop function if exists public\.community_size\(\)/i, 'fake member-count function must be removed');
+assert.match(invitationMigration, /before insert on auth\.users/i, 'invitation codes must be enforced inside the auth signup transaction');
+assert.match(invitationMigration, /code_hash = extensions\.digest/i, 'invitation codes must be stored and compared as hashes');
+assert.match(invitationMigration, /create or replace function public\.begin_invitation/i, 'invitation codes must be verified before showing account creation');
+assert.match(invitationMigration, /claim_expires_at[\s\S]+interval '15 minutes'/i, 'invitation claims must expire quickly');
+assert.match(invitationMigration, /claim_hash = extensions\.digest/i, 'invitation claims must be stored as hashes');
+assert.match(invitations, /rpc\('begin_invitation'/i, 'the invitation screen must verify the code server-side');
+assert.match(invitations, /invite_claim/i, 'signup must use the short-lived invitation claim');
+assert.doesNotMatch(invitations, /create_invitation|admin-panel/i, 'the public invitation page must not create invitations');
+assert.match(invitationMigration, /for update/i, 'single-use invitation redemption must lock the matching row');
+assert.match(invitationMigration, /used_at is null/i, 'used invitation codes must be rejected');
+assert.match(invitationMigration, /email = lower\(new\.email\)/i, 'invitation codes must be tied to the invited email');
+assert.match(profile, /auth\.mfa\.enroll/i, 'profile must support TOTP enrollment');
+assert.match(profile, /auth\.mfa\.unenroll/i, 'profile must support disabling TOTP');
 
 console.log('Security and production-readiness checks passed.');

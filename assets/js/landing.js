@@ -1,7 +1,4 @@
 import { supabase } from './supabaseClient.js';
-import { redirectApprovedMember } from './routeGuard.js?v=2';
-
-await redirectApprovedMember();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).catch(() => {});
