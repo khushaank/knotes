@@ -24,7 +24,7 @@ export function getMembershipState() {
     return membershipStatePromise;
 }
 
-export async function requireApprovedMember() {
+export async function requireApprovedMember({ allowMfaEnrollment = false } = {}) {
     // `getSession` reads the locally stored, expiry-checked token. It lets a
     // returning member start immediately; RLS still protects every data query
     // while the trusted user + membership check finishes in the background.
@@ -38,6 +38,7 @@ export async function requireApprovedMember() {
     document.documentElement.classList.add('access-ready');
     void getMembershipState().then(async state => {
         if (state === 'approved') return;
+        if (state === 'restricted' && allowMfaEnrollment) return;
         clearPrivateCache();
         if (state === 'restricted') await supabase?.auth.signOut();
         window.location.replace('/');

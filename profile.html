@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com; form-action 'self'; upgrade-insecure-requests;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cloudflareinsights.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; form-action 'self'; upgrade-insecure-requests;">
     <title>Account - K. Notes</title>
     <link href="assets/css/styles.css?v=9" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/img/logo.png">
@@ -85,7 +85,6 @@
                     <p class="account-help">Require a fresh six-digit code from your authenticator app when you sign in.</p>
                     <div class="account-actions">
                         <button type="button" id="mfa-start" class="account-button account-button-primary">Set up 2FA</button>
-                        <button type="button" id="mfa-disable" class="account-button account-button-secondary" hidden>Disable 2FA</button>
                     </div>
                     <div id="mfa-enrollment" hidden>
                         <img id="mfa-qr" width="180" height="180" alt="Authenticator setup QR code">

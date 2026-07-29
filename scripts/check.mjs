@@ -23,6 +23,7 @@ await walk(rootPath);
 for (const file of sourceFiles) {
     const source = await readFile(file, 'utf8');
     const name = relative(rootPath, file).replaceAll('\\', '/');
+    if (name.startsWith('assets/vendor/')) continue;
 
     if (/cdn\.jsdelivr\.net\/npm\/(?:dompurify|marked|chart\.js)(?:\/|["'])/i.test(source)) {
         failures.push(`${name}: unpinned CDN dependency`);

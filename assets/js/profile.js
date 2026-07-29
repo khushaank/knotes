@@ -1,7 +1,7 @@
 import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 
-await requireApprovedMember();
+await requireApprovedMember({ allowMfaEnrollment: true });
 
 const ready = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))
@@ -19,7 +19,6 @@ let mfaFactorId = null;
 
 async function loadMfaStatus() {
     const button = document.getElementById('mfa-start');
-    const disableButton = document.getElementById('mfa-disable');
     const status = document.getElementById('mfa-status');
     const { data, error } = await supabase.auth.mfa.listFactors();
     if (error) {
@@ -32,12 +31,10 @@ async function loadMfaStatus() {
         mfaFactorId = verifiedFactor.id;
         status.textContent = 'Two-factor authentication is enabled.';
         button.hidden = true;
-        disableButton.hidden = false;
     } else {
         mfaFactorId = null;
         status.textContent = 'Two-factor authentication is not enabled.';
         button.hidden = false;
-        disableButton.hidden = true;
     }
 }
 
@@ -135,20 +132,6 @@ if (!supabase) {
         await loadMfaStatus();
 
         document.getElementById('mfa-start').addEventListener('click', startMfaEnrollment);
-        document.getElementById('mfa-disable').addEventListener('click', async event => {
-            if (!mfaFactorId || !window.confirm('Disable two-factor authentication for this account?')) return;
-            event.currentTarget.disabled = true;
-            const mfaStatus = document.getElementById('mfa-status');
-            mfaStatus.textContent = 'Disabling two-factor authentication…';
-            const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
-            if (error) {
-                mfaStatus.textContent = 'Two-factor authentication could not be disabled.';
-                event.currentTarget.disabled = false;
-                return;
-            }
-            await loadMfaStatus();
-            event.currentTarget.disabled = false;
-        });
         document.getElementById('mfa-enrollment-form').addEventListener('submit', async event => {
             event.preventDefault();
             if (!event.currentTarget.reportValidity() || !mfaFactorId) return;
@@ -162,8 +145,12 @@ if (!supabase) {
                 ? 'That code was not accepted. Wait for a new code and try again.'
                 : 'Two-factor authentication is enabled.';
             if (!error) {
+                const { data: approved } = await supabase.rpc('complete_invited_membership');
                 document.getElementById('mfa-enrollment').hidden = true;
                 document.getElementById('mfa-start').hidden = true;
+                mfaStatus.textContent = approved
+                    ? 'Two-factor authentication is enabled. Private access is unlocked.'
+                    : 'Two-factor authentication is enabled.';
             }
         });
 

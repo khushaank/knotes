@@ -188,7 +188,12 @@ async function prepareMfaChallenge(showMessage) {
         showMessage('Two-factor authentication could not be checked. Please try again.', true);
         return true;
     }
-    if (assurance.currentLevel !== 'aal1' || assurance.nextLevel !== 'aal2') return false;
+    if (assurance.currentLevel === 'aal2') return false;
+    if (assurance.nextLevel !== 'aal2') {
+        showMessage('Set up two-factor authentication to enter the private network.', false);
+        window.location.replace('/profile#mfa');
+        return true;
+    }
 
     const { data: factors, error: factorError } = await supabase.auth.mfa.listFactors();
     pendingMfaFactorId = factors?.totp?.find(factor => factor.status === 'verified')?.id || null;

@@ -4,15 +4,6 @@ import { renderMarkdown } from './contentRenderer.js';
 
 await requireApprovedMember();
 
-function generateSlug(title) {
-    return title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
-        .substring(0, 80)
-        + '-' + Date.now().toString(36);
-}
-
 function sanitize(str) {
     if (typeof str !== 'string') return '';
     if (typeof DOMPurify !== 'undefined') {
@@ -211,7 +202,7 @@ const HASH_TO_CATEGORY = {
             title = `Show KN: ${title}`;
         }
 
-        const slug = generateSlug(title);
+        const slug = crypto.randomUUID().replaceAll('-', '');
 
         if (btnSubmit) {
             btnSubmit.disabled = true;
@@ -230,12 +221,7 @@ const HASH_TO_CATEGORY = {
                     url: url || '',
                     content: text || '',
                     category: finalCategory,
-                    status: 'published',
-                    published_at: new Date().toISOString(),
-                    slug,
-                    likes_count: 0,
-                    comments_count: 0,
-                    clicks_count: 0
+                    slug
                 })
                 .select()
                 .maybeSingle();
@@ -308,11 +294,11 @@ const HASH_TO_CATEGORY = {
                         let altText = prompt('Enter a short description (alt text) for this image:', 'Image');
                         if (altText === null) altText = 'Image';
                         altText = sanitize(altText);
-                        const markdown = `\n![${altText}](${result.url})\n`;
+                        const markdown = `\n![${altText}](${result.reference})\n`;
                         insertAtCursor(textarea, markdown);
                     } else {
                         const safeName = sanitize(result.name.split('-')[0]) || 'File';
-                        const markdown = `\n[${safeName}](${result.url})\n`;
+                        const markdown = `\n[${safeName}](${result.reference})\n`;
                         insertAtCursor(textarea, markdown);
                     }
                 }
@@ -372,6 +358,7 @@ const HASH_TO_CATEGORY = {
                     const card = document.createElement('div');
                     card.className = 'group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item';
                     card.setAttribute('data-url', f.url);
+                    card.setAttribute('data-reference', f.reference);
                     card.setAttribute('data-name', f.name);
                     card.setAttribute('data-is-img', isImg);
 
@@ -409,7 +396,7 @@ const HASH_TO_CATEGORY = {
 
                 mediaGrid.querySelectorAll('.media-item').forEach(item => {
                     item.addEventListener('click', () => {
-                        const url = item.getAttribute('data-url');
+                        const url = item.getAttribute('data-reference');
                         const name = item.getAttribute('data-name').split('-')[0] || 'File';
                         const isImg = item.getAttribute('data-is-img') === 'true';
 
@@ -422,13 +409,6 @@ const HASH_TO_CATEGORY = {
 
                     });
 
-                    item.addEventListener('mouseenter', (e) => {
-                        const url = item.getAttribute('data-url');
-                        const isImg = item.getAttribute('data-is-img') === 'true';
-                        if (!isImg) showPreview(url, e);
-                    });
-
-                    item.addEventListener('mouseleave', hidePreview);
                 });
             } catch (err) {
                 const errDiv = document.createElement('div');
@@ -437,56 +417,6 @@ const HASH_TO_CATEGORY = {
                 mediaGrid.replaceChildren(errDiv);
             }
         }
-
-        const previewTooltip = document.createElement('div');
-        previewTooltip.className = 'media-preview-tooltip';
-        document.body.appendChild(previewTooltip);
-
-        function showPreview(url, e) {
-            const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
-            let viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-
-            if (url.match(officeExts)) {
-                viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
-            }
-
-            const iframe = document.createElement('iframe');
-            iframe.src = viewerUrl;
-            iframe.className = 'preview-frame';
-            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
-            previewTooltip.replaceChildren(iframe);
-            previewTooltip.classList.add('visible');
-            updatePreviewPos(e);
-        }
-
-        function hidePreview() {
-            previewTooltip.classList.remove('visible');
-            previewTooltip.replaceChildren();
-        }
-
-        function updatePreviewPos(e) {
-            const x = e.clientX + 20;
-            const y = e.clientY - 200;
-
-            const winW = window.innerWidth;
-            const winH = window.innerHeight;
-
-            let finalX = x;
-            let finalY = y;
-
-            if (x + 320 > winW) finalX = e.clientX - 340;
-            if (y + 450 > winH) finalY = winH - 460;
-            if (finalY < 10) finalY = 10;
-
-            previewTooltip.style.left = `${finalX}px`;
-            previewTooltip.style.top = `${finalY}px`;
-        }
-
-        document.addEventListener('mousemove', (e) => {
-            if (previewTooltip.classList.contains('visible')) {
-                updatePreviewPos(e);
-            }
-        });
 
         btnMediaLibrary.addEventListener('click', () => {
             mediaModal.classList.remove('hidden');

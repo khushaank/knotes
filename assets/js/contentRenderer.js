@@ -1,8 +1,6 @@
 const ALLOWED_FRAME_ORIGINS = new Set([
     'https://www.youtube-nocookie.com',
-    'https://www.youtube.com',
-    'https://docs.google.com',
-    'https://view.officeapps.live.com'
+    'https://www.youtube.com'
 ]);
 
 function isAllowedFrameUrl(src) {
@@ -40,6 +38,19 @@ function hardenRenderedHtml(html) {
     });
 
     template.content.querySelectorAll('img').forEach(image => {
+        try {
+            const url = new URL(image.getAttribute('src') || '', window.location.origin);
+            const client = globalThis.KNOTES_SUPABASE;
+            const supabaseOrigin = client?.supabaseUrl ? new URL(client.supabaseUrl).origin : '';
+            if (url.origin !== window.location.origin &&
+                !(url.origin === supabaseOrigin && url.pathname.startsWith('/storage/v1/object/sign/media/'))) {
+                image.replaceWith(document.createTextNode(image.alt || '[external image blocked]'));
+                return;
+            }
+        } catch {
+            image.remove();
+            return;
+        }
         image.setAttribute('loading', 'lazy');
         image.setAttribute('decoding', 'async');
         if (!image.hasAttribute('alt')) image.setAttribute('alt', '');
@@ -57,17 +68,30 @@ function escapePlainText(value) {
         .replace(/'/g, '&#039;');
 }
 
-export function renderMarkdown(text) {
+async function resolvePrivateMedia(text) {
+    const matches = [...new Set(String(text).match(/kn-media:\/\/[A-Za-z0-9%._~-]+/g) || [])];
+    const supabase = globalThis.KNOTES_SUPABASE;
+    if (!matches.length || !supabase) return text;
+
+    const paths = matches.map(value => decodeURIComponent(value.slice('kn-media://'.length)));
+    const { data, error } = await supabase.storage.from('media').createSignedUrls(paths, 900);
+    if (error) return text;
+
+    let resolved = String(text);
+    matches.forEach((match, index) => {
+        resolved = resolved.replaceAll(match, data?.[index]?.signedUrl || '#private-media-unavailable');
+    });
+    return resolved;
+}
+
+export async function renderMarkdown(text) {
     if (!text) return '';
 
-    let processedText = String(text).replace(/\r\n?/g, '\n');
+    let processedText = (await resolvePrivateMedia(text)).replace(/\r\n?/g, '\n');
     const ytRegex = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?[^\s]*?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<]*)?/gi;
     processedText = processedText.replace(ytRegex, (match, videoId) => {
         return `\n<iframe class="kn-media-embed" title="YouTube video" src="https://www.youtube-nocookie.com/embed/${videoId}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
     });
-
-    const imgRegex = /(?<!\!\[.*?\]\()(?<!src=["'])(https?:\/\/[^\s<]+?\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<]*)?)/gi;
-    processedText = processedText.replace(imgRegex, '![]($1)');
 
     let parsed = '';
     if (globalThis.marked?.parse) {
@@ -90,88 +114,5 @@ export function renderMarkdown(text) {
 }
 
 export function setupLinkPreviews() {
-    let tooltip = document.getElementById('link-preview-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'link-preview-tooltip';
-        tooltip.className = 'hidden absolute z-50 bg-white border border-gray-300 shadow-2xl rounded overflow-hidden pointer-events-none transition-opacity duration-200 opacity-0';
-        tooltip.style.width = '400px';
-        tooltip.style.height = '300px';
-
-        const header = document.createElement('div');
-        header.className = 'bg-gray-100 px-2 py-1 text-xs text-gray-600 border-b border-gray-200 truncate font-semibold';
-        header.id = 'link-preview-header';
-
-        const iframe = document.createElement('iframe');
-        iframe.id = 'link-preview-iframe';
-        iframe.style.width = '100%';
-        iframe.style.height = 'calc(100% - 24px)';
-        iframe.style.border = 'none';
-        iframe.sandbox = "allow-scripts allow-same-origin";
-        iframe.loading = 'lazy';
-        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-
-        tooltip.appendChild(header);
-        tooltip.appendChild(iframe);
-        document.body.appendChild(tooltip);
-    }
-
-    const iframe = document.getElementById('link-preview-iframe');
-    const header = document.getElementById('link-preview-header');
-    let timeout;
-
-    document.addEventListener('mouseover', (e) => {
-        const target = e.target.closest('a');
-        if (!target) return;
-
-        if (!target.href.startsWith('http') || target.href.includes(window.location.hostname)) return;
-        if (target.href.match(/\.(jpg|jpeg|png|gif|webp)$/i) || target.href.includes('youtube.com') || target.href.includes('youtu.be')) return;
-
-        clearTimeout(timeout);
-
-        target.addEventListener('mouseenter', () => {
-            clearTimeout(timeout);
-            header.textContent = target.textContent.trim() || target.href;
-            const officeExts = /\.(xlsx?|docx?|pptx?)$/i;
-            const pdfExts = /\.pdf$/i;
-            let finalUrl = '';
-
-            if (target.href.match(officeExts)) {
-                finalUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(target.href)}`;
-            } else if (target.href.match(pdfExts) || target.href.includes('supabase.co/storage/v1/object/public/media')) {
-                finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(target.href)}&embedded=true`;
-            }
-
-            if (!finalUrl || !isAllowedFrameUrl(finalUrl)) return;
-
-            if (iframe.src !== finalUrl) {
-                iframe.src = finalUrl;
-            }
-
-            const rect = target.getBoundingClientRect();
-
-            let left = rect.left + window.scrollX;
-            let top = rect.bottom + window.scrollY + 10;
-
-            if (left + 400 > window.innerWidth) {
-                left = window.innerWidth - 420;
-            }
-            if (top - window.scrollY + 300 > window.innerHeight) {
-                top = rect.top + window.scrollY - 310;
-            }
-
-            tooltip.style.left = `${Math.max(10, left)}px`;
-            tooltip.style.top = `${Math.max(10, top)}px`;
-
-            tooltip.classList.remove('hidden');
-            setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
-        }, { once: true });
-
-        target.addEventListener('mouseleave', () => {
-            timeout = setTimeout(() => {
-                tooltip.classList.add('opacity-0');
-                setTimeout(() => tooltip.classList.add('hidden'), 200);
-            }, 100);
-        }, { once: true });
-    });
+    // Private document URLs are never sent to third-party preview services.
 }

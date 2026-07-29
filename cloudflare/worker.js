@@ -3,12 +3,12 @@ const CONTENT_SECURITY_POLICY = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
+  "script-src 'self' https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com",
-  "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://view.officeapps.live.com",
+  "img-src 'self' data: https://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cloudflareinsights.com",
+  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
   "form-action 'self'",
   "upgrade-insecure-requests"
 ].join('; ');

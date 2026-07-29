@@ -52,12 +52,16 @@ node scripts/write-runtime-config.mjs
 
 SQL is under `Supabase/`. New production changes belong in ordered files under `Supabase/migrations/` and should be tested in a staging Supabase project first.
 
+For a new project, apply the migrations in filename order. Start with `20260722_core_schema.sql`; the later security migrations intentionally assume those core tables already exist.
+
 The hardening migration at `Supabase/migrations/20260723_security_hardening.sql`:
 
 - requires authentication for feedback;
 - enforces feedback length, ownership, and account rate limits;
 - keeps avatar objects private, serves them through one-hour signed URLs, and limits uploads to images up to 2 MiB;
-- limits media to images, PDF, TXT, and CSV up to 10 MiB.
+- limits media to images up to 10 MiB.
+
+`Supabase/migrations/20260729_secure_invitations.sql` makes invitation claims single-use and email-bound, requires a verified AAL2 session before membership approval or private access, makes media private, and enforces post/comment identity, timestamps, protected fields, and rate limits in database triggers.
 
 Apply migrations with the Supabase CLI or SQL editor only after reviewing the current production schema. Validate any `NOT VALID` constraints after cleaning historical data. Follow [PRODUCTION_HARDENING.md](PRODUCTION_HARDENING.md) for staging, approvals, verification, and recovery.
 
@@ -86,7 +90,11 @@ Report vulnerabilities using <https://knotes.dpdns.org/.well-known/security.txt>
 Security controls include:
 
 - Supabase RLS and least-privilege grants;
+- mandatory TOTP/AAL2 authorization for private tables, storage, and sensitive RPCs;
 - server-side upload and feedback limits;
+- server-owned post/comment fields and abuse limits;
+- private media with short-lived signed URLs;
+- no persistent browser cache of private posts;
 - DOMPurify for rendered user content;
 - strict URL protocol and iframe-origin allowlists;
 - automated dependency, static, renderer, and security checks.

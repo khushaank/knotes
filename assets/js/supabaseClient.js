@@ -12,12 +12,7 @@ const AVATAR_TYPES = new Map([
     ['webp', ['image/webp']],
     ['gif', ['image/gif']]
 ]);
-const MEDIA_TYPES = new Map([
-    ...AVATAR_TYPES,
-    ['pdf', ['application/pdf']],
-    ['txt', ['text/plain']],
-    ['csv', ['text/csv', 'application/csv']]
-]);
+const MEDIA_TYPES = AVATAR_TYPES;
 
 function withTimeout(promise, timeoutMs, label) {
     let timeoutId;
@@ -48,12 +43,12 @@ function createTimeoutFetch(timeoutMs = SUPABASE_TIMEOUT_MS) {
 }
 
 try {
-    const supabaseModule = await withTimeout(
-        import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm'),
+    await withTimeout(
+        import('../vendor/supabase.js'),
         SUPABASE_TIMEOUT_MS,
         'Supabase client'
     );
-    createClient = supabaseModule.createClient;
+    createClient = globalThis.supabase?.createClient || null;
 } catch (e) {
     console.warn('Supabase client library could not be loaded. Pages will show fallback content instead of staying on loading.', e);
 }
@@ -73,6 +68,16 @@ export const supabase = (createClient && SUPABASE_URL && SUPABASE_URL !== 'YOUR_
         }
     })
     : null;
+globalThis.KNOTES_SUPABASE = supabase;
+
+try {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith('kn-cache-')) localStorage.removeItem(key);
+    }
+} catch {
+    // Storage may be unavailable; private content is never written there now.
+}
 
 let currentSessionPromise = null;
 
@@ -115,9 +120,6 @@ function validateUploadFile(file, allowedTypes, maxBytes) {
 // =============================================
 
 // =============================================
-const CACHE_PREFIX = 'kn-cache-';
-const DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
-
 export async function generateUniqueUsername(email) {
     const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 27) || 'member';
     return `${base}-${crypto.randomUUID().slice(0, 8)}`;
@@ -128,27 +130,9 @@ export async function getEmailByUsername(username) {
     return null;
 }
 
-export function setCache(key, data, ttl = DEFAULT_TTL) {
-    const cacheData = {
-        data,
-        expiry: Date.now() + ttl
-    };
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(cacheData));
-}
-
-export function getCache(key) {
-    const cached = localStorage.getItem(CACHE_PREFIX + key);
-    if (!cached) return null;
-    try {
-        const { data, expiry } = JSON.parse(cached);
-        if (Date.now() > expiry) {
-            return { data, stale: true };
-        }
-        return { data, stale: false };
-    } catch {
-        return null;
-    }
-}
+// Private posts are deliberately never persisted in browser storage.
+export function setCache() {}
+export function getCache() { return null; }
 
 export function calculateTimeAgo(dateString) {
     const date = new Date(dateString);
@@ -498,11 +482,21 @@ export async function uploadMediaFile(file) {
 
     if (uploadError) return { error: uploadError.message };
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData, error: signedUrlError } = await supabase.storage
         .from('media')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 900);
 
-    return { success: true, url: urlData.publicUrl, name: safeName };
+    if (signedUrlError || !urlData?.signedUrl) {
+        await supabase.storage.from('media').remove([filePath]);
+        return { error: 'Could not create a private media URL' };
+    }
+
+    return {
+        success: true,
+        url: urlData.signedUrl,
+        reference: `kn-media://${encodeURIComponent(filePath)}`,
+        name: safeName
+    };
 }
 
 export async function listUserMedia() {
@@ -522,16 +516,16 @@ export async function listUserMedia() {
 
     if (error || !files) return [];
 
-    return files
-        .filter(f => f.name !== '.emptyFolderPlaceholder')
-        .map(f => {
-            const { data } = supabase.storage.from('media').getPublicUrl(`${userId}/${f.name}`);
-            return {
-                name: f.name,
-                url: data.publicUrl,
-                created_at: f.created_at
-            };
-        });
+    const visibleFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+    const paths = visibleFiles.map(f => `${userId}/${f.name}`);
+    const { data: signed } = await supabase.storage.from('media').createSignedUrls(paths, 900);
+
+    return visibleFiles.map((file, index) => ({
+        name: file.name,
+        url: signed?.[index]?.signedUrl || '',
+        reference: `kn-media://${encodeURIComponent(paths[index])}`,
+        created_at: file.created_at
+    })).filter(file => file.url);
 }
 
 export async function getUserComments(userId) {

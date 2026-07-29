@@ -4,7 +4,8 @@
   "description": "A community-driven technology news aggregator and discussion forum.",
   "scripts": {
     "test": "node scripts/check.mjs && node scripts/renderer-check.mjs && node scripts/security-check.mjs && node scripts/worker-check.mjs",
-    "build": "npx tailwindcss -i assets/css/input.css -o assets/css/styles.css --minify",
+    "vendor": "node scripts/vendor.mjs",
+    "build": "node scripts/vendor.mjs && tailwindcss -i assets/css/input.css -o assets/css/styles.css --minify",
     "audit": "npm audit"
   },
   "repository": {
@@ -30,6 +31,8 @@
     "tailwindcss": "4.3.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.110.8",
+    "chart.js": "4.5.1",
     "dompurify": "3.4.12",
     "marked": "18.0.7"
   }

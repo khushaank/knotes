@@ -19,7 +19,7 @@ const exists = async path => {
     }
 };
 
-const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, privateCircleMigration, removeCountMigration, invitationMigration, invitations, profile, serviceWorker] = await Promise.all([
+const [auth, client, login, contact, security, manifest, packageJson, interceptor, session, styles, home, feed, routeGuard, dashboard, worker, storageMigration, coreMigration, privateCircleMigration, removeCountMigration, invitationMigration, invitations, profile, serviceWorker] = await Promise.all([
     read('assets/js/auth.js'),
     read('assets/js/supabaseClient.js'),
     read('login.html'),
@@ -36,6 +36,7 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
     read('dashboard/js/dashboard.js'),
     read('cloudflare/worker.js'),
     readOptional('Supabase/migrations/20260723_security_hardening.sql'),
+    readOptional('Supabase/migrations/20260722_core_schema.sql'),
     readOptional('Supabase/migrations/20260728_private_circle.sql'),
     readOptional('Supabase/migrations/20260728_remove_fake_community_size.sql'),
     readOptional('Supabase/migrations/20260729_secure_invitations.sql'),
@@ -93,7 +94,8 @@ assert.ok((await read('README.md')).length > 500, 'README must document setup, d
 assert.equal(await exists('PRODUCTION_HARDENING.md'), true, 'production approval and rollout steps must be documented');
 assert.equal(await exists('LICENSE'), true, 'repository must declare a license');
 assert.equal(await exists('.github/workflows/ci.yml'), true, 'CI workflow must exist');
-assert.doesNotMatch(pwa.description, /\bprivate\b/i, 'PWA description must match the public community product');
+assert.match(pwa.description, /\bprivate\b/i, 'PWA description must state that member content is private');
+assert.match(pwa.description, /\bMFA-protected\b/i, 'PWA description must state the member security boundary');
 
 assert.doesNotMatch(interceptor, /window\.location\.href\s*=\s*exitUrl/, 'ordinary external links must not be forced through an interstitial');
 assert.match(interceptor, /relList\.add\('noopener'\)/, 'external links must receive noopener');
@@ -102,7 +104,7 @@ assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration m
 assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
-assert.match(serviceWorker, /knotes-v19/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /knotes-v20/, 'service-worker cache must be bumped after changing route delivery');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
 assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
 assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');
@@ -121,9 +123,12 @@ assert.match(storageMigration, /alter column name set not null/i, 'existing feed
 assert.match(storageMigration, /conrelid\s*=\s*'public\.feedback'::regclass/i, 'constraint checks must be scoped to feedback');
 assert.match(client, /from\('avatars'\)[\s\S]{0,160}createSignedUrl\(filePath,\s*3600\)/, 'private avatars need signed URLs');
 assert.match(client, /update\(\{ avatar_url: filePath \}\)/, 'profiles must store private avatar paths, not public URLs');
+assert.match(client, /startsWith\('kn-cache-'\)[\s\S]+localStorage\.removeItem/i, 'legacy private browser caches must be erased');
 assert.doesNotMatch(client, /file\.type === 'application\/octet-stream'[\s\S]{0,80}return null/, 'generic binary MIME must not bypass upload checks');
 assert.equal(await exists('cloudflare/worker.js'), true, 'Cloudflare security-header worker must be provided');
 assert.equal(await exists('cloudflare/wrangler.toml.example'), true, 'Cloudflare deployment template must be provided');
+assert.match(coreMigration, /create table if not exists public\.profiles/i, 'a clean Supabase project must create profiles before hardening');
+assert.match(coreMigration, /create table if not exists public\.blogs/i, 'a clean Supabase project must create core content tables before hardening');
 assert.match(privateCircleMigration, /create or replace function public\.is_approved_member\(\)/i, 'membership authorization must be database-backed');
 assert.match(privateCircleMigration, /revoke all on public\.blogs[\s\S]+from anon/i, 'anonymous private-content grants must be removed');
 assert.match(privateCircleMigration, /security invoker/i, 'search must not bypass private-content RLS');
@@ -131,6 +136,7 @@ assert.match(privateCircleMigration, /update storage\.buckets set public = false
 assert.match(privateCircleMigration, /create or replace function public\.request_membership/i, 'membership requests must use a trusted database function');
 assert.match(removeCountMigration, /drop function if exists public\.community_size\(\)/i, 'fake member-count function must be removed');
 assert.match(invitationMigration, /before insert on auth\.users/i, 'invitation codes must be enforced inside the auth signup transaction');
+assert.match(invitationMigration, /add column if not exists membership_status/i, 'final invitation hardening must bootstrap membership columns');
 assert.match(invitationMigration, /code_hash = extensions\.digest/i, 'invitation codes must be stored and compared as hashes');
 assert.match(invitationMigration, /create or replace function public\.begin_invitation/i, 'invitation codes must be verified before showing account creation');
 assert.match(invitationMigration, /claim_expires_at[\s\S]+interval '15 minutes'/i, 'invitation claims must expire quickly');
@@ -142,6 +148,12 @@ assert.match(invitationMigration, /for update/i, 'single-use invitation redempti
 assert.match(invitationMigration, /used_at is null/i, 'used invitation codes must be rejected');
 assert.match(invitationMigration, /email = lower\(new\.email\)/i, 'invitation codes must be tied to the invited email');
 assert.match(profile, /auth\.mfa\.enroll/i, 'profile must support TOTP enrollment');
-assert.match(profile, /auth\.mfa\.unenroll/i, 'profile must support disabling TOTP');
+assert.doesNotMatch(profile, /auth\.mfa\.unenroll/i, 'mandatory MFA must not be disableable in the browser');
+assert.match(profile, /rpc\('complete_invited_membership'\)/i, 'verified MFA must complete invited membership server-side');
+assert.match(invitationMigration, /auth\.jwt\(\)\s*->>\s*'aal'[\s\S]+aal2/i, 'private membership must require an AAL2 session');
+assert.match(invitationMigration, /create trigger secure_blog_insert[\s\S]+handle_blog_insert/i, 'server post controls must be attached to inserts');
+assert.match(invitationMigration, /create trigger secure_blog_update[\s\S]+handle_blog_update/i, 'protected post columns must be enforced on updates');
+assert.match(invitationMigration, /create trigger secure_comment_insert[\s\S]+handle_comment_insert/i, 'server comment controls must be attached to inserts');
+assert.doesNotMatch(worker, /script-src[^"\n]*'unsafe-inline'/i, 'production CSP must reject inline scripts');
 
 console.log('Security and production-readiness checks passed.');

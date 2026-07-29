@@ -77,7 +77,7 @@ async function fetchComments(blogId) {
     return data;
 }
 
-function renderCommentList(comments) {
+async function renderCommentList(comments) {
     const fragment = document.createDocumentFragment();
 
     if (comments.length === 0) {
@@ -91,7 +91,7 @@ function renderCommentList(comments) {
     const visibleCount = 2;
     let extraCommentsDiv = null;
 
-    comments.forEach((comment, index) => {
+    for (const [index, comment] of comments.entries()) {
         const timeAgo = calculateTimeAgo(comment.created_at);
 
         if (index === visibleCount) {
@@ -135,7 +135,7 @@ function renderCommentList(comments) {
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'text-black mt-0.5 text-[10pt] leading-snug comment-body pr-4';
         bodyDiv.style.cssText = 'white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;';
-        bodyDiv.innerHTML = renderMarkdown(comment.comment_text).trim(); 
+        bodyDiv.innerHTML = (await renderMarkdown(comment.comment_text)).trim();
         contentDiv.appendChild(bodyDiv);
 
         const footerDiv = document.createElement('div');
@@ -155,7 +155,7 @@ function renderCommentList(comments) {
         } else {
             fragment.appendChild(node);
         }
-    });
+    }
 
     if (comments.length > visibleCount) {
         const moreDiv = document.createElement('div');
@@ -195,11 +195,11 @@ async function renderPage() {
     await loadUserStats();
 
     if (cached) {
-        renderStoryDetails(cached.data);
+        await renderStoryDetails(cached.data);
         if (!cached.stale) {
             // Fetch fresh comments even if story is fresh
             const comments = await fetchComments(cached.data.id);
-            renderCommentsSection(comments, cached.data.id);
+            await renderCommentsSection(comments, cached.data.id);
             document.getElementById('comment-box')?.classList.remove('hidden');
             return;
         }
@@ -220,11 +220,11 @@ async function renderPage() {
         return;
     }
 
-    renderStoryDetails(story);
+    await renderStoryDetails(story);
 
     const comments = await fetchComments(story.id);
 
-    renderCommentsSection(comments, story.id);
+    await renderCommentsSection(comments, story.id);
     document.getElementById('comment-box')?.classList.remove('hidden');
 }
 
@@ -236,7 +236,7 @@ async function loadUserStats() {
     ]);
 }
 
-function renderStoryDetails(story) {
+async function renderStoryDetails(story) {
     trackClick(story.id);
 
     const cleanTitle = sanitize(story.title);
@@ -457,7 +457,7 @@ function renderStoryDetails(story) {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content';
         contentDiv.style.cssText = 'overflow-wrap: anywhere; word-wrap: break-word;';
-        contentDiv.innerHTML = renderMarkdown(story.content).trim();
+        contentDiv.innerHTML = (await renderMarkdown(story.content)).trim();
         fragment.appendChild(contentDiv);
     }
 
@@ -465,10 +465,10 @@ function renderStoryDetails(story) {
     window.currentStoryId = story.id;
 }
 
-function renderCommentsSection(comments, blogId) {
+async function renderCommentsSection(comments, blogId) {
     const commentsListEl = document.getElementById('comments-container');
     if (commentsListEl) {
-        commentsListEl.replaceChildren(renderCommentList(comments));
+        commentsListEl.replaceChildren(await renderCommentList(comments));
     }
 }
 

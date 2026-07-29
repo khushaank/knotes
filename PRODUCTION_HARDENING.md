@@ -20,12 +20,13 @@ Cloudflare deployment, Supabase schema/storage changes, credential rotation, DNS
    - users cannot select other users' feedback;
    - avatar uploads accept only JPEG, PNG, WebP, and GIF up to 2 MiB;
    - avatars are private and one-hour signed URLs work for the owner;
-   - public media accepts only the documented types up to 10 MiB.
+   - private media accepts only images up to 10 MiB;
+   - owners can read unused uploads, while other AAL2 members can read only media referenced by a published post.
 6. Validate the four `NOT VALID` feedback constraints after reviewing historical rows.
 7. Configure Supabase Auth with a 12-character password minimum, leaked-password protection, appropriate email verification, and server-side Auth rate limits.
 8. Apply `Supabase/migrations/20260729_secure_invitations.sql`, then enable email signups in Supabase Auth. The database trigger rejects every signup without a valid, email-bound, unexpired invitation claim; do not enable signups before this migration succeeds. Create codes only in the Supabase SQL editor with `select private.create_invitation('person@example.com', 7);` and send the returned code once through a trusted channel.
-9. Enable TOTP enrollment and verification in Supabase Auth, then verify enrollment, challenged login, and factor removal from the profile page.
-10. Review every existing non-admin profile and explicitly set `membership_status = 'approved'` only for members who should retain access. The private-circle migration deliberately leaves them pending.
+9. Enable TOTP enrollment and verification in Supabase Auth. Verify that an invited AAL1 account can access only its own profile, becomes approved only after TOTP verification, and loses private access whenever its session is below AAL2. Factor removal is intentionally unavailable in the member UI.
+10. Review every existing profile. Legacy `is_admin` flags are not trusted by the final admin check until an operator explicitly verifies `approved_by`; all other existing accounts remain pending until invited and MFA-verified.
 11. Add edge-verified Cloudflare Turnstile to login, password reset, and membership requests if abuse risk warrants it. Never trust a browser-only CAPTCHA result.
 12. Review all existing keys. Rotate any exposed non-publishable credential and update it only in the appropriate secret store.
 
@@ -44,7 +45,7 @@ After both approvals, deploy the tested Worker version and attach `knotes.dpdns.
 
 ## 3. GitHub
 
-1. Push `harden/audit-fixes` and open a pull request; do not push credentials or the local Wrangler configuration.
+1. Make the repository private unless public source is an explicit, documented decision. Push a `codex/` branch and open a pull request; do not push credentials, `runtime-config.json`, or the local Wrangler configuration.
 2. Require the pinned CI workflow to pass before merge.
 3. Enable branch protection for `main`: pull requests, required CI, conversation resolution, no force-pushes, and no branch deletion.
 4. Enable Dependabot alerts/updates, secret scanning, push protection where available, and least-privilege Actions permissions.
@@ -61,8 +62,9 @@ Use the working contact published in `/.well-known/security.txt`. If a branded s
 - Live response headers match the Worker policy.
 - No unexpected CSP violations occur.
 - Invitation, login, MFA, logout, reset, and session expiry work.
+- Anonymous, pending, approved, suspended, moderator, administrator, AAL1, and AAL2 test accounts receive exactly their intended database and storage access.
 - Password and rate-limit policies are enforced server-side.
-- Upload limits and private avatar access work.
+- Upload limits, signed media access, unpublished-upload isolation, and private avatar access work.
 - Feedback ownership and concurrent rate limiting work.
 - Runtime configuration and authenticated pages are not cached.
 - Service-worker updates activate correctly.
