@@ -45,6 +45,15 @@ function clearFailedLogins() {
     const loginForm = document.getElementById('login-form');
     const mfaForm = document.getElementById('mfa-form');
     const messageContainer = document.getElementById('message-container');
+    const passwordToggle = document.getElementById('login-password-toggle');
+
+    passwordToggle?.addEventListener('click', () => {
+        const input = document.getElementById('login-password');
+        const icon = passwordToggle.querySelector('.material-symbols-outlined');
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        icon.textContent = showing ? 'visibility' : 'visibility_off';
+    });
 
     function showMessage(msg, isError = false) {
         messageContainer.textContent = msg;

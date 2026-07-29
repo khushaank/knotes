@@ -104,7 +104,7 @@ assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration m
 assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
-assert.match(serviceWorker, /knotes-v20/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /knotes-v21/, 'service-worker cache must be bumped after changing route delivery');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
 assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
 assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');

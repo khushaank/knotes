@@ -2,20 +2,7 @@
 <html lang="en">
 
 <head>
-    <script>
-        (function () {
-            try {
-                var theme = localStorage.getItem('kn-theme') || 'light';
-                if (theme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    document.documentElement.classList.remove('dark');
-                }
-            } catch (e) { }
-        })();
-    </script>
+    <script src="assets/js/theme-init.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta http-equiv="Content-Security-Policy"
@@ -49,8 +36,8 @@
                                 required
                                 class="border border-gray-400 p-1 text-xs w-36 focus:outline-none focus:border-[#ff6600]">
                             <button type="button"
+                                id="login-password-toggle"
                                 class="ml-1 text-gray-500 hover:text-black focus:outline-none align-middle"
-                                onclick="togglePassword(event, 'login-password')"
                                 aria-label="Show or hide login password">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span>
                             </button>
@@ -92,19 +79,6 @@
             </table>
         </form>
     </div>
-    <script>
-        function togglePassword(event, id) {
-            const input = document.getElementById(id);
-            const icon = event.currentTarget.querySelector('.material-symbols-outlined');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = 'visibility_off';
-            } else {
-                input.type = 'password';
-                icon.textContent = 'visibility';
-            }
-        }
-    </script>
     <script type="module" src="assets/js/auth.js"></script>
     <script type="module" src="assets/js/session.js?v=8"></script>
     <script defer src="assets/js/exit-interceptor.js"></script>
