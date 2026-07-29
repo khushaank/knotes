@@ -17,6 +17,9 @@ const passwordFields = [...passwordForm.querySelectorAll('input[type="password"]
 const mfaDialog = document.getElementById('mfa-dialog');
 const mfaStatus = document.getElementById('mfa-status');
 const mfaDialogStatus = document.getElementById('mfa-dialog-status');
+const mfaRemoveDialog = document.getElementById('mfa-remove-dialog');
+const mfaRemoveForm = document.getElementById('mfa-remove-form');
+const mfaRemoveStatus = document.getElementById('mfa-remove-status');
 let mfaFactorId = null;
 let mfaEnabled = false;
 
@@ -41,6 +44,12 @@ function showMfaEnabled(animate = false) {
     badge.hidden = false;
     badge.classList.toggle('mfa-enabled-confirmed', animate);
     mfaStatus.textContent = '';
+}
+
+function showMfaDisabled() {
+    document.getElementById('mfa-disabled').hidden = false;
+    document.getElementById('mfa-enabled').hidden = true;
+    mfaStatus.textContent = '2FA was removed.';
 }
 
 async function loadMfaStatus() {
@@ -170,6 +179,40 @@ if (!supabase) {
         });
 
         document.getElementById('mfa-start').addEventListener('click', startMfaEnrollment);
+        document.getElementById('mfa-remove-open').addEventListener('click', () => {
+            mfaRemoveStatus.textContent = '';
+            setDialogOpen(mfaRemoveDialog, true);
+            mfaRemoveForm.elements.code.focus();
+        });
+        mfaRemoveForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!mfaRemoveForm.reportValidity() || !mfaFactorId) return;
+            const confirmButton = document.getElementById('mfa-remove-confirm');
+            confirmButton.disabled = true;
+            mfaRemoveStatus.textContent = 'Verifying…';
+            const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: mfaFactorId,
+                code: mfaRemoveForm.elements.code.value.trim()
+            });
+            if (verifyError) {
+                confirmButton.disabled = false;
+                mfaRemoveStatus.textContent = 'That code was not accepted. Wait for a new code and try again.';
+                mfaRemoveForm.elements.code.select();
+                return;
+            }
+            const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+            confirmButton.disabled = false;
+            if (error) {
+                mfaRemoveStatus.textContent = '2FA could not be removed. Please try again.';
+                return;
+            }
+            await supabase.auth.refreshSession();
+            mfaEnabled = false;
+            mfaFactorId = null;
+            mfaRemoveForm.reset();
+            setDialogOpen(mfaRemoveDialog, false);
+            showMfaDisabled();
+        });
         document.getElementById('mfa-enrollment-form').addEventListener('submit', async event => {
             event.preventDefault();
             if (!event.currentTarget.reportValidity() || !mfaFactorId) return;
@@ -190,7 +233,6 @@ if (!supabase) {
             }
 
             mfaEnabled = true;
-            mfaFactorId = null;
             await supabase.rpc('complete_invited_membership');
             setDialogOpen(mfaDialog, false);
             showMfaEnabled(true);

@@ -1,4 +1,5 @@
-import { supabase, uploadMediaFile, listUserMedia } from './supabaseClient.js?v=2';
+import { supabase } from './supabaseClient.js?v=2';
+import { mediaMarkdown, renderMediaLibrary, uploadMediaWithDetails } from './mediaLibrary.js?v=1';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 import { renderMarkdown } from './contentRenderer.js';
 
@@ -273,34 +274,16 @@ const HASH_TO_CATEGORY = {
             const file = e.target.files[0];
             if (!file) return;
 
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image must be under 5MB');
-                return;
-            }
-
             btnUploadImage.disabled = true;
             btnUploadImage.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px">sync</span> Uploading...';
 
             try {
-                const result = await uploadMediaFile(file);
+                const result = await uploadMediaWithDetails(file);
 
                 if (result.error) {
                     alert('Upload failed: ' + result.error);
-                } else {
-                    const ext = result.name.split('.').pop().toLowerCase();
-                    const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-
-                    if (isImg) {
-                        let altText = prompt('Enter a short description (alt text) for this image:', 'Image');
-                        if (altText === null) altText = 'Image';
-                        altText = sanitize(altText);
-                        const markdown = `\n![${altText}](${result.reference})\n`;
-                        insertAtCursor(textarea, markdown);
-                    } else {
-                        const safeName = sanitize(result.name.split('-')[0]) || 'File';
-                        const markdown = `\n[${safeName}](${result.reference})\n`;
-                        insertAtCursor(textarea, markdown);
-                    }
+                } else if (!result.cancelled) {
+                    insertAtCursor(textarea, mediaMarkdown(result));
                 }
             } catch (err) {
                 alert('Upload failed unexpectedly. Please try again.');
@@ -319,96 +302,13 @@ const HASH_TO_CATEGORY = {
 
     if (btnMediaLibrary && mediaModal) {
         async function loadMediaFiles() {
-            mediaGrid.innerHTML = '<div class="col-span-full text-center py-12"><div class="animate-spin inline-block w-8 h-8 border-4 border-[#ff6600] border-t-transparent rounded-full mb-4"></div><p class="text-gray-500 text-sm italic">Loading your photos...</p></div>';
-
             try {
-                const files = await listUserMedia();
-
-                if (!files || files.length === 0) {
-                    mediaGrid.innerHTML = '<div class="col-span-full text-sm text-gray-500 text-center py-8 italic">You haven\'t uploaded any photos yet</div>';
-                    return;
-                }
-
-                function getFileIcon(filename) {
-                    const ext = filename.split('.').pop().toLowerCase();
-                    switch (ext) {
-                        case 'pdf': return 'picture_as_pdf';
-                        case 'xls':
-                        case 'xlsx':
-                        case 'csv': return 'table_chart';
-                        case 'doc':
-                        case 'docx': return 'description';
-                        case 'ppt':
-                        case 'pptx': return 'present_to_all';
-                        case 'txt': return 'article';
-                        default: return 'insert_drive_file';
-                    }
-                }
-
-                function isImage(filename) {
-                    const ext = filename.split('.').pop().toLowerCase();
-                    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-                }
-
-                const fragment = document.createDocumentFragment();
-                files.forEach(f => {
-                    const isImg = isImage(f.name);
-                    const icon = getFileIcon(f.name);
-
-                    const card = document.createElement('div');
-                    card.className = 'group relative aspect-passport bg-white rounded border border-gray-200 overflow-hidden hover:border-[#ff6600] transition-all shadow-sm hover:shadow-md cursor-pointer media-item';
-                    card.setAttribute('data-url', f.url);
-                    card.setAttribute('data-reference', f.reference);
-                    card.setAttribute('data-name', f.name);
-                    card.setAttribute('data-is-img', isImg);
-
-                    if (isImg) {
-                        const img = document.createElement('img');
-                        img.src = f.url;
-                        img.className = 'w-full h-full object-cover';
-                        img.loading = 'lazy';
-                        card.appendChild(img);
-                    } else {
-                        const iconContainer = document.createElement('div');
-                        iconContainer.className = 'w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-2 text-center';
-
-                        const spanIcon = document.createElement('span');
-                        spanIcon.className = 'material-symbols-outlined text-3xl mb-1';
-                        spanIcon.textContent = icon;
-                        iconContainer.appendChild(spanIcon);
-
-                        const spanName = document.createElement('span');
-                        spanName.className = 'text-[9px] truncate w-full px-1';
-                        spanName.textContent = f.name.split('-')[0];
-                        iconContainer.appendChild(spanName);
-
-                        card.appendChild(iconContainer);
-                    }
-
-                    const hoverDiv = document.createElement('div');
-                    hoverDiv.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold';
-                    hoverDiv.textContent = 'Insert';
-                    card.appendChild(hoverDiv);
-
-                    fragment.appendChild(card);
-                });
-                mediaGrid.replaceChildren(fragment);
-
-                mediaGrid.querySelectorAll('.media-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const url = item.getAttribute('data-reference');
-                        const name = item.getAttribute('data-name').split('-')[0] || 'File';
-                        const isImg = item.getAttribute('data-is-img') === 'true';
-
-                        if (isImg) {
-                            insertAtCursor(textarea, `\n![${sanitize(name)}](${url})\n`);
-                        } else {
-                            insertAtCursor(textarea, `\n[${sanitize(name)}](${url})\n`);
-                        }
+                await renderMediaLibrary(mediaGrid, {
+                    manage: true,
+                    onInsert(media) {
+                        insertAtCursor(textarea, mediaMarkdown(media));
                         mediaModal.classList.add('hidden');
-
-                    });
-
+                    }
                 });
             } catch (err) {
                 const errDiv = document.createElement('div');

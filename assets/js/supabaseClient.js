@@ -12,7 +12,18 @@ const AVATAR_TYPES = new Map([
     ['webp', ['image/webp']],
     ['gif', ['image/gif']]
 ]);
-const MEDIA_TYPES = AVATAR_TYPES;
+const MEDIA_TYPES = new Map([
+    ...AVATAR_TYPES,
+    ['pdf', ['application/pdf']],
+    ['txt', ['text/plain']],
+    ['csv', ['text/csv', 'application/vnd.ms-excel']],
+    ['doc', ['application/msword']],
+    ['docx', ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']],
+    ['xls', ['application/vnd.ms-excel']],
+    ['xlsx', ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']],
+    ['ppt', ['application/vnd.ms-powerpoint']],
+    ['pptx', ['application/vnd.openxmlformats-officedocument.presentationml.presentation']]
+]);
 
 function withTimeout(promise, timeoutMs, label) {
     let timeoutId;
@@ -461,7 +472,15 @@ export async function deleteStory(storyId) {
     return { success: true };
 }
 
-export async function uploadMediaFile(file) {
+function mediaDisplayName(value, fallback = 'File') {
+    return String(value || fallback).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 160) || fallback;
+}
+
+function mediaAltText(value) {
+    return String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 500);
+}
+
+export async function uploadMediaFile(file, metadata = {}) {
     if (!supabase) return { error: 'Supabase not initialized' };
 
     const validationError = validateUploadFile(file, MEDIA_TYPES, MEDIA_MAX_BYTES);
@@ -491,11 +510,37 @@ export async function uploadMediaFile(file) {
         return { error: 'Could not create a private media URL' };
     }
 
+    const asset = {
+        owner_id: userId,
+        path: filePath,
+        display_name: mediaDisplayName(metadata.displayName, file.name),
+        alt_text: mediaAltText(metadata.altText),
+        mime_type: file.type || MEDIA_TYPES.get(ext)?.[0] || 'application/octet-stream',
+        size_bytes: file.size
+    };
+    const { data: savedAsset, error: metadataError } = await supabase
+        .from('media_assets')
+        .insert(asset)
+        .select()
+        .single();
+
+    const metadataTableMissing = ['42P01', 'PGRST204', 'PGRST205'].includes(metadataError?.code);
+    if (metadataError && !metadataTableMissing) {
+        await supabase.storage.from('media').remove([filePath]);
+        return { error: 'Media details could not be saved. Apply the latest database migration and try again.' };
+    }
+
     return {
         success: true,
+        id: savedAsset?.id || null,
         url: urlData.signedUrl,
         reference: `kn-media://${encodeURIComponent(filePath)}`,
-        name: safeName
+        path: filePath,
+        name: safeName,
+        displayName: savedAsset?.display_name || asset.display_name,
+        altText: savedAsset?.alt_text || asset.alt_text,
+        mimeType: savedAsset?.mime_type || asset.mime_type,
+        metadataPending: metadataTableMissing
     };
 }
 
@@ -517,15 +562,62 @@ export async function listUserMedia() {
     if (error || !files) return [];
 
     const visibleFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+    if (!visibleFiles.length) return [];
     const paths = visibleFiles.map(f => `${userId}/${f.name}`);
     const { data: signed } = await supabase.storage.from('media').createSignedUrls(paths, 900);
 
-    return visibleFiles.map((file, index) => ({
-        name: file.name,
-        url: signed?.[index]?.signedUrl || '',
-        reference: `kn-media://${encodeURIComponent(paths[index])}`,
-        created_at: file.created_at
-    })).filter(file => file.url);
+    const { data: assets } = await supabase
+        .from('media_assets')
+        .select('id,path,display_name,alt_text,mime_type,size_bytes,created_at')
+        .eq('owner_id', userId)
+        .in('path', paths);
+    const byPath = new Map((assets || []).map(asset => [asset.path, asset]));
+
+    return visibleFiles.map((file, index) => {
+        const path = paths[index];
+        const asset = byPath.get(path);
+        return {
+            id: asset?.id || null,
+            path,
+            name: file.name,
+            displayName: asset?.display_name || file.name.replace(/^\d+-/, ''),
+            altText: asset?.alt_text || '',
+            mimeType: asset?.mime_type || file.metadata?.mimetype || '',
+            sizeBytes: asset?.size_bytes || file.metadata?.size || 0,
+            url: signed?.[index]?.signedUrl || '',
+            reference: `kn-media://${encodeURIComponent(path)}`,
+            created_at: asset?.created_at || file.created_at
+        };
+    }).filter(file => file.url);
+}
+
+export async function updateMediaDetails(assetId, { displayName, altText }) {
+    if (!supabase || !assetId) return { error: 'This older upload cannot be edited until it is re-uploaded.' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'Please login' };
+    const { error } = await supabase
+        .from('media_assets')
+        .update({
+            display_name: mediaDisplayName(displayName),
+            alt_text: mediaAltText(altText),
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', assetId)
+        .eq('owner_id', session.user.id);
+    return error ? { error: error.message } : { success: true };
+}
+
+export async function deleteMediaFile(media) {
+    if (!supabase || !media?.path) return { error: 'Media file not found.' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !media.path.startsWith(`${session.user.id}/`)) return { error: 'Unauthorized' };
+    const { error: storageError } = await supabase.storage.from('media').remove([media.path]);
+    if (storageError) return { error: storageError.message };
+    if (media.id) {
+        const { error } = await supabase.from('media_assets').delete().eq('id', media.id).eq('owner_id', session.user.id);
+        if (error) return { error: error.message };
+    }
+    return { success: true };
 }
 
 export async function getUserComments(userId) {

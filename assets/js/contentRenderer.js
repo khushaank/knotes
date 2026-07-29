@@ -113,6 +113,43 @@ export async function renderMarkdown(text) {
     return escapePlainText(processedText).replace(/\n/g, '<br>');
 }
 
-export function setupLinkPreviews() {
-    // Private document URLs are never sent to third-party preview services.
+export function setupLinkPreviews(container = document) {
+    const preview = async media => {
+        const { openMediaPreview } = await import('./mediaLibrary.js?v=1');
+        openMediaPreview(media);
+    };
+    const selector = '[src*="/storage/v1/object/sign/media/"],a[href*="/storage/v1/object/sign/media/"]';
+    container.querySelectorAll(selector).forEach(element => {
+        if (element.dataset.knPreviewReady) return;
+        element.dataset.knPreviewReady = 'true';
+        const isImage = element.tagName === 'IMG';
+        const url = isImage ? element.src : element.href;
+        const pathName = decodeURIComponent(new URL(url).pathname);
+        const storedName = pathName.split('/').pop() || 'File';
+        const name = isImage ? (element.alt || storedName) : (element.textContent.trim() || storedName);
+        const media = {
+            name: storedName,
+            displayName: name,
+            altText: isImage ? element.alt : '',
+            url
+        };
+        if (isImage) {
+            element.tabIndex = 0;
+            element.role = 'button';
+            element.setAttribute('aria-label', `Open ${name} full screen`);
+            element.style.cursor = 'zoom-in';
+            element.addEventListener('click', () => preview(media));
+            element.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    preview(media);
+                }
+            });
+        } else {
+            element.addEventListener('click', event => {
+                event.preventDefault();
+                preview(media);
+            });
+        }
+    });
 }

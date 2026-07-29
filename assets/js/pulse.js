@@ -1,6 +1,6 @@
 import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, toggleBookmark, setBookmark, getUserBookmarks, getUserLikes, sharePost, getCache, setCache, getCurrentSession, hideStory } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
-import { renderMarkdown } from './contentRenderer.js?v=8';
+import { renderMarkdown, setupLinkPreviews } from './contentRenderer.js?v=9';
 
 await requireApprovedMember();
 
@@ -136,6 +136,7 @@ async function renderCommentList(comments) {
         bodyDiv.className = 'text-black mt-0.5 text-[10pt] leading-snug comment-body pr-4';
         bodyDiv.style.cssText = 'white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word;';
         bodyDiv.innerHTML = (await renderMarkdown(comment.comment_text)).trim();
+        setupLinkPreviews(bodyDiv);
         contentDiv.appendChild(bodyDiv);
 
         const footerDiv = document.createElement('div');
@@ -458,6 +459,7 @@ async function renderStoryDetails(story) {
         contentDiv.className = 'text-black mt-2 ml-[17px] max-w-prose leading-relaxed text-[10pt] story-content';
         contentDiv.style.cssText = 'overflow-wrap: anywhere; word-wrap: break-word;';
         contentDiv.innerHTML = (await renderMarkdown(story.content)).trim();
+        setupLinkPreviews(contentDiv);
         fragment.appendChild(contentDiv);
     }
 

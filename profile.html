@@ -63,6 +63,7 @@
                     <div id="mfa-enabled" class="mfa-enabled" hidden>
                         <span class="mfa-check" aria-hidden="true">✓</span>
                         <span>2FA is enabled</span>
+                        <button type="button" id="mfa-remove-open" class="account-button account-button-secondary">Remove 2FA</button>
                     </div>
                     <p id="mfa-status" class="account-message" role="status" aria-live="polite"></p>
                 </section>
@@ -131,6 +132,23 @@
                     </div>
                 </div>
             </dialog>
+
+            <dialog id="mfa-remove-dialog" class="account-dialog" aria-labelledby="mfa-remove-title">
+                <form id="mfa-remove-form" class="dialog-card password-form">
+                    <div class="dialog-heading">
+                        <div>
+                            <h2 id="mfa-remove-title">Remove two-factor authentication?</h2>
+                            <p class="account-help">Enter a current authenticator code to confirm this security change.</p>
+                        </div>
+                        <button type="button" class="dialog-close" data-close-dialog aria-label="Close">×</button>
+                    </div>
+                    <label for="mfa-remove-code">Authenticator code</label>
+                    <input id="mfa-remove-code" name="code" inputmode="numeric" autocomplete="one-time-code"
+                        pattern="[0-9]{6}" maxlength="6" required>
+                    <p id="mfa-remove-status" class="account-message" role="status" aria-live="polite"></p>
+                    <button type="submit" id="mfa-remove-confirm" class="account-button account-button-secondary">Remove 2FA</button>
+                </form>
+            </dialog>
         </main>
 
         <p id="account-loading" class="account-loading" role="status">Loading account…</p>
@@ -142,7 +160,7 @@
         </footer>
     </div>
 
-    <script type="module" src="assets/js/profile.js"></script>
+    <script type="module" src="assets/js/profile.js?v=3"></script>
     <script type="module" src="assets/js/session.js?v=8"></script>
 </body>
 

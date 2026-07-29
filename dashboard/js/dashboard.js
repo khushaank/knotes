@@ -1,5 +1,6 @@
 import { supabase } from '../../assets/js/supabaseClient.js?v=2';
 import { requireApprovedMember } from '../../assets/js/routeGuard.js?v=2';
+import { mediaMarkdown, renderMediaLibrary, uploadMediaWithDetails } from '../../assets/js/mediaLibrary.js?v=1';
 
 await requireApprovedMember();
 
@@ -94,6 +95,7 @@ let myWrittenComments = [];
 async function initDashboard() {
     await checkUserAuth();
     setupSidebar();
+    setupDashboardMedia();
 }
 
 if (document.readyState === 'loading') {
@@ -693,8 +695,35 @@ function setupSidebar() {
             if (targetTab) targetTab.classList.remove('hidden');
 
             window.history.replaceState(null, '', '#' + targetId);
+            if (targetId === 'media-section') loadDashboardMedia();
         });
     });
+}
+
+async function loadDashboardMedia() {
+    const grid = document.getElementById('dashboard-media-grid');
+    if (grid) await renderMediaLibrary(grid, { manage: true });
+}
+
+function setupDashboardMedia() {
+    const uploadButton = document.getElementById('dashboard-upload-button');
+    const input = document.getElementById('dashboard-media-input');
+    uploadButton?.addEventListener('click', () => input.click());
+    input?.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file) return;
+        uploadButton.disabled = true;
+        const result = await uploadMediaWithDetails(file);
+        uploadButton.disabled = false;
+        if (result.error) showToast(result.error, 'error');
+        else if (!result.cancelled) {
+            showToast('File uploaded.', 'success');
+            await loadDashboardMedia();
+        }
+    });
+    document.getElementById('create-post-button')?.addEventListener('click', () => openEditPostDialog(null));
+    if (window.location.hash === '#media-section') loadDashboardMedia();
 }
 
 // =============================================
@@ -931,7 +960,27 @@ function clearPostCaches(slug) {
         .forEach(key => localStorage.removeItem(key));
 }
 
+function openMediaPicker(target) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'kn-media-dialog kn-media-preview-dialog';
+    dialog.innerHTML = '<div class="kn-media-dialog-card"><div class="kn-media-dialog-head"><h2>Media &amp; Work</h2><button type="button" class="kn-media-icon-button" aria-label="Close">×</button></div><div class="kn-media-dialog-body"><div class="picker-grid"></div></div></div>';
+    dialog.querySelector('button').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    document.body.append(dialog);
+    renderMediaLibrary(dialog.querySelector('.picker-grid'), {
+        manage: true,
+        onInsert(media) {
+            const start = target.selectionStart;
+            target.setRangeText(mediaMarkdown(media), start, target.selectionEnd, 'end');
+            dialog.close();
+            target.focus();
+        }
+    });
+    dialog.showModal();
+}
+
 function openEditPostDialog(post) {
+    const creating = !post;
     const existing = document.getElementById('edit-post-dialog');
     if (existing) existing.remove();
 
@@ -947,12 +996,14 @@ function openEditPostDialog(post) {
 
     const heading = document.createElement('h2');
     heading.id = 'edit-post-title';
-    heading.textContent = 'Edit post';
+    heading.textContent = creating ? 'Create post' : 'Edit post';
     heading.setAttribute('style', 'margin:0 0 6px;font-size:20px;');
     form.appendChild(heading);
 
     const note = document.createElement('p');
-    note.textContent = 'Your post URL stays the same. Readers will see that it was edited.';
+    note.textContent = creating
+        ? 'Write and publish without leaving your dashboard.'
+        : 'Your post URL stays the same. Readers will see that it was edited.';
     note.setAttribute('style', 'margin:0 0 18px;color:var(--text-secondary,#64748b);font-size:13px;');
     form.appendChild(note);
 
@@ -973,8 +1024,8 @@ function openEditPostDialog(post) {
         fields[name] = control;
     };
 
-    addField('Title', 'title', post.title);
-    addField('Link (optional)', 'url', post.url);
+    addField('Title', 'title', post?.title);
+    addField('Link (optional)', 'url', post?.url);
 
     const categoryLabel = document.createElement('label');
     categoryLabel.textContent = 'Post type';
@@ -985,12 +1036,19 @@ function openEditPostDialog(post) {
         const option = document.createElement('option');
         option.value = value;
         option.textContent = label;
-        option.selected = value === post.category;
+        option.selected = value === (post?.category || 'article');
         category.appendChild(option);
     });
     categoryLabel.appendChild(category);
     form.appendChild(categoryLabel);
-    addField('Post text', 'content', post.content, 'textarea');
+    addField('Post text', 'content', post?.content, 'textarea');
+    const mediaButton = document.createElement('button');
+    mediaButton.type = 'button';
+    mediaButton.className = 'btn btn-secondary';
+    mediaButton.textContent = 'Add or manage media';
+    mediaButton.setAttribute('style', 'margin-top:10px;');
+    mediaButton.addEventListener('click', () => openMediaPicker(fields.content));
+    form.appendChild(mediaButton);
 
     const actions = document.createElement('div');
     actions.setAttribute('style', 'display:flex;justify-content:flex-end;gap:10px;margin-top:20px;');
@@ -1002,7 +1060,7 @@ function openEditPostDialog(post) {
     const save = document.createElement('button');
     save.type = 'submit';
     save.className = 'btn btn-primary';
-    save.textContent = 'Save changes';
+    save.textContent = creating ? 'Publish post' : 'Save changes';
     actions.append(cancel, save);
     form.appendChild(actions);
 
@@ -1026,21 +1084,30 @@ function openEditPostDialog(post) {
 
         save.disabled = true;
         save.textContent = 'Saving…';
-        const { error } = await supabase
-            .from('blogs')
-            .update({ title, url, content, category: category.value, updated_at: new Date().toISOString() })
-            .eq('id', post.id)
-            .eq('author_id', currentUser.id);
+        const query = creating
+            ? supabase.from('blogs').insert({
+                title,
+                url,
+                content,
+                category: category.value,
+                slug: crypto.randomUUID().replaceAll('-', '')
+            })
+            : supabase
+                .from('blogs')
+                .update({ title, url, content, category: category.value, updated_at: new Date().toISOString() })
+                .eq('id', post.id)
+                .eq('author_id', currentUser.id);
+        const { error } = await query;
         if (error) {
             showToast('Could not save: ' + error.message, 'error');
             save.disabled = false;
-            save.textContent = 'Save changes';
+            save.textContent = creating ? 'Publish post' : 'Save changes';
             return;
         }
 
-        clearPostCaches(post.slug);
+        if (!creating) clearPostCaches(post.slug);
         overlay.remove();
-        showToast('Post updated. Readers can now see it was edited.', 'success');
+        showToast(creating ? 'Post published.' : 'Post updated. Readers can now see it was edited.', 'success');
         await loadCreatorData();
     });
 

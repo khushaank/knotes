@@ -155,7 +155,7 @@ assert.match(invitationMigration, /for update/i, 'single-use invitation redempti
 assert.match(invitationMigration, /used_at is null/i, 'used invitation codes must be rejected');
 assert.match(invitationMigration, /email = lower\(new\.email\)/i, 'invitation codes must be tied to the invited email');
 assert.match(profile, /auth\.mfa\.enroll/i, 'profile must support TOTP enrollment');
-assert.doesNotMatch(profile, /auth\.mfa\.unenroll/i, 'mandatory MFA must not be disableable in the browser');
+assert.match(profile, /challengeAndVerify[\s\S]+auth\.mfa\.unenroll/i, 'MFA removal must require a fresh authenticator proof');
 assert.match(profile, /rpc\('complete_invited_membership'\)/i, 'verified MFA must complete invited membership server-side');
 assert.match(invitationMigration, /auth\.jwt\(\)\s*->>\s*'aal'[\s\S]+aal2/i, 'private membership must require an AAL2 session');
 assert.match(invitationMigration, /create trigger secure_blog_insert[\s\S]+handle_blog_insert/i, 'server post controls must be attached to inserts');
