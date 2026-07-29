@@ -593,15 +593,16 @@ body.sidebar-collapsed .nav-item.active {
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 6px;
+    gap: 8px;
 }
 
 .row-action-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 34px;
-    padding: 6px 10px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--bg-card);
@@ -1280,10 +1281,7 @@ tbody tr:hover {
         justify-content: flex-end;
     }
 
-    .row-action-button {
-        min-height: 40px;
-        padding: 8px 12px;
-    }
+    .row-action-button { width: 44px; height: 44px; padding: 0; }
 
     .desktop-only-admin-toggle {
         display: none !important;

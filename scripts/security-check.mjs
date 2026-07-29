@@ -102,10 +102,10 @@ assert.doesNotMatch(interceptor, /window\.location\.href\s*=\s*exitUrl/, 'ordina
 assert.match(interceptor, /relList\.add\('noopener'\)/, 'external links must receive noopener');
 assert.doesNotMatch(interceptor, /\bexport\s+\{/, 'classic interceptor script must not use ES module exports');
 assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration must bypass HTTP cache');
-assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
+assert.match(session, /requireApprovedMember\(\)/, 'private pages must invoke the approved-member route guard');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
-assert.match(serviceWorker, /knotes-v22/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /knotes-v23/, 'service-worker cache must be bumped after changing route delivery');
 assert.match(serviceWorker, /\(\?:css\|img\|js\|vendor\)/, 'service worker must revalidate vendored browser dependencies');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
 assert.ok(

@@ -10,6 +10,20 @@ function loginDestination() {
     return '/home';
 }
 
+function cacheLoginIdentity(user, fallbackEmail = '') {
+    const email = user?.email || fallbackEmail;
+    const username = user?.user_metadata?.username || email.split('@')[0] || 'member';
+    try {
+        sessionStorage.setItem('kn-auth-cache', JSON.stringify({
+            username,
+            isAdmin: false,
+            themePreference: localStorage.getItem('kn-theme-preference') || 'system'
+        }));
+    } catch {
+        // Login still works when storage is unavailable in strict privacy modes.
+    }
+}
+
 function getLoginAttempts() {
     try {
         const parsed = JSON.parse(localStorage.getItem(LOGIN_ATTEMPT_KEY) || '{}');
@@ -93,7 +107,7 @@ function clearFailedLogins() {
             loginBtn.disabled = true;
             loginBtn.textContent = 'logging in...';
 
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -105,6 +119,7 @@ function clearFailedLogins() {
                 loginBtn.textContent = 'login';
             } else {
                 clearFailedLogins();
+                cacheLoginIdentity(data.user, email);
                 const needsMfa = await prepareMfaChallenge(showMessage);
                 if (!needsMfa) {
                     showMessage('Logged in successfully! Redirecting...', false);
@@ -185,6 +200,7 @@ function clearFailedLogins() {
     if (!hash.includes('type=recovery') && urlParams.get('type') !== 'recovery') {
         supabase?.auth.getSession().then(async ({ data }) => {
             if (!data.session) return;
+            cacheLoginIdentity(data.session.user);
             const needsMfa = await prepareMfaChallenge(showMessage);
             if (!needsMfa) window.location.href = loginDestination();
         });

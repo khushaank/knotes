@@ -63,7 +63,17 @@
                     <div id="mfa-enabled" class="mfa-enabled" hidden>
                         <span class="mfa-check" aria-hidden="true">✓</span>
                         <span>2FA is enabled</span>
-                        <button type="button" id="mfa-remove-open" class="account-button account-button-secondary">Remove 2FA</button>
+                        <button type="button" id="mfa-remove-open"
+                            class="account-icon-button account-icon-danger"
+                            aria-label="Remove two-factor authentication"
+                            title="Remove two-factor authentication">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
                     </div>
                     <p id="mfa-status" class="account-message" role="status" aria-live="polite"></p>
                 </section>
@@ -146,7 +156,15 @@
                     <input id="mfa-remove-code" name="code" inputmode="numeric" autocomplete="one-time-code"
                         pattern="[0-9]{6}" maxlength="6" required>
                     <p id="mfa-remove-status" class="account-message" role="status" aria-live="polite"></p>
-                    <button type="submit" id="mfa-remove-confirm" class="account-button account-button-secondary">Remove 2FA</button>
+                    <button type="submit" id="mfa-remove-confirm" class="account-button account-button-danger">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Remove 2FA
+                    </button>
                 </form>
             </dialog>
         </main>

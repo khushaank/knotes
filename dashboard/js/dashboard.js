@@ -73,7 +73,9 @@ function createRowAction(label, icon, onClick, danger = false) {
     button.type = 'button';
     button.className = `row-action-button${danger ? ' danger' : ''}`;
     button.setAttribute('aria-label', label);
-    button.append(icon, document.createTextNode(label));
+    button.title = label;
+    icon.style.marginRight = '0';
+    button.append(icon);
     button.addEventListener('click', onClick);
     return button;
 }
@@ -151,6 +153,15 @@ async function checkUserAuth() {
     }
 
     currentUser = session.user;
+    currentProfile = {
+        id: currentUser.id,
+        username: currentUser.email.split('@')[0]
+    };
+
+    // The session is local and RLS still protects every query. Reveal the shell
+    // before optional profile decoration so returning users never wait on it.
+    document.getElementById('loading-overlay')?.classList.add('hidden');
+    document.getElementById('admin-dashboard')?.classList.remove('hidden');
 
     // Fetch user profile to get creator details
     const { data: profile, error } = await supabase
@@ -160,17 +171,10 @@ async function checkUserAuth() {
         .single();
 
     if (error || !profile) {
-        currentProfile = {
-            id: currentUser.id,
-            username: currentUser.email.split('@')[0]
-        };
+        // Keep the immediate email-based fallback.
     } else {
         currentProfile = profile;
     }
-
-    // Hide loader, show dashboard shell
-    document.getElementById('loading-overlay')?.classList.add('hidden');
-    document.getElementById('admin-dashboard')?.classList.remove('hidden');
 
     // Register Logout
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
@@ -650,7 +654,7 @@ function setupSidebar() {
 
     if (brandToggle && sidebar) {
         const savedState = localStorage.getItem('kn-dashboard-sidebar-collapsed');
-        document.body.classList.toggle('sidebar-collapsed', savedState !== 'false');
+        document.body.classList.toggle('sidebar-collapsed', savedState === 'true');
 
         const syncToggle = () => {
             const collapsed = document.body.classList.contains('sidebar-collapsed');

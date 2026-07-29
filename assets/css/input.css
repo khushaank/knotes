@@ -1075,11 +1075,16 @@ html.dark .account-body {
 }
 
 .mfa-enabled {
-    display: inline-flex;
+    display: flex;
+    width: 100%;
     align-items: center;
     gap: 8px;
     color: #087a45;
     font-weight: 700;
+}
+
+.mfa-enabled .account-icon-button {
+    margin-left: auto;
 }
 
 html.dark .mfa-enabled {
@@ -1173,6 +1178,45 @@ html.dark .mfa-enabled {
     min-height: 21px;
     margin: 4px 0;
     color: var(--account-muted);
+}
+
+.account-button-danger {
+    gap: 8px;
+    border-color: #b91c1c;
+    background: #b91c1c;
+    color: #fff;
+}
+
+.account-icon-button {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    padding: 0;
+    border: 1px solid var(--account-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--account-text);
+    cursor: pointer;
+    place-items: center;
+}
+
+.account-icon-danger {
+    color: #b42318;
+}
+
+.account-icon-danger:hover {
+    border-color: #b42318;
+    background: #fff1f0;
+}
+
+html.dark .account-icon-danger {
+    color: #fca5a5;
+}
+
+html.dark .account-icon-danger:hover {
+    border-color: #f87171;
+    background: #451a1a;
 }
 
 .account-message:empty {
@@ -1319,6 +1363,15 @@ body>div:first-child>header:first-child>div>div:last-child {
     white-space: nowrap;
 }
 
+/* Prevent the static "login" link from flashing before cached auth is applied. */
+.kn-site-header .kn-header-auth {
+    visibility: hidden;
+}
+
+html.auth-ui-ready .kn-site-header .kn-header-auth {
+    visibility: visible;
+}
+
 .kn-header-current,
 .kn-site-header [aria-current="page"] {
     font-weight: 700;
@@ -1345,7 +1398,7 @@ body>div:first-child>header:first-child>div>div:last-child {
         visibility: hidden;
     }
 
-    .kn-header-auth {
+    html.auth-ui-ready .kn-header-auth {
         visibility: visible;
     }
 

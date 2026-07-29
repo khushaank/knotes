@@ -423,6 +423,7 @@ function applyAuthUI(username) {
     profile.append(name, compactName);
     auth.replaceChildren(profile);
     syncHeaderLabels();
+    document.documentElement.classList.add('auth-ui-ready');
 }
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
@@ -431,34 +432,35 @@ function applyAuthUI(username) {
     ? document.addEventListener.bind(document, 'DOMContentLoaded')
     : (cb) => cb()
 )(async () => {
-    if (PRIVATE_PAGE) await requireApprovedMember();
-    else document.documentElement.classList.add('access-ready');
     setupInstallPrompt();
     enhanceFormAccessibility();
     if (!HEADERLESS_PAGES.has(PAGE_NAME)) {
         renderSharedHeader();
         syncHeaderLabels();
     }
-    document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
-    if (!supabase) {
-        if (PRIVATE_PAGE) window.location.replace(APP_ROOT);
-        else document.body.style.visibility = 'visible';
-        return;
-    }
 
-    // STEP 1 — Instant render from cache (zero network)
+    // Render the last verified display identity before any network request.
+    // Server-side RLS remains authoritative for all private data.
     const cached = getCachedAuth();
-    if (cached && cached.username) {
+    if (cached?.username) {
         applyAuthUI(cached.username);
         applyTheme(cached.themePreference || 'system');
-    }
-
-    // Show body immediately when we have cached state — no flicker
-    if (cached) {
         document.body.style.visibility = 'visible';
     }
 
-    // STEP 2 — Background validation
+    if (PRIVATE_PAGE) await requireApprovedMember();
+    else document.documentElement.classList.add('access-ready');
+    document.querySelectorAll('a[href*="profile?user="]').forEach(link => link.replaceWith(document.createTextNode(link.textContent)));
+    if (!supabase) {
+        if (PRIVATE_PAGE) window.location.replace(APP_ROOT);
+        else {
+            document.documentElement.classList.add('auth-ui-ready');
+            document.body.style.visibility = 'visible';
+        }
+        return;
+    }
+
+    // Background validation
     try {
         const [maintResult, sessionResult] = await Promise.all([
             supabase.from('site_settings').select('value').eq('id', 'maintenance_mode').maybeSingle(),
@@ -477,20 +479,6 @@ function applyAuthUI(username) {
             clearCachedAuth();
             window.location.replace(APP_ROOT);
             return;
-        }
-
-        if (session?.user && PRIVATE_PAGE) {
-            const { data: membership } = await supabase
-                .from('profiles')
-                .select('membership_status')
-                .eq('id', session.user.id)
-                .single();
-            if (membership?.membership_status !== 'approved') {
-                clearCachedAuth();
-                await supabase.auth.signOut();
-                window.location.replace('/?access=review');
-                return;
-            }
         }
 
         if (session && session.user) {
@@ -551,10 +539,12 @@ function applyAuthUI(username) {
         }
 
         document.body.style.visibility = 'visible';
+        document.documentElement.classList.add('auth-ui-ready');
 
     } catch (err) {
         console.error('Session error:', err);
         document.body.style.visibility = 'visible';
+        document.documentElement.classList.add('auth-ui-ready');
     }
 
     // Failsafe — always show body after 2.5s
