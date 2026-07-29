@@ -31,7 +31,7 @@
     <script defer src="../assets/vendor/chart.umd.js"></script>
 </head>
 
-<body>
+<body class="sidebar-collapsed">
 
     <div id="loading-overlay"
         style="position:fixed; inset:0; z-index:1000; background:var(--bg-body); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;">
@@ -41,8 +41,15 @@
     <div id="admin-dashboard" class="dashboard-shell hidden">
 
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand" id="sidebar-brand-toggle" title="Toggle Sidebar">
+            <div class="sidebar-brand">
                 <span class="brand-text">K. Notes</span>
+                <button type="button" id="sidebar-brand-toggle" class="sidebar-toggle"
+                    aria-label="Expand sidebar" aria-expanded="false" title="Expand sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2" aria-hidden="true">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-target="overview-section">

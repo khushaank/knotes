@@ -647,8 +647,24 @@ function setupSidebar() {
     const brandToggle = document.getElementById('sidebar-brand-toggle');
 
     if (brandToggle && sidebar) {
+        const savedState = localStorage.getItem('kn-dashboard-sidebar-collapsed');
+        document.body.classList.toggle('sidebar-collapsed', savedState !== 'false');
+
+        const syncToggle = () => {
+            const collapsed = document.body.classList.contains('sidebar-collapsed');
+            brandToggle.setAttribute('aria-expanded', String(!collapsed));
+            brandToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+            brandToggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+        };
+        syncToggle();
+
         brandToggle.addEventListener('click', () => {
             document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem(
+                'kn-dashboard-sidebar-collapsed',
+                String(document.body.classList.contains('sidebar-collapsed'))
+            );
+            syncToggle();
         });
     }
 

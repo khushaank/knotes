@@ -39,7 +39,7 @@ codeForm.addEventListener('submit', async event => {
   codeForm.reset();
   codeForm.hidden = true;
   accountForm.hidden = false;
-  document.getElementById('step-number').textContent = '02';
+  document.getElementById('step-number').textContent = '2';
   document.getElementById('invitation-name').focus();
 });
 

@@ -828,11 +828,18 @@ html.dark .account-body {
 
 .account-heading {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 24px;
     padding-bottom: 24px;
     border-bottom: 1px solid var(--account-border);
+}
+
+.account-heading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .account-eyebrow {
@@ -860,7 +867,7 @@ html.dark .account-body {
 
 .account-grid {
     display: grid;
-    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     margin-top: 24px;
 }
@@ -906,10 +913,16 @@ html.dark .account-body {
 }
 
 .account-panel {
-    padding: 24px;
+    display: flex;
+    min-height: 116px;
+    padding: 18px;
     border: 1px solid var(--account-border);
     border-radius: 8px;
     background: var(--account-surface);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .account-panel h2 {
@@ -940,13 +953,14 @@ html.dark .account-body {
 .password-form {
     display: grid;
     gap: 8px;
-    margin-top: 24px;
+    margin-top: 18px;
 }
 
 .theme-form {
-    display: grid;
+    display: flex;
+    width: 100%;
     gap: 8px;
-    margin-top: 24px;
+    align-items: center;
 }
 
 .theme-form label {
@@ -956,6 +970,7 @@ html.dark .account-body {
 }
 
 .theme-form select {
+    width: 100%;
     min-height: 44px;
     border: 1px solid var(--account-border);
     border-radius: 6px;
@@ -964,19 +979,7 @@ html.dark .account-body {
     color: var(--account-text);
 }
 
-@media (min-width: 640px) {
-    .theme-form {
-        grid-template-columns: 80px minmax(0, 1fr);
-        align-items: center;
-    }
-
-    .theme-form .account-message {
-        grid-column: 2;
-    }
-}
-
-.password-form input[type="password"],
-.password-form input[type="text"] {
+.password-form input {
     width: 100%;
     min-height: 44px;
     margin-bottom: 8px;
@@ -986,6 +989,126 @@ html.dark .account-body {
     background: var(--account-bg) !important;
     color: var(--account-text) !important;
     font: inherit;
+}
+
+.account-dialog {
+    width: min(92vw, 430px);
+    max-height: min(88vh, 640px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--account-border);
+    border-radius: 12px;
+    background: var(--account-surface);
+    color: var(--account-text);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+}
+
+.account-dialog::backdrop {
+    background: rgba(20, 14, 11, .58);
+    backdrop-filter: blur(3px);
+}
+
+.account-dialog[open] {
+    animation: account-dialog-in 180ms ease-out;
+}
+
+.dialog-card {
+    padding: 22px;
+}
+
+.dialog-card.password-form {
+    margin-top: 0;
+}
+
+.dialog-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.dialog-heading h2 {
+    margin: 0;
+    color: var(--account-text);
+    font-size: 20px;
+}
+
+.dialog-close {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--account-muted);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    place-items: center;
+}
+
+.dialog-close:hover {
+    background: var(--account-bg);
+    color: var(--account-text);
+}
+
+.mfa-qr {
+    display: block;
+    width: min(176px, 52vw);
+    height: auto;
+    margin: 4px auto 14px;
+    border: 8px solid #fff;
+    border-radius: 8px;
+}
+
+.mfa-secret {
+    color: var(--account-muted);
+    font-size: 12px;
+}
+
+.mfa-secret code {
+    overflow-wrap: anywhere;
+    color: var(--account-text);
+}
+
+.mfa-enabled {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #087a45;
+    font-weight: 700;
+}
+
+html.dark .mfa-enabled {
+    color: #6ee7a8;
+}
+
+.mfa-check {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0f9f5c;
+    color: #fff;
+    place-items: center;
+}
+
+.mfa-enabled-confirmed .mfa-check {
+    animation: mfa-confirm 520ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes account-dialog-in {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mfa-confirm {
+    0% { transform: scale(.5); }
+    55% { transform: scale(1.22); }
+    100% { transform: scale(1); }
 }
 
 .password-form input:focus-visible,
@@ -1052,6 +1175,10 @@ html.dark .account-body {
     color: var(--account-muted);
 }
 
+.account-message:empty {
+    display: none;
+}
+
 .account-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1090,6 +1217,14 @@ html.dark .account-body {
         flex-direction: column;
     }
 
+    .account-heading-actions {
+        justify-content: stretch;
+    }
+
+    .account-heading-actions > * {
+        flex: 1 1 auto;
+    }
+
     .account-grid {
         grid-template-columns: 1fr;
     }
@@ -1101,6 +1236,10 @@ html.dark .account-body {
 
     .account-panel {
         padding: 20px 16px;
+    }
+
+    .dialog-card {
+        padding: 18px;
     }
 }
 

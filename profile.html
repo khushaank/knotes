@@ -28,25 +28,19 @@
         <main id="account-page" class="account-page" hidden>
             <div class="account-heading">
                 <div>
-                    <p class="account-eyebrow">Private account</p>
                     <h1>Account settings</h1>
-                    <p>Manage your login and open your creator dashboard.</p>
                 </div>
-                <a href="/dashboard/" class="account-button account-button-primary">Open dashboard</a>
+                <div class="account-heading-actions">
+                    <button type="button" id="profile-logout" class="account-button account-button-secondary">Sign out</button>
+                    <a href="/dashboard/" class="account-button account-button-primary">Open dashboard</a>
+                </div>
             </div>
 
             <div class="account-grid">
-                <section class="account-panel" aria-labelledby="account-details-title">
-                    <h2 id="account-details-title">Account</h2>
-                    <p class="account-help">This private page is only available while you are signed in.</p>
-                    <button type="button" id="profile-logout" class="account-button account-button-secondary">Sign out</button>
-                </section>
-
                 <section class="account-panel" aria-labelledby="theme-title">
-                    <h2 id="theme-title">Appearance</h2>
-                    <p class="account-help">Choose how K. Notes looks on this account.</p>
+                    <h2 id="theme-title">Theme</h2>
                     <form id="theme-form" class="theme-form">
-                        <label for="theme-preference">Theme</label>
+                        <label class="sr-only" for="theme-preference">Theme</label>
                         <select id="theme-preference" name="theme-preference">
                             <option value="system">Use device setting</option>
                             <option value="light">Light</option>
@@ -57,49 +51,23 @@
                 </section>
 
                 <section class="account-panel" aria-labelledby="password-title">
-                    <h2 id="password-title">Change password</h2>
-                    <p class="account-help">Use at least 12 characters and avoid reusing another password.</p>
-
-                    <form id="password-form" class="password-form">
-                        <label for="current-password">Current password</label>
-                        <input id="current-password" name="current-password" type="password" autocomplete="current-password" required>
-
-                        <label for="new-password">New password</label>
-                        <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
-
-                        <label for="confirm-password">Confirm new password</label>
-                        <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
-
-                        <label class="password-visibility">
-                            <input id="show-passwords" type="checkbox">
-                            <span>Show passwords</span>
-                        </label>
-
-                        <p id="password-status" class="account-message" role="status" aria-live="polite"></p>
-                        <button type="submit" id="password-save" class="account-button account-button-primary">Update password</button>
-                    </form>
+                    <h2 id="password-title">Password</h2>
+                    <button type="button" id="password-open" class="account-button account-button-secondary">Change your password</button>
                 </section>
 
                 <section class="account-panel" aria-labelledby="mfa-title">
                     <h2 id="mfa-title">Two-factor authentication</h2>
-                    <p class="account-help">Require a fresh six-digit code from your authenticator app when you sign in.</p>
-                    <div class="account-actions">
+                    <div id="mfa-disabled">
                         <button type="button" id="mfa-start" class="account-button account-button-primary">Set up 2FA</button>
                     </div>
-                    <div id="mfa-enrollment" hidden>
-                        <img id="mfa-qr" width="180" height="180" alt="Authenticator setup QR code">
-                        <p class="account-help">If you cannot scan the code, enter this secret: <code id="mfa-secret"></code></p>
-                        <form id="mfa-enrollment-form" class="password-form">
-                            <label for="mfa-enrollment-code">Authenticator code</label>
-                            <input id="mfa-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code"
-                                pattern="[0-9]{6}" maxlength="6" required>
-                            <button type="submit" class="account-button account-button-primary">Verify and enable</button>
-                        </form>
+                    <div id="mfa-enabled" class="mfa-enabled" hidden>
+                        <span class="mfa-check" aria-hidden="true">✓</span>
+                        <span>2FA is enabled</span>
                     </div>
                     <p id="mfa-status" class="account-message" role="status" aria-live="polite"></p>
                 </section>
 
-                <section class="account-panel account-hidden-panel" aria-labelledby="hidden-items-title">
+                <section id="hidden-items-panel" class="account-panel account-hidden-panel" aria-labelledby="hidden-items-title" hidden>
                     <div class="hidden-items-heading">
                         <div>
                             <h2 id="hidden-items-title">Hidden items</h2>
@@ -112,6 +80,57 @@
                     </div>
                 </section>
             </div>
+
+            <dialog id="password-dialog" class="account-dialog" aria-labelledby="password-dialog-title">
+                <form id="password-form" class="dialog-card password-form">
+                    <div class="dialog-heading">
+                        <div>
+                            <h2 id="password-dialog-title">Change your password</h2>
+                            <p class="account-help">Use at least 12 characters and a password you do not reuse.</p>
+                        </div>
+                        <button type="button" class="dialog-close" data-close-dialog aria-label="Close">×</button>
+                    </div>
+
+                    <label for="current-password">Current password</label>
+                    <input id="current-password" name="current-password" type="password" autocomplete="current-password" required>
+                    <label for="new-password">New password</label>
+                    <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
+                    <label for="confirm-password">Confirm new password</label>
+                    <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+                    <label class="password-visibility">
+                        <input id="show-passwords" type="checkbox">
+                        <span>Show passwords</span>
+                    </label>
+                    <p id="password-status" class="account-message" role="status" aria-live="polite"></p>
+                    <button type="submit" id="password-save" class="account-button account-button-primary">Update password</button>
+                </form>
+            </dialog>
+
+            <dialog id="mfa-dialog" class="account-dialog" aria-labelledby="mfa-dialog-title">
+                <div class="dialog-card">
+                    <div class="dialog-heading">
+                        <div>
+                            <h2 id="mfa-dialog-title">Secure your account</h2>
+                            <p class="account-help">Scan with an authenticator app, then enter its six-digit code.</p>
+                        </div>
+                        <button type="button" class="dialog-close" data-close-dialog aria-label="Close">×</button>
+                    </div>
+                    <p id="mfa-dialog-status" class="account-message" role="status" aria-live="polite"></p>
+                    <div id="mfa-setup-content" hidden>
+                        <img id="mfa-qr" class="mfa-qr" width="176" height="176" alt="Authenticator setup QR code">
+                        <details class="mfa-secret">
+                            <summary>Can’t scan the code?</summary>
+                            <p>Enter this secret manually: <code id="mfa-secret"></code></p>
+                        </details>
+                        <form id="mfa-enrollment-form" class="password-form">
+                            <label for="mfa-enrollment-code">Authenticator code</label>
+                            <input id="mfa-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code"
+                                pattern="[0-9]{6}" maxlength="6" required>
+                            <button type="submit" id="mfa-verify" class="account-button account-button-primary">Verify and enable</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
         </main>
 
         <p id="account-loading" class="account-loading" role="status">Loading account…</p>

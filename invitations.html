@@ -6,90 +6,82 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="description" content="Redeem a private K. Notes invitation.">
-  <meta name="theme-color" content="#090a08">
+  <meta name="theme-color" content="#ff6600">
   <title>Invitation — K. Notes</title>
   <link rel="icon" href="assets/img/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/landing.css?v=4">
+  <link rel="stylesheet" href="assets/css/landing.css?v=1">
+  <link rel="stylesheet" href="assets/css/invitations.css?v=1">
 </head>
 
 <body class="invitation-page">
   <header class="site-header">
     <a class="brand" href="/" aria-label="K. Notes home">
-      <span class="brand-mark" aria-hidden="true">K</span>
+      <img src="assets/img/logo.png" alt="" width="28" height="28">
       <span>K. Notes</span>
     </a>
     <nav aria-label="Invitation navigation">
       <a href="/">About</a>
-      <a class="button compact" href="login">Sign in</a>
+      <a class="sign-in" href="login">Sign in</a>
     </nav>
   </header>
 
-  <main class="invitation-shell">
-    <section class="invitation-copy" aria-labelledby="invitation-title">
-      <p class="eyebrow"><span></span> Invitation protocol</p>
-      <h1 id="invitation-title">Your key<br>to the room.</h1>
-      <p>Start with the private code sent to you. Account creation stays locked until Supabase verifies the exact, unused invitation.</p>
-      <div class="security-note">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6l-7-3Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <p><strong>Single-use and email-bound.</strong><br>The raw code is never stored in the database.</p>
+  <main>
+    <section class="request invitation-request" aria-labelledby="invitation-title">
+      <div class="request-copy">
+        <p class="section-label">Private invitation · Step <span id="step-number">1</span> of 2</p>
+        <h1 id="invitation-title">Your invitation to a smaller room.</h1>
+        <p>Enter the personal code sent to you. It is single-use, email-bound, and the raw code is never stored.</p>
       </div>
-    </section>
 
-    <section class="invitation-card" aria-labelledby="redeem-title">
-      <div class="step-marker"><span id="step-number">01</span><span>OF 02</span></div>
+      <div class="invitation-card">
+        <form id="code-form">
+          <h2>Verify your invitation.</h2>
+          <p class="form-intro">Paste the secure code from your invitation email.</p>
 
-      <form id="code-form">
-        <p class="section-index">VERIFY ACCESS</p>
-        <h2 id="redeem-title">Enter your invitation.</h2>
-        <p class="form-intro">Paste the secure code from your invitation email.</p>
+          <label for="invitation-code">Invitation code</label>
+          <input class="code-input" id="invitation-code" name="code" autocomplete="one-time-code"
+            autocapitalize="characters" spellcheck="false" maxlength="40" required
+            aria-describedby="code-help">
+          <p class="field-help" id="code-help">Codes are personal, case-insensitive, and can only be used once.</p>
 
-        <label for="invitation-code">Invitation code</label>
-        <input class="code-input" id="invitation-code" name="code" autocomplete="one-time-code"
-          autocapitalize="characters" spellcheck="false" maxlength="40" required
-          aria-describedby="code-help">
-        <p class="field-help" id="code-help">Codes are personal, case-insensitive, and can only be used once.</p>
+          <button class="button primary" type="submit">Verify invitation</button>
+          <p class="form-status" id="code-status" role="status" aria-live="polite"></p>
+        </form>
 
-        <button class="button primary" type="submit">Verify invitation <span aria-hidden="true">→</span></button>
-        <p class="form-status" id="code-status" role="status" aria-live="polite"></p>
-      </form>
+        <form id="account-form" hidden>
+          <p class="section-label">Invitation verified</p>
+          <h2>Create your account.</h2>
+          <p class="form-intro">Use the email address that received this invitation.</p>
 
-      <form id="account-form" hidden>
-        <p class="section-index verified-label"><span aria-hidden="true">✓</span> INVITATION VERIFIED</p>
-        <h2>Create your account.</h2>
-        <p class="form-intro">This invitation is valid for the email address it was issued to.</p>
+          <label for="invitation-name">Name</label>
+          <input id="invitation-name" name="name" autocomplete="name" maxlength="80" required>
 
-        <label for="invitation-name">Your name</label>
-        <input id="invitation-name" name="name" autocomplete="name" maxlength="80" required>
+          <label for="invitation-email">Invited email</label>
+          <input id="invitation-email" name="email" type="email" autocomplete="email" maxlength="254" required>
 
-        <label for="invitation-email">Invited email</label>
-        <input id="invitation-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+          <label for="invitation-password">Password</label>
+          <input id="invitation-password" name="password" type="password" autocomplete="new-password" minlength="12" required>
+          <p class="field-help">Use at least 12 characters.</p>
 
-        <label for="invitation-password">Password</label>
-        <input id="invitation-password" name="password" type="password" autocomplete="new-password" minlength="12" required>
-        <p class="field-help">Use at least 12 characters.</p>
+          <label for="invitation-confirm">Confirm password</label>
+          <input id="invitation-confirm" name="confirm" type="password" autocomplete="new-password" minlength="12" required>
 
-        <label for="invitation-confirm">Confirm password</label>
-        <input id="invitation-confirm" name="confirm" type="password" autocomplete="new-password" minlength="12" required>
-
-        <button class="button primary" type="submit">Create private account <span aria-hidden="true">→</span></button>
-        <p class="form-status" id="account-status" role="status" aria-live="polite"></p>
-      </form>
+          <button class="button primary" type="submit">Create private account</button>
+          <p class="form-status" id="account-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
     </section>
   </main>
 
   <footer>
-    <a class="brand" href="/">
-      <span class="brand-mark" aria-hidden="true">K</span>
-      <span>K. Notes</span>
-    </a>
-    <p>Invitation codes are personal and single-use.</p>
-    <div class="footer-links"><a href="mailto:uniquevara@gmail.com">Need help?</a></div>
+    <div>
+      <strong>K. Notes</strong>
+      <p>Invitation codes are personal and single-use.</p>
+    </div>
+    <div class="footer-links">
+      <a href="mailto:uniquevara@gmail.com">Need help?</a>
+      <a href="login">Member sign in</a>
+    </div>
   </footer>
 
   <script type="module" src="assets/js/invitations.js?v=2"></script>

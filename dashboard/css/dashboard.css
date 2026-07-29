@@ -220,11 +220,11 @@ body {
 .sidebar-brand {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     padding: 20px 18px;
     border-bottom: 1px solid var(--border);
     transition: background var(--transition), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
     overflow: hidden;
 }
 
@@ -253,6 +253,33 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.sidebar-toggle {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+    place-items: center;
+}
+
+.sidebar-toggle:hover {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+.sidebar-toggle svg {
+    transition: transform .2s ease;
+}
+
+body:not(.sidebar-collapsed) .sidebar-toggle svg {
+    transform: rotate(180deg);
 }
 
 /* Unified styling and cubic-bezier transitions for premium smooth collapse */
