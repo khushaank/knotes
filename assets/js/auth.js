@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=2';
 
 const LOGIN_ATTEMPT_KEY = 'kn-login-attempts';
 const LOGIN_MAX_ATTEMPTS = 5;

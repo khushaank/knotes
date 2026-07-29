@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=2';
 
 let membershipStatePromise;
 

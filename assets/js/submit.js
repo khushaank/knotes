@@ -1,4 +1,4 @@
-import { supabase, uploadMediaFile, listUserMedia } from './supabaseClient.js';
+import { supabase, uploadMediaFile, listUserMedia } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 import { renderMarkdown } from './contentRenderer.js';
 

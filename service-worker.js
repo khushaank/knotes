@@ -1,9 +1,9 @@
-const CACHE = 'knotes-v21';
+const CACHE = 'knotes-v22';
 const SHELL = ['/', '/assets/css/landing.css', '/assets/img/logo.png'];
 const PUBLIC_PAGES = new Set([
     '/', '/login'
 ]);
-const STATIC_ASSET = /^\/assets\/(?:css|img|js)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
+const STATIC_ASSET = /^\/assets\/(?:css|img|js|vendor)\/[^?]+\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico)$/i;
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(SHELL.map(url => cache.add(url)))));

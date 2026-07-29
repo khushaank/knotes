@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, getHiddenPosts, unhideStory } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 
 await requireApprovedMember({ allowMfaEnrollment: true });

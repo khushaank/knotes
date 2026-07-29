@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 
 function applyTheme(preference = 'system') {
@@ -73,6 +73,25 @@ function clearCachedAuth() {
 }
 
 function setupInstallPrompt() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            let hasReloadedForNewWorker = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (hasReloadedForNewWorker) return;
+                hasReloadedForNewWorker = true;
+                window.location.reload();
+            });
+
+            try {
+                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js', {
+                    updateViaCache: 'none'
+                });
+                await registration.update();
+            } catch (e) { }
+        });
+    }
+
     if (localStorage.getItem(INSTALL_PROMPT_KEY) || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
 
     let installEvent;
@@ -123,25 +142,6 @@ function setupInstallPrompt() {
     manifest.rel = 'manifest';
     manifest.href = APP_ROOT + 'manifest.webmanifest';
     document.head.appendChild(manifest);
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-            let hasReloadedForNewWorker = false;
-
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (hasReloadedForNewWorker) return;
-                hasReloadedForNewWorker = true;
-                window.location.reload();
-            });
-
-            try {
-                const registration = await navigator.serviceWorker.register(APP_ROOT + 'service-worker.js', {
-                    updateViaCache: 'none'
-                });
-                await registration.update();
-            } catch (e) { }
-        });
-    }
 
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if (isIos && !navigator.standalone) {

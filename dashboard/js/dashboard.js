@@ -1,4 +1,4 @@
-import { supabase } from '../../assets/js/supabaseClient.js';
+import { supabase } from '../../assets/js/supabaseClient.js?v=2';
 import { requireApprovedMember } from '../../assets/js/routeGuard.js?v=2';
 
 await requireApprovedMember();

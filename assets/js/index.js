@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, upvoteStory, trackClick, sanitize, setBookmark, getUserBookmarks, getUserLikes, getCache, setCache, getHiddenStoryIds, hideStory } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 import { calculateRelevanceScore, sortStories } from './algorithm.js';
 

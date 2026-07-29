@@ -1,4 +1,4 @@
-import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js';
+import { supabase, calculateTimeAgo, sanitize } from './supabaseClient.js?v=2';
 import { requireApprovedMember } from './routeGuard.js?v=2';
 
 await requireApprovedMember();

@@ -34,8 +34,8 @@ for (const file of sourceFiles) {
     if (extname(file) === '.js' && /\bcreateClient\(/.test(source)) {
         supabaseClientConstructors.push(name);
     }
-    if (extname(file) === '.js' && /supabaseClient\.js\?/.test(source)) {
-        failures.push(`${name}: versioned Supabase singleton import creates a duplicate auth client`);
+    if (extname(file) === '.js' && /from\s+['"][^'"]*supabaseClient\.js['"]/.test(source)) {
+        failures.push(`${name}: Supabase singleton import must use the current shared version`);
     }
     if (extname(file) === '.js' && !file.endsWith('check.mjs')) {
         const syntax = spawnSync(process.execPath, [

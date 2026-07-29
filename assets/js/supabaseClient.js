@@ -44,7 +44,7 @@ function createTimeoutFetch(timeoutMs = SUPABASE_TIMEOUT_MS) {
 
 try {
     await withTimeout(
-        import('../vendor/supabase.js'),
+        import('../vendor/supabase.js?v=2'),
         SUPABASE_TIMEOUT_MS,
         'Supabase client'
     );
@@ -54,7 +54,7 @@ try {
 }
 
 try {
-    const config = await import('./supabaseConfig.js');
+    const config = await import('./supabaseConfig.js?v=2');
     SUPABASE_URL = config.SUPABASE_URL;
     SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
 } catch (e) {

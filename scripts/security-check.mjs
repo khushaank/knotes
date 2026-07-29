@@ -74,7 +74,7 @@ assert.match(routeGuard, /classList\.add\('access-ready'\)/, 'private pages must
 assert.match(auth, /return '\/home';/, 'successful login must always open the private feed');
 assert.equal((client.match(/\bcreateClient\(/g) || []).length, 1, 'canonical client must be constructed once');
 assert.doesNotMatch(dashboard, /createClient\(|@supabase\/supabase-js/, 'dashboard must reuse the canonical Supabase client');
-assert.doesNotMatch((await read('assets/js/index.js')) + session, /supabaseClient\.js\?/, 'module specifiers must not create duplicate Supabase clients');
+assert.match((await read('assets/js/index.js')) + session, /supabaseClient\.js\?v=2/, 'module specifiers must share the current Supabase client version');
 assert.match(session, /function enhanceFormAccessibility\(/, 'shared forms need runtime accessibility normalization');
 assert.doesNotMatch(styles, /font-size:\s*7pt/, 'story metadata must remain readable');
 assert.match(styles, /:focus-visible/, 'interactive controls need visible keyboard focus');
@@ -105,8 +105,13 @@ assert.match(session, /updateViaCache:\s*'none'/, 'service-worker registration m
 assert.match(session, /membership_status[\s\S]+approved/, 'private pages must check approved membership');
 assert.doesNotMatch(serviceWorker, /const SHELL = \[[^\]]*\/home/, 'private home must not be pre-cached');
 assert.doesNotMatch(serviceWorker, /PUBLIC_PAGES[\s\S]{0,180}'\/home'/, 'private home must not be a public navigation cache');
-assert.match(serviceWorker, /knotes-v21/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /knotes-v22/, 'service-worker cache must be bumped after changing route delivery');
+assert.match(serviceWorker, /\(\?:css\|img\|js\|vendor\)/, 'service worker must revalidate vendored browser dependencies');
 assert.match(serviceWorker, /new Request\(request, \{ cache: 'reload' \}\)/, 'service worker must revalidate scripts and styles after deploy');
+assert.ok(
+    session.indexOf("if ('serviceWorker' in navigator)") < session.indexOf('localStorage.getItem(INSTALL_PROMPT_KEY)'),
+    'service-worker updates must not depend on whether the install prompt was dismissed'
+);
 assert.match(supabaseVendor, /globalThis\.supabase\s*=\s*supabase/, 'vendored Supabase UMD build must expose its browser global after module loading');
 assert.match(worker, /https:\/\/static\.cloudflareinsights\.com/, 'CSP must allow the intentional Cloudflare beacon');
 assert.match(worker, /https:\/\/cloudflareinsights\.com/, 'CSP must allow the Cloudflare analytics endpoint');
