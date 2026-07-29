@@ -74,7 +74,8 @@ function createRowAction(label, icon, onClick, danger = false) {
     button.className = `row-action-button${danger ? ' danger' : ''}`;
     button.setAttribute('aria-label', label);
     button.title = label;
-    icon.style.marginRight = '0';
+    icon.removeAttribute('style');
+    icon.setAttribute('aria-hidden', 'true');
     button.append(icon);
     button.addEventListener('click', onClick);
     return button;
@@ -476,6 +477,7 @@ async function populateOverviewMetrics() {
 
             // Title cell
             const tdTitle = document.createElement('td');
+            tdTitle.setAttribute('data-label', 'Title');
             tdTitle.title = p.title;
             const titleLink = document.createElement('a');
             titleLink.href = `../pulse/home?s=${encodeURIComponent(p.slug)}`;
@@ -486,6 +488,7 @@ async function populateOverviewMetrics() {
 
             // Likes cell
             const tdLikes = document.createElement('td');
+            tdLikes.setAttribute('data-label', 'Likes');
             const likesStrong = document.createElement('strong');
             likesStrong.setAttribute('style', 'color: #ff6600;');
             likesStrong.textContent = p.likes_count || 0;
@@ -493,6 +496,7 @@ async function populateOverviewMetrics() {
 
             // Clicks cell
             const tdClicks = document.createElement('td');
+            tdClicks.setAttribute('data-label', 'Clicks');
             tdClicks.textContent = p.clicks_count || 0;
 
             tr.appendChild(tdTitle);

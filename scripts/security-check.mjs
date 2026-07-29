@@ -48,6 +48,8 @@ const [auth, client, login, contact, security, manifest, packageJson, intercepto
 
 const pkg = JSON.parse(packageJson);
 const pwa = JSON.parse(manifest);
+const dashboardHtml = await read('dashboard/index.html');
+const dashboardStyles = await read('dashboard/css/dashboard.css');
 
 assert.doesNotMatch(auth, /length\s*<\s*(?:6|7|8|9|10|11)\b/, 'all password flows must require at least 12 characters');
 assert.match(auth, /PASSWORD_MIN_LENGTH\s*=\s*12/, 'password policy must be centralized at 12 characters');
@@ -74,6 +76,11 @@ assert.match(routeGuard, /classList\.add\('access-ready'\)/, 'private pages must
 assert.match(auth, /return '\/home';/, 'successful login must always open the private feed');
 assert.equal((client.match(/\bcreateClient\(/g) || []).length, 1, 'canonical client must be constructed once');
 assert.doesNotMatch(dashboard, /createClient\(|@supabase\/supabase-js/, 'dashboard must reuse the canonical Supabase client');
+assert.doesNotMatch(dashboard, /icon\.style/, 'dashboard action icons must support XML-parsed SVG elements');
+assert.match(dashboard, /icon\.removeAttribute\('style'\)/, 'dashboard action icons must remove legacy spacing safely');
+assert.match(dashboardHtml, /id="top-posts-table" class="stack-on-mobile"/, 'all dashboard tables must use the responsive mobile layout');
+assert.match(dashboardStyles, /\.content\s*\{[\s\S]*?min-width:\s*0/, 'dashboard content must be allowed to shrink inside its flex layout');
+assert.match(dashboardHtml, /src="\.\.\/assets\/js\/theme-bootstrap\.js"/, 'dashboard theme bootstrap must be CSP-safe');
 assert.match((await read('assets/js/index.js')) + session, /supabaseClient\.js\?v=2/, 'module specifiers must share the current Supabase client version');
 assert.match(session, /function enhanceFormAccessibility\(/, 'shared forms need runtime accessibility normalization');
 assert.doesNotMatch(styles, /font-size:\s*7pt/, 'story metadata must remain readable');
