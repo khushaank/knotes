@@ -74,7 +74,9 @@ function createRowAction(label, icon, onClick, danger = false) {
     button.className = `row-action-button${danger ? ' danger' : ''}`;
     button.setAttribute('aria-label', label);
     button.title = label;
-    button.textContent = label;
+    icon.removeAttribute('style');
+    button.appendChild(icon);
+    button.appendChild(document.createTextNode(label));
     button.addEventListener('click', onClick);
     return button;
 }
