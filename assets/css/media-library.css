@@ -18,3 +18,7 @@
 /* Keep a short media list compact and prevent a single file card from filling the row. */
 .kn-media-grid{grid-template-columns:repeat(auto-fill,210px);align-items:start;padding:14px}.kn-media-card{width:210px;min-height:0}.kn-media-card>img{display:block}.kn-media-preview-dialog{margin:auto;padding:0;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px)}.kn-media-preview-dialog .kn-media-dialog-card{max-height:calc(100vh - 24px)}.kn-media-preview-dialog .kn-media-dialog-body{overflow:auto}.kn-media-preview-image{max-height:calc(100vh - 180px)}
 @media (max-width:520px){.kn-media-grid{grid-template-columns:1fr;padding:10px}.kn-media-card{width:auto}}
+
+/* Dialog is a full-viewport backdrop; its card is always centered and scrollable. */
+.kn-media-dialog[open]{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;display:grid;place-items:center;overflow:auto}.kn-media-dialog-card{margin:24px;max-height:calc(100dvh - 48px)}
+@media (max-width:520px){.kn-media-dialog-card{width:calc(100vw - 28px);margin:14px;max-height:calc(100dvh - 28px)}}
