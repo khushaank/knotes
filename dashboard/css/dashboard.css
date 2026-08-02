@@ -610,9 +610,9 @@ body.sidebar-collapsed .nav-item.active {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
+    min-width: 64px;
+    height: 38px;
+    padding: 0 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--bg-card);
@@ -622,7 +622,6 @@ body.sidebar-collapsed .nav-item.active {
     font-weight: 600;
     cursor: pointer;
 }
-.row-action-button svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
 
 .row-action-button:hover {
     border-color: var(--accent);
@@ -1326,7 +1325,7 @@ tbody tr:hover {
         justify-content: flex-end;
     }
 
-    .row-action-button { width: 44px; height: 44px; padding: 0; }
+    .row-action-button { min-width: 64px; height: 40px; padding: 0 12px; }
 
     .desktop-only-admin-toggle {
         display: none !important;
