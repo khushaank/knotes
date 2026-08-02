@@ -164,6 +164,9 @@ async function checkUserAuth() {
     document.getElementById('loading-overlay')?.classList.add('hidden');
     document.getElementById('admin-dashboard')?.classList.remove('hidden');
 
+    // Load the requested media tab immediately; it does not depend on the profile or dashboard metrics.
+    if (window.location.hash === '#media-section') loadDashboardMedia();
+
     // Fetch user profile to get creator details
     const { data: profile, error } = await supabase
         .from('profiles')
@@ -191,8 +194,7 @@ async function checkUserAuth() {
 // DATA LOADERS (Personalized to Logged-in User)
 // =============================================
 async function loadCreatorData() {
-    await Promise.all([loadPosts(), loadMyWrittenComments()]);
-    await loadComments();
+    await Promise.all([loadPosts(), loadMyWrittenComments(), loadComments()]);
     await populateOverviewMetrics();
 }
 
@@ -655,10 +657,32 @@ function showToast(message, type = 'success') {
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const brandToggle = document.getElementById('sidebar-brand-toggle');
+    const menuButton = document.getElementById('dashboard-menu-button');
+    const overlay = document.getElementById('sidebar-overlay');
+    const closeMenu = () => {
+        document.body.classList.remove('sidebar-open');
+        menuButton?.setAttribute('aria-expanded', 'false');
+        overlay?.classList.remove('active');
+        overlay?.setAttribute('aria-hidden', 'true');
+    };
+    const openMenu = () => {
+        document.body.classList.add('sidebar-open');
+        menuButton?.setAttribute('aria-expanded', 'true');
+        overlay?.classList.add('active');
+        overlay?.setAttribute('aria-hidden', 'false');
+    };
+
+    menuButton?.addEventListener('click', () =>
+        document.body.classList.contains('sidebar-open') ? closeMenu() : openMenu());
+    overlay?.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeMenu(); });
 
     if (brandToggle && sidebar) {
         const savedState = localStorage.getItem('kn-dashboard-sidebar-collapsed');
+        document.body.classList.add('dashboard-loading');
         document.body.classList.toggle('sidebar-collapsed', savedState === 'true');
+        requestAnimationFrame(() => document.body.classList.remove('dashboard-loading'));
 
         const syncToggle = () => {
             const collapsed = document.body.classList.contains('sidebar-collapsed');
@@ -704,6 +728,7 @@ function setupSidebar() {
 
             window.history.replaceState(null, '', '#' + targetId);
             if (targetId === 'media-section') loadDashboardMedia();
+            closeMenu();
         });
     });
 }
@@ -731,7 +756,6 @@ function setupDashboardMedia() {
         }
     });
     document.getElementById('create-post-button')?.addEventListener('click', () => openEditPostDialog(null));
-    if (window.location.hash === '#media-section') loadDashboardMedia();
 }
 
 // =============================================
@@ -744,6 +768,7 @@ function getChartDefaults() {
     return {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: { legend: { labels: { color: text, font: { family: 'Inter', size: 12 } } } },
         scales: {
             x: { ticks: { color: text, font: { size: 11 } }, grid: { color: grid } },
@@ -808,6 +833,7 @@ function drawCategoryChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -1097,8 +1123,7 @@ function openEditPostDialog(post) {
                 title,
                 url,
                 content,
-                category: category.value,
-                slug: crypto.randomUUID().replaceAll('-', '')
+                category: category.value
             })
             : supabase
                 .from('blogs')

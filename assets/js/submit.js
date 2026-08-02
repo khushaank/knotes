@@ -203,8 +203,6 @@ const HASH_TO_CATEGORY = {
             title = `Show KN: ${title}`;
         }
 
-        const slug = crypto.randomUUID().replaceAll('-', '');
-
         if (btnSubmit) {
             btnSubmit.disabled = true;
             btnSubmit.textContent = 'submitting...';
@@ -221,8 +219,7 @@ const HASH_TO_CATEGORY = {
                     title,
                     url: url || '',
                     content: text || '',
-                    category: finalCategory,
-                    slug
+                    category: finalCategory
                 })
                 .select()
                 .maybeSingle();

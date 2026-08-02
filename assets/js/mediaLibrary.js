@@ -7,11 +7,20 @@ import {
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
 const TEXT_EXTENSIONS = new Set(['txt', 'csv']);
-const iconByExtension = {
-    pdf: 'picture_as_pdf', xls: 'table_chart', xlsx: 'table_chart', csv: 'table_chart',
-    doc: 'description', docx: 'description', ppt: 'present_to_all', pptx: 'present_to_all',
-    txt: 'article'
-};
+function icon(name) {
+    const paths = {
+        preview: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>',
+        add: '<path d="M12 5v14M5 12h14"/>', edit: '<path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.5 7.5 3 3"/>',
+        delete: '<path d="M4 7h16M10 11v5m4-5v5M9 7l1-2h4l1 2m-9 0 1 14h10l1-14"/>',
+        file: '<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M8 12h8M8 16h8"/>',
+        table: '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16M15 4v16"/>'
+    };
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    ['viewBox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'aria-hidden'].forEach((key, i) =>
+        svg.setAttribute(key, ['0 0 24 24', 'none', 'currentColor', '2', 'round', 'round', 'true'][i]));
+    svg.innerHTML = paths[name] || paths.file;
+    return svg;
+}
 
 function extension(name = '') {
     return name.split('.').pop().toLowerCase();
@@ -118,7 +127,12 @@ export async function openMediaPreview(media) {
     } else {
         const message = document.createElement('div');
         message.className = 'kn-media-document-fallback';
-        message.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">description</span><p>Word, Excel, and PowerPoint files open in their compatible app.</p>`;
+        message.append(icon(ext === 'xls' || ext === 'xlsx' ? 'table' : 'file'));
+        const text = document.createElement('p');
+        text.textContent = ext === 'xls' || ext === 'xlsx'
+            ? 'Excel files open in Excel or your browser’s compatible spreadsheet viewer.'
+            : 'This file opens in its compatible app.';
+        message.append(text);
         body.append(message);
     }
 
@@ -132,13 +146,13 @@ export async function openMediaPreview(media) {
     dialog.showModal();
 }
 
-function makeIconButton(label, icon, onClick, danger = false) {
+function makeIconButton(label, iconName, onClick, danger = false) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `kn-media-card-action${danger ? ' danger' : ''}`;
     button.setAttribute('aria-label', label);
     button.title = label;
-    button.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">${icon}</span>`;
+    button.append(icon(iconName));
     button.addEventListener('click', event => {
         event.stopPropagation();
         onClick();
@@ -148,7 +162,7 @@ function makeIconButton(label, icon, onClick, danger = false) {
 
 export async function renderMediaLibrary(container, { onInsert, manage = false, onChanged } = {}) {
     container.classList.add('kn-media-grid');
-    container.textContent = 'Loading your files…';
+    container.innerHTML = '<p class="kn-media-loading" role="status">Loading your files…</p>';
     const files = await listUserMedia();
     if (!files.length) {
         container.innerHTML = '<p class="kn-media-empty">No files yet. Upload your first file.</p>';
@@ -166,17 +180,16 @@ export async function renderMediaLibrary(container, { onInsert, manage = false, 
             image.loading = 'lazy';
             card.append(image);
         } else {
-            const icon = document.createElement('span');
-            icon.className = 'material-symbols-outlined kn-media-file-icon';
-            icon.textContent = iconByExtension[extension(media.name)] || 'insert_drive_file';
-            card.append(icon);
+            const fileIcon = icon(['xls', 'xlsx', 'csv'].includes(extension(media.name)) ? 'table' : 'file');
+            fileIcon.classList.add('kn-media-file-icon');
+            card.append(fileIcon);
         }
         const title = document.createElement('div');
         title.className = 'kn-media-card-title';
         title.textContent = media.displayName;
         const actions = document.createElement('div');
         actions.className = 'kn-media-card-actions';
-        actions.append(makeIconButton('Preview full screen', 'fullscreen', () => openMediaPreview(media)));
+        actions.append(makeIconButton('Preview file', 'preview', () => openMediaPreview(media)));
         if (onInsert) actions.append(makeIconButton('Insert into post', 'add', () => onInsert(media)));
         if (manage) {
             actions.append(makeIconButton('Rename and edit alt text', 'edit', async () => {

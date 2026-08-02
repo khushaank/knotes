@@ -564,13 +564,13 @@ export async function listUserMedia() {
     const visibleFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
     if (!visibleFiles.length) return [];
     const paths = visibleFiles.map(f => `${userId}/${f.name}`);
-    const { data: signed } = await supabase.storage.from('media').createSignedUrls(paths, 900);
-
-    const { data: assets } = await supabase
-        .from('media_assets')
-        .select('id,path,display_name,alt_text,mime_type,size_bytes,created_at')
-        .eq('owner_id', userId)
-        .in('path', paths);
+    const [{ data: signed }, { data: assets }] = await Promise.all([
+        supabase.storage.from('media').createSignedUrls(paths, 900),
+        supabase.from('media_assets')
+            .select('id,path,display_name,alt_text,mime_type,size_bytes,created_at')
+            .eq('owner_id', userId)
+            .in('path', paths)
+    ]);
     const byPath = new Map((assets || []).map(asset => [asset.path, asset]));
 
     return visibleFiles.map((file, index) => {
